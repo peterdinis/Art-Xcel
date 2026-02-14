@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { all, create } from 'mathjs';
 
 export interface CellData {
     value: string;
@@ -20,8 +21,6 @@ export interface SpreadsheetState {
     selectedCell: string | null;
     selectionRange: string[] | null;
 }
-
-import { all, create } from 'mathjs';
 
 const math = create(all);
 
