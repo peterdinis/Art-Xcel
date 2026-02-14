@@ -1,6 +1,9 @@
+"use client"
+
 import React, { memo, useState, useEffect, useRef, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { SheetData, CellData } from '@/hooks/use-spreadsheet';
+import { useVirtualizer } from '@tanstack/react-virtual';
 
 interface GridProps {
     data: SheetData;
@@ -9,8 +12,11 @@ interface GridProps {
     onCellChange: (cellId: string, value: string) => void;
 }
 
-const ROWS = 100;
-const COLS = 26; // A-Z
+const DEFAULT_ROW_HEIGHT = 32;
+const DEFAULT_COL_WIDTH = 100;
+const ROW_HEADER_WIDTH = 40;
+const BATCH_SIZE = 50;
+const OVERSCAN = 10; // Počet riadkov nad a pod viditeľnou oblasťou
 
 const colLabel = (index: number) => String.fromCharCode(65 + index);
 
@@ -21,11 +27,14 @@ interface CellProps {
     style?: CellData['style'];
     isSelected: boolean;
     isEditing: boolean;
+    width: number;
+    height: number;
     onClick: () => void;
     onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
     onBlur: () => void;
     inputRef?: React.RefCallback<HTMLInputElement>;
+    onResize?: (e: React.MouseEvent) => void;
 }
 
 const Cell = memo(({ 
@@ -35,23 +44,31 @@ const Cell = memo(({
     style, 
     isSelected, 
     isEditing,
+    width,
+    height,
     onClick, 
     onChange,
     onKeyDown,
     onBlur,
-    inputRef
+    inputRef,
+    onResize
 }: CellProps) => {
-    // Zobraziť formula ak sa edituje, inak hodnotu
     const displayValue = isEditing ? (formula || value) : value;
 
     return (
         <div
             className={cn(
-                "border-r border-b h-8 min-w-25 flex items-center relative",
+                "border-r border-b flex items-center relative group",
                 isSelected ? "ring-2 ring-primary z-10" : "",
                 isEditing && "ring-2 ring-blue-500 z-20"
             )}
-            style={{ backgroundColor: style?.backgroundColor }}
+            style={{ 
+                backgroundColor: style?.backgroundColor,
+                width: `${width}px`,
+                height: `${height}px`,
+                minWidth: `${width}px`,
+                maxWidth: `${width}px`
+            }}
             onClick={onClick}
         >
             <input
@@ -72,46 +89,202 @@ const Cell = memo(({
                 onBlur={onBlur}
                 autoFocus={isEditing}
             />
-            {/* Indikátor pre bunku s formulkou */}
+            
             {formula && !isEditing && (
                 <div className="absolute top-0 right-0 w-2 h-2 bg-green-500 rounded-full" title="Contains formula" />
             )}
+
+            <div
+                className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-blue-500 opacity-0 group-hover:opacity-100"
+                onMouseDown={(e) => onResize?.(e)}
+                data-resize="col"
+                data-cell={id}
+            />
         </div>
     );
 });
 
 Cell.displayName = "Cell";
 
+interface RowHeaderProps {
+    rowIndex: number;
+    height: number;
+    onResize?: (e: React.MouseEvent) => void;
+}
+
+const RowHeader = memo(({ rowIndex, height, onResize }: RowHeaderProps) => {
+    return (
+        <div 
+            className="w-10 shrink-0 bg-muted border-r border-b flex items-center justify-center font-bold text-xs text-muted-foreground sticky left-0 z-10 group"
+            style={{ height: `${height}px`, minHeight: `${height}px` }}
+        >
+            {rowIndex}
+            <div
+                className="absolute bottom-0 left-0 w-full h-1 cursor-row-resize hover:bg-blue-500 opacity-0 group-hover:opacity-100"
+                onMouseDown={onResize}
+                data-resize="row"
+                data-row={rowIndex}
+            />
+        </div>
+    );
+});
+
+RowHeader.displayName = "RowHeader";
+
 export const Grid = ({ data, selectedCell, onSelectCell, onCellChange }: GridProps) => {
     const [editingCell, setEditingCell] = useState<string | null>(null);
     const [editValue, setEditValue] = useState<string>("");
+    const [rowHeights, setRowHeights] = useState<Record<number, number>>({});
+    const [colWidths, setColWidths] = useState<Record<string, number>>({});
+    const [totalRows, setTotalRows] = useState(100);
+    const [totalCols, setTotalCols] = useState(26);
+    
     const inputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
-    const doubleClickTimer = useRef<NodeJS.Timeout>(null);
+    const gridRef = useRef<HTMLDivElement>(null);
+    const headerRef = useRef<HTMLDivElement>(null);
+    const resizeRef = useRef<{
+        type: 'row' | 'col';
+        id: string | number;
+        startPos: number;
+        startSize: number;
+    } | null>(null);
 
-    // Reset editing when selected cell changes
-    useEffect(() => {
-        if (selectedCell && selectedCell !== editingCell) {
-            setEditingCell(null);
-            setEditValue("");
+    // Funkcia pre získanie výšky riadku
+    const getRowHeight = useCallback((index: number) => {
+        return rowHeights[index + 1] || DEFAULT_ROW_HEIGHT;
+    }, [rowHeights]);
+
+    // Funkcia pre získanie šírky stĺpca
+    const getColWidth = useCallback((index: number) => {
+        const col = colLabel(index);
+        return colWidths[col] || DEFAULT_COL_WIDTH;
+    }, [colWidths]);
+
+    // Virtualizér pre riadky
+    const rowVirtualizer = useVirtualizer({
+        count: totalRows,
+        getScrollElement: () => gridRef.current,
+        estimateSize: (index) => getRowHeight(index),
+        overscan: OVERSCAN,
+        rangeExtractor: (range) => {
+            // Pridáme dynamické načítanie keď sa blížime ku koncu
+            if (range.endIndex > totalRows - BATCH_SIZE) {
+                setTotalRows(prev => prev + BATCH_SIZE);
+            }
+            return Array.from(
+                { length: range.endIndex - range.startIndex + 1 },
+                (_, i) => range.startIndex + i
+            );
         }
-    }, [selectedCell]);
+    });
+
+    // Virtualizér pre stĺpce (pre hlavičku)
+    const colVirtualizer = useVirtualizer({
+        count: totalCols,
+        getScrollElement: () => headerRef.current,
+        horizontal: true,
+        estimateSize: (index) => getColWidth(index),
+        overscan: 5,
+        rangeExtractor: (range) => {
+            if (range.endIndex > totalCols - 10) {
+                setTotalCols(prev => Math.min(prev + 10, 52));
+            }
+            return Array.from(
+                { length: range.endIndex - range.startIndex + 1 },
+                (_, i) => range.startIndex + i
+            );
+        }
+    });
+
+    // Sync scroll medzi gridom a headerom
+    useEffect(() => {
+        const handleScroll = () => {
+            if (headerRef.current && gridRef.current) {
+                headerRef.current.scrollLeft = gridRef.current.scrollLeft;
+            }
+        };
+
+        const grid = gridRef.current;
+        if (grid) {
+            grid.addEventListener('scroll', handleScroll);
+            return () => grid.removeEventListener('scroll', handleScroll);
+        }
+    }, []);
+
+    // Resize handling
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            if (!resizeRef.current) return;
+            
+            const { type, id, startPos, startSize } = resizeRef.current;
+            
+            if (type === 'col') {
+                const delta = e.clientX - startPos;
+                const newWidth = Math.max(50, startSize + delta);
+                setColWidths(prev => ({ ...prev, [id as string]: newWidth }));
+                colVirtualizer.measure();
+            } else if (type === 'row') {
+                const delta = e.clientY - startPos;
+                const newHeight = Math.max(24, startSize + delta);
+                setRowHeights(prev => ({ ...prev, [id as number]: newHeight }));
+                rowVirtualizer.measure();
+            }
+        };
+
+        const handleMouseUp = () => {
+            resizeRef.current = null;
+        };
+
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mouseup', handleMouseUp);
+
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [colVirtualizer, rowVirtualizer]);
+
+    const handleResizeStart = useCallback((e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const target = e.target as HTMLElement;
+        const type = target.dataset.resize as 'row' | 'col';
+        
+        if (type === 'col') {
+            const cellId = target.dataset.cell;
+            if (!cellId) return;
+            
+            const col = cellId[0];
+            resizeRef.current = {
+                type: 'col',
+                id: col,
+                startPos: e.clientX,
+                startSize: colWidths[col] || DEFAULT_COL_WIDTH
+            };
+        } else if (type === 'row') {
+            const row = target.dataset.row;
+            if (!row) return;
+            
+            const rowNum = parseInt(row);
+            resizeRef.current = {
+                type: 'row',
+                id: rowNum,
+                startPos: e.clientY,
+                startSize: rowHeights[rowNum] || DEFAULT_ROW_HEIGHT
+            };
+        }
+    }, [colWidths, rowHeights]);
 
     const handleCellClick = useCallback((cellId: string) => {
-        // Single click - select cell
         onSelectCell(cellId);
     }, [onSelectCell]);
 
     const handleDoubleClick = useCallback((cellId: string) => {
-        // Clear any pending single click
-        if (doubleClickTimer.current) {
-            clearTimeout(doubleClickTimer.current);
-        }
-
         const cellData = data[cellId];
         setEditingCell(cellId);
         setEditValue(cellData?.formula || cellData?.value || "");
         
-        // Focus input po nastavení editing stavu
         setTimeout(() => {
             const input = inputRefs.current.get(cellId);
             if (input) {
@@ -128,12 +301,10 @@ export const Grid = ({ data, selectedCell, onSelectCell, onCellChange }: GridPro
     }, [editingCell]);
 
     const saveAndMove = useCallback((cellId: string, direction: 'down' | 'up' | 'right' | 'left') => {
-        // Save changes
         if (editingCell === cellId) {
             onCellChange(cellId, editValue);
             setEditingCell(null);
             
-            // Move to next cell
             const col = cellId[0];
             const row = parseInt(cellId.slice(1));
             
@@ -141,25 +312,37 @@ export const Grid = ({ data, selectedCell, onSelectCell, onCellChange }: GridPro
             
             switch (direction) {
                 case 'down':
-                    if (row < ROWS) {
-                        nextCellId = col + (row + 1);
-                    }
+                    nextCellId = col + (row + 1);
+                    // Scroll to the new row
+                    rowVirtualizer.scrollToIndex(row, { align: 'auto' });
                     break;
                 case 'up':
                     if (row > 1) {
                         nextCellId = col + (row - 1);
+                        rowVirtualizer.scrollToIndex(row - 2, { align: 'auto' });
                     }
                     break;
                 case 'right':
                     if (col < 'Z') {
                         const nextCol = String.fromCharCode(col.charCodeAt(0) + 1);
                         nextCellId = nextCol + row;
+                        // Scroll to the new column
+                        if (gridRef.current) {
+                            const colIndex = nextCol.charCodeAt(0) - 65;
+                            const scrollLeft = colVirtualizer.getOffsetForIndex(colIndex) || 0;
+                            gridRef.current.scrollLeft = scrollLeft as unknown as number;
+                        }
                     }
                     break;
                 case 'left':
                     if (col > 'A') {
                         const prevCol = String.fromCharCode(col.charCodeAt(0) - 1);
                         nextCellId = prevCol + row;
+                        if (gridRef.current) {
+                            const colIndex = prevCol.charCodeAt(0) - 65;
+                            const scrollLeft = colVirtualizer.getOffsetForIndex(colIndex) || 0;
+                            gridRef.current.scrollLeft = scrollLeft as unknown as number;
+                        }
                     }
                     break;
             }
@@ -168,33 +351,23 @@ export const Grid = ({ data, selectedCell, onSelectCell, onCellChange }: GridPro
                 onSelectCell(nextCellId);
             }
         }
-    }, [editingCell, editValue, onCellChange, onSelectCell]);
+    }, [editingCell, editValue, onCellChange, onSelectCell, rowVirtualizer, colVirtualizer]);
 
     const handleKeyDown = useCallback((cellId: string, e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
             e.preventDefault();
-            if (e.shiftKey) {
-                saveAndMove(cellId, 'up');
-            } else {
-                saveAndMove(cellId, 'down');
-            }
+            saveAndMove(cellId, e.shiftKey ? 'up' : 'down');
         } else if (e.key === 'Escape') {
             e.preventDefault();
-            // Cancel editing
             setEditingCell(null);
             setEditValue("");
         } else if (e.key === 'Tab') {
             e.preventDefault();
-            if (e.shiftKey) {
-                saveAndMove(cellId, 'left');
-            } else {
-                saveAndMove(cellId, 'right');
-            }
+            saveAndMove(cellId, e.shiftKey ? 'left' : 'right');
         }
     }, [saveAndMove]);
 
     const handleBlur = useCallback((cellId: string) => {
-        // Save changes when input loses focus
         if (editingCell === cellId) {
             onCellChange(cellId, editValue);
             setEditingCell(null);
@@ -209,67 +382,125 @@ export const Grid = ({ data, selectedCell, onSelectCell, onCellChange }: GridPro
         }
     }, []);
 
-    // Cleanup timer on unmount
-    useEffect(() => {
-        return () => {
-            if (doubleClickTimer.current) {
-                clearTimeout(doubleClickTimer.current);
-            }
-        };
-    }, []);
-
     return (
-        <div className="overflow-auto flex-1 bg-background relative">
-            <div className="flex sticky top-0 z-20 bg-background">
-                {/* Header Row */}
-                <div className="w-10 shrink-0 bg-muted border-r border-b flex items-center justify-center font-bold text-xs text-muted-foreground sticky left-0 z-30">
-                    #
-                </div>
-                {Array.from({ length: COLS }).map((_, colIndex) => (
-                    <div key={colIndex} className="min-w-25 h-8 bg-muted border-r border-b flex items-center justify-center font-bold text-xs text-muted-foreground">
-                        {colLabel(colIndex)}
+        <div className="h-full flex flex-col">
+            {/* Header - oddelený pre lepšiu virtualizáciu */}
+            <div 
+                ref={headerRef}
+                className="overflow-hidden border-b"
+                style={{ height: DEFAULT_ROW_HEIGHT }}
+            >
+                <div className="flex sticky top-0 z-20 bg-background">
+                    <div 
+                        className="w-10 shrink-0 bg-muted border-r flex items-center justify-center font-bold text-xs text-muted-foreground sticky left-0 z-30"
+                        style={{ height: DEFAULT_ROW_HEIGHT }}
+                    >
+                        #
                     </div>
-                ))}
-            </div>
-
-            {Array.from({ length: ROWS }).map((_, rowIndex) => {
-                const rowLabel = rowIndex + 1;
-                return (
-                    <div key={rowIndex} className="flex">
-                        {/* Row Header */}
-                        <div className="w-10 shrink-0 bg-muted border-r border-b flex items-center justify-center font-bold text-xs text-muted-foreground sticky left-0 z-10">
-                            {rowLabel}
-                        </div>
-                        {/* Cells */}
-                        {Array.from({ length: COLS }).map((_, colIndex) => {
-                            const cellId = `${colLabel(colIndex)}${rowLabel}`;
-                            const cellData = data[cellId] || { value: '', style: {} };
-                            const isEditing = editingCell === cellId;
-                            
+                    <div style={{ width: colVirtualizer.getTotalSize(), position: 'relative', height: DEFAULT_ROW_HEIGHT }}>
+                        {colVirtualizer.getVirtualItems().map((virtualCol) => {
+                            const col = colLabel(virtualCol.index);
                             return (
-                                <div
-                                    key={cellId}
-                                    onDoubleClick={() => handleDoubleClick(cellId)}
+                                <div 
+                                    key={col}
+                                    className="absolute top-0 h-full bg-muted border-r flex items-center justify-center font-bold text-xs text-muted-foreground group"
+                                    style={{
+                                        left: 0,
+                                        width: virtualCol.size,
+                                        transform: `translateX(${virtualCol.start}px)`,
+                                        height: DEFAULT_ROW_HEIGHT
+                                    }}
                                 >
-                                    <Cell
-                                        id={cellId}
-                                        value={cellData.value || ""}
-                                        formula={cellData.formula}
-                                        style={cellData.style}
-                                        isSelected={selectedCell === cellId}
-                                        isEditing={isEditing}
-                                        onClick={() => handleCellClick(cellId)}
-                                        onChange={(e) => handleCellChange(cellId, e)}
-                                        onKeyDown={(e) => handleKeyDown(cellId, e)}
-                                        onBlur={() => handleBlur(cellId)}
-                                        inputRef={setInputRef(cellId)}
+                                    {col}
+                                    <div
+                                        className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-blue-500 opacity-0 group-hover:opacity-100"
+                                        onMouseDown={handleResizeStart}
+                                        data-resize="col"
+                                        data-cell={`${col}1`}
                                     />
                                 </div>
                             );
                         })}
                     </div>
-                );
-            })}
+                </div>
+            </div>
+
+            {/* Grid s virtuálnymi riadkami */}
+            <div 
+                ref={gridRef} 
+                className="flex-1 overflow-auto bg-background"
+            >
+                <div style={{ height: rowVirtualizer.getTotalSize(), position: 'relative' }}>
+                    {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                        const row = virtualRow.index + 1;
+                        const rowHeight = virtualRow.size;
+                        
+                        return (
+                            <div
+                                key={row}
+                                className="flex absolute"
+                                style={{
+                                    top: 0,
+                                    left: 0,
+                                    width: '100%',
+                                    height: rowHeight,
+                                    transform: `translateY(${virtualRow.start}px)`
+                                }}
+                            >
+                                <RowHeader 
+                                    rowIndex={row} 
+                                    height={rowHeight}
+                                    onResize={handleResizeStart}
+                                />
+                                
+                                <div style={{ 
+                                    width: colVirtualizer.getTotalSize(), 
+                                    position: 'relative',
+                                    height: rowHeight
+                                }}>
+                                    {colVirtualizer.getVirtualItems().map((virtualCol) => {
+                                        const col = colLabel(virtualCol.index);
+                                        const cellId = `${col}${row}`;
+                                        const cellData = data[cellId] || { value: '', style: {} };
+                                        const isEditing = editingCell === cellId;
+                                        
+                                        return (
+                                            <div
+                                                key={cellId}
+                                                className="absolute"
+                                                style={{
+                                                    left: 0,
+                                                    width: virtualCol.size,
+                                                    transform: `translateX(${virtualCol.start}px)`,
+                                                    height: rowHeight
+                                                }}
+                                                onDoubleClick={() => handleDoubleClick(cellId)}
+                                            >
+                                                <Cell
+                                                    id={cellId}
+                                                    value={cellData.value || ""}
+                                                    formula={cellData.formula}
+                                                    style={cellData.style}
+                                                    width={virtualCol.size}
+                                                    height={rowHeight}
+                                                    isSelected={selectedCell === cellId}
+                                                    isEditing={isEditing}
+                                                    onClick={() => handleCellClick(cellId)}
+                                                    onChange={(e) => handleCellChange(cellId, e)}
+                                                    onKeyDown={(e) => handleKeyDown(cellId, e)}
+                                                    onBlur={() => handleBlur(cellId)}
+                                                    inputRef={setInputRef(cellId)}
+                                                    onResize={handleResizeStart}
+                                                />
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
         </div>
     );
 };
