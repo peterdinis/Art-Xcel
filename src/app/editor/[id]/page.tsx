@@ -8,9 +8,11 @@ import { Grid } from "@/components/editor/Grid";
 import { Toolbar } from "@/components/editor/Toolbar";
 import { FormulaBar } from "@/components/editor/FormulaBar";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Share2 } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { Permission, ShareDialog, ShareSettings } from "@/components/share-dialog";
+
 
 export default function EditorPage() {
   const params = useParams();
@@ -19,6 +21,15 @@ export default function EditorPage() {
   const { data, setData, selectedCell, updateCell, updateCellStyle, getCellFormula, selectCell } = useSpreadsheet();
   const { exportToExcel, importFromExcel } = useExcelService();
   const [sheetName, setSheetName] = useState("Untitled Spreadsheet");
+  
+  // Share state
+  const [shareSettings, setShareSettings] = useState<ShareSettings>({
+    accessLevel: "private",
+    linkPermission: "view",
+    collaborators: [],
+    expiryDate: null,
+    password: null
+  });
 
   // Load data from localStorage
   useEffect(() => {
@@ -30,6 +41,10 @@ export default function EditorPage() {
         setSheetName(currentSheet.name);
         if (currentSheet.data) {
           setData(currentSheet.data);
+        }
+        // Load share settings if they exist
+        if (currentSheet.shareSettings) {
+          setShareSettings(currentSheet.shareSettings);
         }
       }
     }
@@ -48,6 +63,7 @@ export default function EditorPage() {
               ...spreadsheets[index],
               data,
               name: sheetName,
+              shareSettings, // Save share settings
               lastModified: Date.now(),
             };
             localStorage.setItem("excel-editor-files", JSON.stringify(spreadsheets));
@@ -60,7 +76,7 @@ export default function EditorPage() {
     
     const timer = setTimeout(save, 1000);
     return () => clearTimeout(timer);
-  }, [data, id, sheetName]);
+  }, [data, id, sheetName, shareSettings]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -101,7 +117,6 @@ export default function EditorPage() {
 
   const handleStyleChange = (style: any) => {
     if (selectedCell) {
-      // For toggling, we need to read current style
       const currentStyle = data[selectedCell]?.style || {};
       const newStyle = { ...currentStyle, ...style };
       updateCellStyle(selectedCell, newStyle);
@@ -142,6 +157,33 @@ export default function EditorPage() {
     }
   }, [importFromExcel, setData]);
 
+  // Share handlers
+  const handleShareSave = async (settings: ShareSettings) => {
+    setShareSettings(settings);
+    // You can add API call here for real sharing
+    return Promise.resolve();
+  };
+
+  const handleInvite = async (emails: string[], permission: Permission) => {
+    // Here you would typically send invitations via API
+    console.log("Inviting:", emails, "with permission:", permission);
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  };
+
+  const handleRemoveCollaborator = async (collaboratorId: string) => {
+    // Here you would typically remove collaborator via API
+    console.log("Removing collaborator:", collaboratorId);
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 500));
+  };
+
+  const handleCopyLink = () => {
+    // Custom copy link logic
+    const shareUrl = `${window.location.origin}/share/${id}`;
+    navigator.clipboard.writeText(shareUrl);
+  };
+
   return (
     <div className="h-screen flex flex-col font-sans overflow-hidden">
       {/* Top Header */}
@@ -169,10 +211,19 @@ export default function EditorPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="gap-2">
-            <Share2 className="h-4 w-4" />
-            Share
-          </Button>
+          {/* Share Dialog komponent */}
+          <ShareDialog
+            resourceName={sheetName}
+            resourceType="spreadsheet"
+            initialSettings={shareSettings}
+            currentUserEmail="user@example.com" // Replace with actual user email
+            currentUserId="current-user-id" // Replace with actual user ID
+            onSave={handleShareSave}
+            onInvite={handleInvite}
+            onRemoveCollaborator={handleRemoveCollaborator}
+            onCopyLink={handleCopyLink}
+            isLoading={false}
+          />
           <div className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold text-sm">
             U
           </div>

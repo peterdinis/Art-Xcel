@@ -16,9 +16,31 @@ const DEFAULT_ROW_HEIGHT = 32;
 const DEFAULT_COL_WIDTH = 100;
 const ROW_HEADER_WIDTH = 40;
 const BATCH_SIZE = 50;
-const OVERSCAN = 10; // Počet riadkov nad a pod viditeľnou oblasťou
+const OVERSCAN = 10;
 
-const colLabel = (index: number) => String.fromCharCode(65 + index);
+// Funkcia pre konverziu čísla na Excel-style stĺpec (A, B, C, ..., Z, AA, AB, ...)
+const numberToColLabel = (index: number): string => {
+    let result = '';
+    let num = index + 1; // Prevod na 1-based index
+    
+    while (num > 0) {
+        num--; // Posun pre 0-based
+        const remainder = num % 26;
+        result = String.fromCharCode(65 + remainder) + result;
+        num = Math.floor(num / 26);
+    }
+    
+    return result;
+};
+
+// Funkcia pre konverziu Excel-style stĺpca na číslo (A->0, B->1, ..., Z->25, AA->26, ...)
+const colLabelToNumber = (colLabel: string): number => {
+    let result = 0;
+    for (let i = 0; i < colLabel.length; i++) {
+        result = result * 26 + (colLabel.charCodeAt(i) - 64);
+    }
+    return result - 1;
+};
 
 interface CellProps {
     id: string;
@@ -137,7 +159,7 @@ export const Grid = ({ data, selectedCell, onSelectCell, onCellChange }: GridPro
     const [rowHeights, setRowHeights] = useState<Record<number, number>>({});
     const [colWidths, setColWidths] = useState<Record<string, number>>({});
     const [totalRows, setTotalRows] = useState(100);
-    const [totalCols, setTotalCols] = useState(26);
+    const [totalCols, setTotalCols] = useState(26); // Začíname s A-Z
     
     const inputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
     const gridRef = useRef<HTMLDivElement>(null);
@@ -156,7 +178,7 @@ export const Grid = ({ data, selectedCell, onSelectCell, onCellChange }: GridPro
 
     // Funkcia pre získanie šírky stĺpca
     const getColWidth = useCallback((index: number) => {
-        const col = colLabel(index);
+        const col = numberToColLabel(index);
         return colWidths[col] || DEFAULT_COL_WIDTH;
     }, [colWidths]);
 
@@ -167,7 +189,7 @@ export const Grid = ({ data, selectedCell, onSelectCell, onCellChange }: GridPro
         estimateSize: (index) => getRowHeight(index),
         overscan: OVERSCAN,
         rangeExtractor: (range) => {
-            // Pridáme dynamické načítanie keď sa blížime ku koncu
+            // Dynamické načítanie riadkov
             if (range.endIndex > totalRows - BATCH_SIZE) {
                 setTotalRows(prev => prev + BATCH_SIZE);
             }
@@ -178,16 +200,17 @@ export const Grid = ({ data, selectedCell, onSelectCell, onCellChange }: GridPro
         }
     });
 
-    // Virtualizér pre stĺpce (pre hlavičku)
+    // Virtualizér pre stĺpce
     const colVirtualizer = useVirtualizer({
         count: totalCols,
         getScrollElement: () => headerRef.current,
         horizontal: true,
         estimateSize: (index) => getColWidth(index),
-        overscan: 5,
+        overscan: 10, // Zvýšime overscan pre plynulejšie scrollovanie
         rangeExtractor: (range) => {
+            // Dynamické načítanie stĺpcov (A-Z, AA-AZ, BA-BZ, atď.)
             if (range.endIndex > totalCols - 10) {
-                setTotalCols(prev => Math.min(prev + 10, 52));
+                setTotalCols(prev => prev + 10);
             }
             return Array.from(
                 { length: range.endIndex - range.startIndex + 1 },
@@ -208,6 +231,21 @@ export const Grid = ({ data, selectedCell, onSelectCell, onCellChange }: GridPro
         if (grid) {
             grid.addEventListener('scroll', handleScroll);
             return () => grid.removeEventListener('scroll', handleScroll);
+        }
+    }, []);
+
+    // Pridáme aj scroll event pre header aby sme mohli scrollovať aj z neho
+    useEffect(() => {
+        const handleHeaderScroll = () => {
+            if (headerRef.current && gridRef.current) {
+                gridRef.current.scrollLeft = headerRef.current.scrollLeft;
+            }
+        };
+
+        const header = headerRef.current;
+        if (header) {
+            header.addEventListener('scroll', handleHeaderScroll);
+            return () => header.removeEventListener('scroll', handleHeaderScroll);
         }
     }, []);
 
@@ -255,7 +293,8 @@ export const Grid = ({ data, selectedCell, onSelectCell, onCellChange }: GridPro
             const cellId = target.dataset.cell;
             if (!cellId) return;
             
-            const col = cellId[0];
+            // Extrahujeme stĺpec z cellId (napr. "AA1" -> "AA")
+            const col = cellId.match(/[A-Z]+/)?.[0] || '';
             resizeRef.current = {
                 type: 'col',
                 id: col,
@@ -305,42 +344,41 @@ export const Grid = ({ data, selectedCell, onSelectCell, onCellChange }: GridPro
             onCellChange(cellId, editValue);
             setEditingCell(null);
             
-            const col = cellId[0];
-            const row = parseInt(cellId.slice(1));
+            // Extrahujeme stĺpec a riadok z cellId
+            const colMatch = cellId.match(/[A-Z]+/)?.[0] || '';
+            const row = parseInt(cellId.match(/\d+/)?.[0] || '1');
+            const colNumber = colMatch ? colLabelToNumber(colMatch) : 0;
             
             let nextCellId = cellId;
             
             switch (direction) {
                 case 'down':
-                    nextCellId = col + (row + 1);
-                    // Scroll to the new row
+                    nextCellId = colMatch + (row + 1);
                     rowVirtualizer.scrollToIndex(row, { align: 'auto' });
                     break;
                 case 'up':
                     if (row > 1) {
-                        nextCellId = col + (row - 1);
+                        nextCellId = colMatch + (row - 1);
                         rowVirtualizer.scrollToIndex(row - 2, { align: 'auto' });
                     }
                     break;
                 case 'right':
-                    if (col < 'Z') {
-                        const nextCol = String.fromCharCode(col.charCodeAt(0) + 1);
-                        nextCellId = nextCol + row;
-                        // Scroll to the new column
-                        if (gridRef.current) {
-                            const colIndex = nextCol.charCodeAt(0) - 65;
-                            const scrollLeft = colVirtualizer.getOffsetForIndex(colIndex) || 0;
-                            gridRef.current.scrollLeft = scrollLeft as unknown as number;
-                        }
+                    const nextColNumber = colNumber + 1;
+                    const nextCol = numberToColLabel(nextColNumber);
+                    nextCellId = nextCol + row;
+                    // Scroll to the new column
+                    if (gridRef.current) {
+                        const scrollLeft = colVirtualizer.getOffsetForIndex(nextColNumber) || 0;
+                        gridRef.current.scrollLeft = scrollLeft as unknown as number;
                     }
                     break;
                 case 'left':
-                    if (col > 'A') {
-                        const prevCol = String.fromCharCode(col.charCodeAt(0) - 1);
+                    if (colNumber > 0) {
+                        const prevColNumber = colNumber - 1;
+                        const prevCol = numberToColLabel(prevColNumber);
                         nextCellId = prevCol + row;
                         if (gridRef.current) {
-                            const colIndex = prevCol.charCodeAt(0) - 65;
-                            const scrollLeft = colVirtualizer.getOffsetForIndex(colIndex) || 0;
+                            const scrollLeft = colVirtualizer.getOffsetForIndex(prevColNumber) || 0;
                             gridRef.current.scrollLeft = scrollLeft as unknown as number;
                         }
                     }
@@ -383,14 +421,14 @@ export const Grid = ({ data, selectedCell, onSelectCell, onCellChange }: GridPro
     }, []);
 
     return (
-        <div className="h-full flex flex-col">
+        <div className="h-full flex flex-col overflow-hidden">
             {/* Header - oddelený pre lepšiu virtualizáciu */}
             <div 
                 ref={headerRef}
-                className="overflow-hidden border-b"
+                className="overflow-auto border-b hide-scrollbar"
                 style={{ height: DEFAULT_ROW_HEIGHT }}
             >
-                <div className="flex sticky top-0 z-20 bg-background">
+                <div className="flex" style={{ width: colVirtualizer.getTotalSize() + ROW_HEADER_WIDTH }}>
                     <div 
                         className="w-10 shrink-0 bg-muted border-r flex items-center justify-center font-bold text-xs text-muted-foreground sticky left-0 z-30"
                         style={{ height: DEFAULT_ROW_HEIGHT }}
@@ -399,7 +437,7 @@ export const Grid = ({ data, selectedCell, onSelectCell, onCellChange }: GridPro
                     </div>
                     <div style={{ width: colVirtualizer.getTotalSize(), position: 'relative', height: DEFAULT_ROW_HEIGHT }}>
                         {colVirtualizer.getVirtualItems().map((virtualCol) => {
-                            const col = colLabel(virtualCol.index);
+                            const col = numberToColLabel(virtualCol.index);
                             return (
                                 <div 
                                     key={col}
@@ -430,7 +468,7 @@ export const Grid = ({ data, selectedCell, onSelectCell, onCellChange }: GridPro
                 ref={gridRef} 
                 className="flex-1 overflow-auto bg-background"
             >
-                <div style={{ height: rowVirtualizer.getTotalSize(), position: 'relative' }}>
+                <div style={{ width: colVirtualizer.getTotalSize() + ROW_HEADER_WIDTH, height: rowVirtualizer.getTotalSize(), position: 'relative' }}>
                     {rowVirtualizer.getVirtualItems().map((virtualRow) => {
                         const row = virtualRow.index + 1;
                         const rowHeight = virtualRow.size;
@@ -459,7 +497,7 @@ export const Grid = ({ data, selectedCell, onSelectCell, onCellChange }: GridPro
                                     height: rowHeight
                                 }}>
                                     {colVirtualizer.getVirtualItems().map((virtualCol) => {
-                                        const col = colLabel(virtualCol.index);
+                                        const col = numberToColLabel(virtualCol.index);
                                         const cellId = `${col}${row}`;
                                         const cellData = data[cellId] || { value: '', style: {} };
                                         const isEditing = editingCell === cellId;
