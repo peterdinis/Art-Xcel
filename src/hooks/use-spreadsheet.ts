@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { all, create } from "mathjs";
 
 export interface CellData {
@@ -130,7 +130,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 			setData((prev) => ({
 				...prev,
 				[cellId]: {
-					...prev[cellId],
+					...prev[cellId] || { value: "", formula: "" },
 					style: {
 						...prev[cellId]?.style,
 						...style,
@@ -159,6 +159,17 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 		setSelectedCell(cellId);
 	}, []);
 
+	// PRIDANÉ CHÝBAJÚCE FUNKCIE
+	const clearSheet = useCallback(() => {
+		setData({});
+		setSelectedCell("A1");
+	}, []);
+
+	const updateSheetName = useCallback((name: string) => {
+		// Toto je len placeholder - aktuálne meno je v EditorPage state
+		console.log("Sheet name updated:", name);
+	}, []);
+
 	return {
 		data,
 		selectedCell,
@@ -168,5 +179,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 		getCellFormula,
 		selectCell,
 		setData,
+		clearSheet,
+		updateSheetName,
 	};
 };

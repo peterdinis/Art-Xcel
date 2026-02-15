@@ -10,6 +10,9 @@ interface GridProps {
 	selectedCell: string | null;
 	onSelectCell: (cellId: string) => void;
 	onCellChange: (cellId: string, value: string) => void;
+	showGrid?: boolean;
+	showHeaders?: boolean;
+	freezePanes?: boolean;
 }
 
 const DEFAULT_ROW_HEIGHT = 32;
@@ -51,6 +54,7 @@ interface CellProps {
 	isEditing: boolean;
 	width: number;
 	height: number;
+	showGrid?: boolean;
 	onClick: () => void;
 	onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 	onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
@@ -69,6 +73,7 @@ const Cell = memo(
 		isEditing,
 		width,
 		height,
+		showGrid = true,
 		onClick,
 		onChange,
 		onKeyDown,
@@ -81,9 +86,10 @@ const Cell = memo(
 		return (
 			<div
 				className={cn(
-					"border-r border-b flex items-center relative group",
+					"flex items-center relative group",
 					isSelected ? "ring-2 ring-primary z-10" : "",
 					isEditing && "ring-2 ring-blue-500 z-20",
+					showGrid ? "border-r border-b" : "border-0",
 				)}
 				style={{
 					backgroundColor: style?.backgroundColor,
@@ -120,6 +126,7 @@ const Cell = memo(
 					/>
 				)}
 
+				{/* Resize handle for columns */}
 				<div
 					className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-blue-500 opacity-0 group-hover:opacity-100"
 					onMouseDown={(e) => onResize?.(e)}
@@ -136,16 +143,20 @@ Cell.displayName = "Cell";
 interface RowHeaderProps {
 	rowIndex: number;
 	height: number;
+	showHeaders?: boolean;
 	onResize?: (e: React.MouseEvent) => void;
 }
 
-const RowHeader = memo(({ rowIndex, height, onResize }: RowHeaderProps) => {
+const RowHeader = memo(({ rowIndex, height, showHeaders = true, onResize }: RowHeaderProps) => {
+	if (!showHeaders) return null;
+
 	return (
 		<div
 			className="w-10 shrink-0 bg-muted border-r border-b flex items-center justify-center font-bold text-xs text-muted-foreground sticky left-0 z-10 group"
 			style={{ height: `${height}px`, minHeight: `${height}px` }}
 		>
 			{rowIndex}
+			{/* Resize handle for rows */}
 			<div
 				className="absolute bottom-0 left-0 w-full h-1 cursor-row-resize hover:bg-blue-500 opacity-0 group-hover:opacity-100"
 				onMouseDown={onResize}
@@ -163,6 +174,9 @@ export const Grid = ({
 	selectedCell,
 	onSelectCell,
 	onCellChange,
+	showGrid = true,
+	showHeaders = true,
+	freezePanes = false,
 }: GridProps) => {
 	const [editingCell, setEditingCell] = useState<string | null>(null);
 	const [editValue, setEditValue] = useState<string>("");
@@ -170,6 +184,7 @@ export const Grid = ({
 	const [colWidths, setColWidths] = useState<Record<string, number>>({});
 	const [totalRows, setTotalRows] = useState(100);
 	const [totalCols, setTotalCols] = useState(26); // Začíname s A-Z
+	const [scrollPosition, setScrollPosition] = useState({ left: 0, top: 0 });
 
 	const inputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
 	const gridRef = useRef<HTMLDivElement>(null);
@@ -219,7 +234,7 @@ export const Grid = ({
 	// Virtualizér pre stĺpce
 	const colVirtualizer = useVirtualizer({
 		count: totalCols,
-		getScrollElement: () => headerRef.current,
+		getScrollElement: () => gridRef.current,
 		horizontal: true,
 		estimateSize: (index) => getColWidth(index),
 		overscan: 10, // Zvýšime overscan pre plynulejšie scrollovanie
@@ -240,6 +255,10 @@ export const Grid = ({
 		const handleScroll = () => {
 			if (headerRef.current && gridRef.current) {
 				headerRef.current.scrollLeft = gridRef.current.scrollLeft;
+				setScrollPosition({
+					left: gridRef.current.scrollLeft,
+					top: gridRef.current.scrollTop,
+				});
 			}
 		};
 
@@ -469,9 +488,11 @@ export const Grid = ({
 		[],
 	);
 
-	return (
-		<div className="h-full flex flex-col overflow-hidden">
-			{/* Header - oddelený pre lepšiu virtualizáciu */}
+	// Render header only if showHeaders is true
+	const renderHeader = () => {
+		if (!showHeaders) return null;
+
+		return (
 			<div
 				ref={headerRef}
 				className="overflow-auto border-b hide-scrollbar"
@@ -479,14 +500,16 @@ export const Grid = ({
 			>
 				<div
 					className="flex"
-					style={{ width: colVirtualizer.getTotalSize() + ROW_HEADER_WIDTH }}
+					style={{ width: colVirtualizer.getTotalSize() + (showHeaders ? ROW_HEADER_WIDTH : 0) }}
 				>
-					<div
-						className="w-10 shrink-0 bg-muted border-r flex items-center justify-center font-bold text-xs text-muted-foreground sticky left-0 z-30"
-						style={{ height: DEFAULT_ROW_HEIGHT }}
-					>
-						#
-					</div>
+					{showHeaders && (
+						<div
+							className="w-10 shrink-0 bg-muted border-r flex items-center justify-center font-bold text-xs text-muted-foreground sticky left-0 z-30"
+							style={{ height: DEFAULT_ROW_HEIGHT }}
+						>
+							#
+						</div>
+					)}
 					<div
 						style={{
 							width: colVirtualizer.getTotalSize(),
@@ -520,12 +543,19 @@ export const Grid = ({
 					</div>
 				</div>
 			</div>
+		);
+	};
+
+	return (
+		<div className="h-full flex flex-col overflow-hidden">
+			{/* Header */}
+			{renderHeader()}
 
 			{/* Grid s virtuálnymi riadkami */}
 			<div ref={gridRef} className="flex-1 overflow-auto bg-background">
 				<div
 					style={{
-						width: colVirtualizer.getTotalSize() + ROW_HEADER_WIDTH,
+						width: colVirtualizer.getTotalSize() + (showHeaders ? ROW_HEADER_WIDTH : 0),
 						height: rowVirtualizer.getTotalSize(),
 						position: "relative",
 					}}
@@ -549,6 +579,7 @@ export const Grid = ({
 								<RowHeader
 									rowIndex={row}
 									height={rowHeight}
+									showHeaders={showHeaders}
 									onResize={handleResizeStart}
 								/>
 
@@ -584,6 +615,7 @@ export const Grid = ({
 													style={cellData.style}
 													width={virtualCol.size}
 													height={rowHeight}
+													showGrid={showGrid}
 													isSelected={selectedCell === cellId}
 													isEditing={isEditing}
 													onClick={() => handleCellClick(cellId)}
