@@ -237,9 +237,9 @@ export const Grid = ({
 		getScrollElement: () => gridRef.current,
 		horizontal: true,
 		estimateSize: (index) => getColWidth(index),
-		overscan: 10, // Zvýšime overscan pre plynulejšie scrollovanie
+		overscan: 10,
 		rangeExtractor: (range) => {
-			// Dynamické načítanie stĺpcov (A-Z, AA-AZ, BA-BZ, atď.)
+			// Dynamické načítanie stĺpcov
 			if (range.endIndex > totalCols - 10) {
 				setTotalCols((prev) => prev + 10);
 			}
@@ -269,7 +269,6 @@ export const Grid = ({
 		}
 	}, []);
 
-	// Pridáme aj scroll event pre header aby sme mohli scrollovať aj z neho
 	useEffect(() => {
 		const handleHeaderScroll = () => {
 			if (headerRef.current && gridRef.current) {
@@ -329,7 +328,6 @@ export const Grid = ({
 				const cellId = target.dataset.cell;
 				if (!cellId) return;
 
-				// Extrahujeme stĺpec z cellId (napr. "AA1" -> "AA")
 				const col = cellId.match(/[A-Z]+/)?.[0] || "";
 				resizeRef.current = {
 					type: "col",
@@ -392,7 +390,6 @@ export const Grid = ({
 				onCellChange(cellId, editValue);
 				setEditingCell(null);
 
-				// Extrahujeme stĺpec a riadok z cellId
 				const colMatch = cellId.match(/[A-Z]+/)?.[0] || "";
 				const row = parseInt(cellId.match(/\d+/)?.[0] || "1");
 				const colNumber = colMatch ? colLabelToNumber(colMatch) : 0;
@@ -414,7 +411,6 @@ export const Grid = ({
 						const nextColNumber = colNumber + 1;
 						const nextCol = numberToColLabel(nextColNumber);
 						nextCellId = nextCol + row;
-						// Scroll to the new column
 						if (gridRef.current) {
 							const scrollLeft =
 								colVirtualizer.getOffsetForIndex(nextColNumber) || 0;
@@ -488,7 +484,7 @@ export const Grid = ({
 		[],
 	);
 
-	// Render header only if showHeaders is true
+	// Render header
 	const renderHeader = () => {
 		if (!showHeaders) return null;
 
