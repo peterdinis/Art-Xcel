@@ -33,6 +33,8 @@ import {
 	AlignLeft,
 	AlignCenter,
 	AlignRight,
+	Underline,
+	Italic,
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -216,19 +218,28 @@ export default function EditorPage() {
 						e.preventDefault();
 						const currentStyle = data[selectedCell]?.style || {};
 						updateCellStyle(selectedCell, { bold: !currentStyle.bold });
-						toast.info("Bold style toggled");
+						toast.success("Bold style toggled", {
+							icon: <Bold className="h-4 w-4" />,
+							duration: 1500,
+						});
 					}
 					if (e.key.toLowerCase() === "i") {
 						e.preventDefault();
 						const currentStyle = data[selectedCell]?.style || {};
 						updateCellStyle(selectedCell, { italic: !currentStyle.italic });
-						toast.info("Italic style toggled");
+						toast.success("Italic style toggled", {
+							icon: <Italic className="h-4 w-4" />,
+							duration: 1500,
+						});
 					}
 					if (e.key.toLowerCase() === "u") {
 						e.preventDefault();
 						const currentStyle = data[selectedCell]?.style || {};
 						updateCellStyle(selectedCell, { underline: !currentStyle.underline });
-						toast.info("Underline style toggled");
+						toast.success("Underline style toggled", {
+							icon: <Underline className="h-4 w-4" />,
+							duration: 1500,
+						});
 					}
 				}
 			}
@@ -240,6 +251,9 @@ export default function EditorPage() {
 
 	const handleCellChange = (cellId: string, value: string) => {
 		updateCell(cellId, value);
+		toast.success(`Cell ${cellId} updated`, {
+			duration: 1000,
+		});
 	};
 
 	const handleFormulaBarChange = (value: string) => {
@@ -253,30 +267,38 @@ export default function EditorPage() {
 			const currentStyle = data[selectedCell]?.style || {};
 			const newStyle = { ...currentStyle, ...style };
 			updateCellStyle(selectedCell, newStyle);
+			
+			toast.success("Style applied", {
+				duration: 1000,
+			});
 		}
 	};
 
 	const handleSave = useCallback(() => {
 		toast.success("Saved", {
 			description: "Your spreadsheet has been saved.",
+			icon: <Save className="h-4 w-4" />,
 		});
 	}, []);
 
 	const handleUndo = useCallback(() => {
 		toast.info("Undo", {
 			description: "Undo last action",
+			icon: <Undo className="h-4 w-4" />,
 		});
 	}, []);
 
 	const handleRedo = useCallback(() => {
 		toast.info("Redo", {
 			description: "Redo last action",
+			icon: <Redo className="h-4 w-4" />,
 		});
 	}, []);
 
 	const selectAll = useCallback(() => {
 		toast.info("Select All", {
 			description: "All cells selected",
+			icon: <Grid3x3 className="h-4 w-4" />,
 		});
 	}, []);
 
@@ -284,6 +306,11 @@ export default function EditorPage() {
 		if (selectedCell) {
 			toast.info("Cut", {
 				description: `Cell ${selectedCell} copied to clipboard`,
+				icon: <Scissors className="h-4 w-4" />,
+			});
+		} else {
+			toast.error("No cell selected", {
+				description: "Please select a cell to cut",
 			});
 		}
 	}, [selectedCell]);
@@ -292,6 +319,11 @@ export default function EditorPage() {
 		if (selectedCell) {
 			toast.info("Copy", {
 				description: `Cell ${selectedCell} copied to clipboard`,
+				icon: <Copy className="h-4 w-4" />,
+			});
+		} else {
+			toast.error("No cell selected", {
+				description: "Please select a cell to copy",
 			});
 		}
 	}, [selectedCell]);
@@ -299,6 +331,7 @@ export default function EditorPage() {
 	const handlePaste = useCallback(() => {
 		toast.info("Paste", {
 			description: "Pasted from clipboard",
+			icon: <ClipboardPaste className="h-4 w-4" />,
 		});
 	}, []);
 
@@ -307,6 +340,7 @@ export default function EditorPage() {
 			updateCell(selectedCell, "");
 			toast.success("Deleted", {
 				description: `Cell ${selectedCell} cleared`,
+				icon: <Trash2 className="h-4 w-4" />,
 			});
 		} else {
 			setShowDeleteDialog(true);
@@ -318,23 +352,32 @@ export default function EditorPage() {
 		setShowDeleteDialog(false);
 		toast.success("Sheet cleared", {
 			description: "All data has been removed",
+			icon: <Trash2 className="h-4 w-4" />,
 		});
 	}, [clearSheet]);
 
 	const handleFind = useCallback(() => {
-		if (!findText) return;
+		if (!findText) {
+			toast.error("Please enter text to find");
+			return;
+		}
 
-		toast.info("Find", {
+		toast.success("Find", {
 			description: `Searching for "${findText}"`,
+			icon: <Search className="h-4 w-4" />,
 		});
 		setShowFindDialog(false);
 	}, [findText]);
 
 	const handleReplace = useCallback(() => {
-		if (!findText) return;
+		if (!findText) {
+			toast.error("Please enter text to find");
+			return;
+		}
 
-		toast.info("Replace", {
+		toast.success("Replace", {
 			description: `Replaced "${findText}" with "${replaceText}"`,
+			icon: <Search className="h-4 w-4" />,
 		});
 		setShowFindDialog(false);
 	}, [findText, replaceText]);
@@ -342,13 +385,22 @@ export default function EditorPage() {
 	const handleExport = useCallback(
 		async (format: string = "excel") => {
 			try {
+				toast.loading("Exporting...", {
+					id: "export-toast",
+					description: `Exporting as ${format.toUpperCase()}`,
+				});
+				
 				await exportToExcel(data, sheetName);
+				
 				toast.success("Export Successful", {
+					id: "export-toast",
 					description: `Your spreadsheet has been exported as ${format.toUpperCase()}.`,
+					icon: <Download className="h-4 w-4" />,
 				});
 				setShowExportDialog(false);
 			} catch (error) {
 				toast.error("Export Failed", {
+					id: "export-toast",
 					description: "There was an error exporting your spreadsheet.",
 				});
 			}
@@ -359,16 +411,25 @@ export default function EditorPage() {
 	const handleImport = useCallback(
 		async (file: File) => {
 			try {
+				toast.loading("Importing...", {
+					id: "import-toast",
+					description: `Importing ${file.name}`,
+				});
+				
 				const { data: importedData, name: importedName } =
 					await importFromExcel(file);
 				setData(importedData);
 				setSheetName(importedName);
+				
 				toast.success("Import Successful", {
+					id: "import-toast",
 					description: "Your Excel file has been imported.",
+					icon: <Upload className="h-4 w-4" />,
 				});
 				setShowImportDialog(false);
 			} catch (error) {
 				toast.error("Import Failed", {
+					id: "import-toast",
 					description: "There was an error importing your Excel file.",
 				});
 			}
@@ -377,59 +438,81 @@ export default function EditorPage() {
 	);
 
 	const handlePrint = useCallback(() => {
-		toast.info("Print", {
+		toast.loading("Preparing document...", {
+			id: "print-toast",
 			description: "Preparing document for printing...",
 		});
+		
+		setTimeout(() => {
+			toast.success("Ready to print", {
+				id: "print-toast",
+				description: "Document is ready for printing",
+				icon: <Printer className="h-4 w-4" />,
+			});
+		}, 1500);
+		
 		setShowPrintDialog(false);
 	}, []);
 
 	const handlePageSetup = useCallback(() => {
 		toast.success("Page setup saved", {
 			description: "Your page settings have been applied",
+			icon: <Grid3x3 className="h-4 w-4" />,
 		});
 		setShowPageSetupDialog(false);
 	}, []);
 
 	const handleInsertRow = useCallback(() => {
-		toast.info("Insert Row", {
+		toast.success("Insert Row", {
 			description: "New row inserted",
+			icon: <Table className="h-4 w-4" />,
 		});
 	}, []);
 
 	const handleInsertColumn = useCallback(() => {
-		toast.info("Insert Column", {
+		toast.success("Insert Column", {
 			description: "New column inserted",
+			icon: <Table className="h-4 w-4" />,
 		});
 	}, []);
 
 	const handleInsertChart = useCallback(() => {
-		toast.info("Insert Chart", {
+		toast.success("Insert Chart", {
 			description: "Chart wizard opened",
+			icon: <BarChart className="h-4 w-4" />,
 		});
 	}, []);
 
 	const handleInsertImage = useCallback(() => {
-		toast.info("Insert Image", {
+		toast.success("Insert Image", {
 			description: "Image upload dialog opened",
+			icon: <Upload className="h-4 w-4" />,
 		});
 	}, []);
 
 	const handleFormatCells = useCallback(() => {
-		toast.info("Format Cells", {
+		toast.success("Format Cells", {
 			description: "Format cells dialog opened",
+			icon: <Bold className="h-4 w-4" />,
 		});
 	}, []);
 
 	const handleConditionalFormatting = useCallback(() => {
-		toast.info("Conditional Formatting", {
+		toast.success("Conditional Formatting", {
 			description: "Conditional formatting rules editor opened",
+			icon: <Eye className="h-4 w-4" />,
 		});
 	}, []);
 
 	const handleNumberFormat = useCallback((format: string) => {
 		if (selectedCell) {
-			toast.info("Number Format", {
+			toast.success("Number Format", {
 				description: `Applied ${format} format to cell ${selectedCell}`,
+				icon: <Table className="h-4 w-4" />,
+			});
+		} else {
+			toast.error("No cell selected", {
+				description: "Please select a cell to apply number format",
 			});
 		}
 	}, [selectedCell]);
@@ -447,62 +530,86 @@ export default function EditorPage() {
 				updateCellStyle(selectedCell, { align: alignValue });
 			}
 			
-			toast.info("Alignment", {
+			toast.success("Alignment", {
 				description: `Applied ${align} alignment to cell ${selectedCell}`,
+				icon: align === "Left" ? <AlignLeft className="h-4 w-4" /> : 
+					   align === "Center" ? <AlignCenter className="h-4 w-4" /> : 
+					   <AlignRight className="h-4 w-4" />,
+			});
+		} else {
+			toast.error("No cell selected", {
+				description: "Please select a cell to apply alignment",
 			});
 		}
 	}, [selectedCell, updateCellStyle]);
 
 	const handleSort = useCallback(() => {
-		toast.info("Sort", {
+		toast.success("Sort", {
 			description: "Sort dialog opened",
+			icon: <Search className="h-4 w-4" />,
 		});
 	}, []);
 
 	const handleFilter = useCallback(() => {
-		toast.info("Filter", {
+		toast.success("Filter", {
 			description: "Filter dialog opened",
+			icon: <Filter className="h-4 w-4" />,
 		});
 	}, []);
 
 	const handleGroup = useCallback(() => {
-		toast.info("Group", {
+		toast.success("Group", {
 			description: "Group dialog opened",
+			icon: <Table className="h-4 w-4" />,
 		});
 	}, []);
 
 	const handleRemoveDuplicates = useCallback(() => {
-		toast.info("Remove Duplicates", {
+		toast.success("Remove Duplicates", {
 			description: "Removing duplicate values...",
+			icon: <Trash2 className="h-4 w-4" />,
 		});
 	}, []);
 
 	const handleDataValidation = useCallback(() => {
-		toast.info("Data Validation", {
+		toast.success("Data Validation", {
 			description: "Data validation dialog opened",
+			icon: <Grid3x3 className="h-4 w-4" />,
 		});
 	}, []);
 
 	const handleWhatIfAnalysis = useCallback(() => {
-		toast.info("What-If Analysis", {
+		toast.success("What-If Analysis", {
 			description: "What-If analysis tools opened",
+			icon: <BarChart className="h-4 w-4" />,
 		});
 	}, []);
 
 	const handleZoomIn = useCallback(() => {
 		setZoom(prev => Math.min(prev + 10, 200));
-		toast.info(`Zoom: ${Math.min(zoom + 10, 200)}%`);
+		toast.success(`Zoom: ${Math.min(zoom + 10, 200)}%`, {
+			icon: <ZoomIn className="h-4 w-4" />,
+			duration: 1000,
+		});
 	}, [zoom]);
 
 	const handleZoomOut = useCallback(() => {
 		setZoom(prev => Math.max(prev - 10, 50));
-		toast.info(`Zoom: ${Math.max(zoom - 10, 50)}%`);
+		toast.success(`Zoom: ${Math.max(zoom - 10, 50)}%`, {
+			icon: <ZoomOut className="h-4 w-4" />,
+			duration: 1000,
+		});
 	}, [zoom]);
 
 	const handleZoomToSelection = useCallback(() => {
 		if (selectedCell) {
-			toast.info("Zoom to Selection", {
+			toast.success("Zoom to Selection", {
 				description: `Zoomed to cell ${selectedCell}`,
+				icon: <Search className="h-4 w-4" />,
+			});
+		} else {
+			toast.error("No cell selected", {
+				description: "Please select a cell to zoom to",
 			});
 		}
 	}, [selectedCell]);
@@ -510,27 +617,56 @@ export default function EditorPage() {
 	// Share handlers
 	const handleShareSave = async (settings: ShareSettings) => {
 		setShareSettings(settings);
+		
+		toast.loading("Updating share settings...", {
+			id: "share-toast",
+		});
+		
+		await new Promise((resolve) => setTimeout(resolve, 1000));
+		
+		toast.success("Share settings updated", {
+			id: "share-toast",
+			description: "Your sharing preferences have been saved",
+			icon: <Copy className="h-4 w-4" />,
+		});
+		
 		return Promise.resolve();
 	};
 
 	const handleInvite = async (emails: string[], permission: Permission) => {
-		console.log("Inviting:", emails, "with permission:", permission);
-		await new Promise((resolve) => setTimeout(resolve, 1000));
+		toast.loading("Sending invitations...", {
+			id: "invite-toast",
+			description: `Inviting ${emails.length} collaborator(s)`,
+		});
+		
+		await new Promise((resolve) => setTimeout(resolve, 1500));
+		
 		toast.success("Invitations sent", {
-			description: `Invited ${emails.length} collaborator(s)`,
+			id: "invite-toast",
+			description: `Invited ${emails.length} collaborator(s) with ${permission} permission`,
+			icon: <Copy className="h-4 w-4" />,
 		});
 	};
 
 	const handleRemoveCollaborator = async (collaboratorId: string) => {
-		console.log("Removing collaborator:", collaboratorId);
+		toast.loading("Removing collaborator...", {
+			id: "remove-toast",
+		});
+		
 		await new Promise((resolve) => setTimeout(resolve, 500));
-		toast.success("Collaborator removed");
+		
+		toast.success("Collaborator removed", {
+			id: "remove-toast",
+			icon: <Trash2 className="h-4 w-4" />,
+		});
 	};
 
 	const handleCopyLink = () => {
 		const shareUrl = `${window.location.origin}/share/${id}`;
 		navigator.clipboard.writeText(shareUrl);
-		toast.success("Link copied to clipboard");
+		toast.success("Link copied to clipboard", {
+			icon: <Copy className="h-4 w-4" />,
+		});
 	};
 
 	return (
@@ -560,6 +696,10 @@ export default function EditorPage() {
 							onChange={(e) => {
 								setSheetName(e.target.value);
 								updateSheetName(e.target.value);
+								toast.success("Sheet renamed", {
+									description: `New name: ${e.target.value}`,
+									duration: 1500,
+								});
 							}}
 						/>
 						<div className="text-xs text-muted-foreground flex gap-2">
@@ -694,7 +834,12 @@ export default function EditorPage() {
 											<span>Show Grid</span>
 											<Switch 
 												checked={showGrid} 
-												onCheckedChange={setShowGrid} 
+												onCheckedChange={(checked) => {
+													setShowGrid(checked);
+													toast.success(checked ? "Grid shown" : "Grid hidden", {
+														duration: 1000,
+													});
+												}} 
 												className="scale-75"
 											/>
 										</div>
@@ -704,7 +849,12 @@ export default function EditorPage() {
 											<span>Show Headers</span>
 											<Switch 
 												checked={showHeaders} 
-												onCheckedChange={setShowHeaders} 
+												onCheckedChange={(checked) => {
+													setShowHeaders(checked);
+													toast.success(checked ? "Headers shown" : "Headers hidden", {
+														duration: 1000,
+													});
+												}} 
 												className="scale-75"
 											/>
 										</div>
@@ -714,7 +864,12 @@ export default function EditorPage() {
 											<span>Freeze Panes</span>
 											<Switch 
 												checked={freezePanes} 
-												onCheckedChange={setFreezePanes} 
+												onCheckedChange={(checked) => {
+													setFreezePanes(checked);
+													toast.success(checked ? "Panes frozen" : "Panes unfrozen", {
+														duration: 1000,
+													});
+												}} 
 												className="scale-75"
 											/>
 										</div>
