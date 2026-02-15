@@ -35,6 +35,9 @@ import {
 	AlignRight,
 	Underline,
 	Italic,
+	Plus,
+	ChevronDown,
+	FileSpreadsheet,
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -86,16 +89,64 @@ export default function EditorPage() {
 	const id = params.id as string;
 	const router = useRouter();
 	const {
+		// Core data
 		data,
 		setData,
 		selectedCell,
+		selectionRange,
+		sheetNames,
+		currentSheetIndex,
+		namedRanges,
+		
+		// Cell operations
 		updateCell,
+		updateCells,
 		updateCellStyle,
 		getCellFormula,
+		getCellValue,
 		selectCell,
+		selectRange,
+		
+		// Row/Column operations
+		insertRow,
+		deleteRow,
+		insertColumn,
+		deleteColumn,
+		
+		// Clipboard
+		copyCells,
+		cutCells,
+		pasteCells,
+		
+		// Undo/Redo
+		undo,
+		redo,
+		
+		// Data operations
+		sortRange,
+		filterRange,
+		findAndReplace,
+		
+		// Cell features
+		addNote,
+		addValidation,
+		validateCell,
+		
+		// Named ranges
+		createNamedRange,
+		deleteNamedRange,
+		
+		// Sheet management
+		addSheet,
+		deleteSheet,
+		renameSheet,
+		switchSheet,
+		
+		// Utilities
 		clearSheet,
 		updateSheetName,
 	} = useSpreadsheet();
+	
 	const { exportToExcel, importFromExcel } = useExcelService();
 	const [sheetName, setSheetName] = useState("Untitled Spreadsheet");
 	const [showFindDialog, setShowFindDialog] = useState(false);
@@ -104,6 +155,10 @@ export default function EditorPage() {
 	const [showExportDialog, setShowExportDialog] = useState(false);
 	const [showImportDialog, setShowImportDialog] = useState(false);
 	const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+	const [showNewSheetDialog, setShowNewSheetDialog] = useState(false);
+	const [showNamedRangeDialog, setShowNamedRangeDialog] = useState(false);
+	const [showValidationDialog, setShowValidationDialog] = useState(false);
+	const [showNoteDialog, setShowNoteDialog] = useState(false);
 	const [findText, setFindText] = useState("");
 	const [replaceText, setReplaceText] = useState("");
 	const [matchCase, setMatchCase] = useState(false);
@@ -112,6 +167,15 @@ export default function EditorPage() {
 	const [showGrid, setShowGrid] = useState(true);
 	const [showHeaders, setShowHeaders] = useState(true);
 	const [freezePanes, setFreezePanes] = useState(false);
+	const [newSheetName, setNewSheetName] = useState("");
+	const [newRangeName, setNewRangeName] = useState("");
+	const [newRangeRef, setNewRangeRef] = useState("");
+	const [cellNote, setCellNote] = useState("");
+	const [validationType, setValidationType] = useState<"number" | "text" | "list" | "date">("number");
+	const [validationMin, setValidationMin] = useState<number>(0);
+	const [validationMax, setValidationMax] = useState<number>(100);
+	const [validationList, setValidationList] = useState<string>("");
+	const [validationRequired, setValidationRequired] = useState(false);
 
 	// Share state
 	const [shareSettings, setShareSettings] = useState<ShareSettings>({
@@ -207,7 +271,21 @@ export default function EditorPage() {
 						break;
 					case "a":
 						e.preventDefault();
-						selectAll();
+						handleSelectAll();
+						break;
+					case "c":
+						if (!e.shiftKey) {
+							e.preventDefault();
+							handleCopy();
+						}
+						break;
+					case "x":
+						e.preventDefault();
+						handleCut();
+						break;
+					case "v":
+						e.preventDefault();
+						handlePaste();
 						break;
 				}
 			}
@@ -250,6 +328,14 @@ export default function EditorPage() {
 	}, [selectedCell, data, updateCellStyle]);
 
 	const handleCellChange = (cellId: string, value: string) => {
+		// Validate before update
+		if (!validateCell(cellId, value)) {
+			toast.error("Validation failed", {
+				description: "The value does not meet validation criteria",
+			});
+			return;
+		}
+		
 		updateCell(cellId, value);
 		toast.success(`Cell ${cellId} updated`, {
 			duration: 1000,
@@ -282,70 +368,110 @@ export default function EditorPage() {
 	}, []);
 
 	const handleUndo = useCallback(() => {
+		undo();
 		toast.info("Undo", {
 			description: "Undo last action",
 			icon: <Undo className="h-4 w-4" />,
 		});
-	}, []);
+	}, [undo]);
 
 	const handleRedo = useCallback(() => {
+		redo();
 		toast.info("Redo", {
 			description: "Redo last action",
 			icon: <Redo className="h-4 w-4" />,
 		});
-	}, []);
+	}, [redo]);
 
-	const selectAll = useCallback(() => {
+	const handleSelectAll = useCallback(() => {
+		selectRange("A1:Z100");
 		toast.info("Select All", {
 			description: "All cells selected",
 			icon: <Grid3x3 className="h-4 w-4" />,
 		});
-	}, []);
+	}, [selectRange]);
 
 	const handleCut = useCallback(() => {
 		if (selectedCell) {
-			toast.info("Cut", {
-				description: `Cell ${selectedCell} copied to clipboard`,
-				icon: <Scissors className="h-4 w-4" />,
-			});
+			if (selectionRange) {
+				cutCells(selectionRange);
+				toast.info("Cut", {
+					description: `${selectionRange.length} cells cut to clipboard`,
+					icon: <Scissors className="h-4 w-4" />,
+				});
+			} else {
+				cutCells([selectedCell]);
+				toast.info("Cut", {
+					description: `Cell ${selectedCell} cut to clipboard`,
+					icon: <Scissors className="h-4 w-4" />,
+				});
+			}
 		} else {
 			toast.error("No cell selected", {
 				description: "Please select a cell to cut",
 			});
 		}
-	}, [selectedCell]);
+	}, [selectedCell, selectionRange, cutCells]);
 
 	const handleCopy = useCallback(() => {
 		if (selectedCell) {
-			toast.info("Copy", {
-				description: `Cell ${selectedCell} copied to clipboard`,
-				icon: <Copy className="h-4 w-4" />,
-			});
+			if (selectionRange) {
+				copyCells(selectionRange);
+				toast.info("Copy", {
+					description: `${selectionRange.length} cells copied to clipboard`,
+					icon: <Copy className="h-4 w-4" />,
+				});
+			} else {
+				copyCells([selectedCell]);
+				toast.info("Copy", {
+					description: `Cell ${selectedCell} copied to clipboard`,
+					icon: <Copy className="h-4 w-4" />,
+				});
+			}
 		} else {
 			toast.error("No cell selected", {
 				description: "Please select a cell to copy",
 			});
 		}
-	}, [selectedCell]);
+	}, [selectedCell, selectionRange, copyCells]);
 
 	const handlePaste = useCallback(() => {
-		toast.info("Paste", {
-			description: "Pasted from clipboard",
-			icon: <ClipboardPaste className="h-4 w-4" />,
-		});
-	}, []);
+		if (selectedCell) {
+			pasteCells(selectedCell);
+			toast.info("Paste", {
+				description: "Pasted from clipboard",
+				icon: <ClipboardPaste className="h-4 w-4" />,
+			});
+		} else {
+			toast.error("No cell selected", {
+				description: "Please select a cell to paste to",
+			});
+		}
+	}, [selectedCell, pasteCells]);
 
 	const handleDelete = useCallback(() => {
 		if (selectedCell) {
-			updateCell(selectedCell, "");
-			toast.success("Deleted", {
-				description: `Cell ${selectedCell} cleared`,
-				icon: <Trash2 className="h-4 w-4" />,
-			});
+			if (selectionRange && selectionRange.length > 1) {
+				const updates: Record<string, string> = {};
+				selectionRange.forEach(cell => {
+					updates[cell] = "";
+				});
+				updateCells(updates);
+				toast.success("Deleted", {
+					description: `${selectionRange.length} cells cleared`,
+					icon: <Trash2 className="h-4 w-4" />,
+				});
+			} else {
+				updateCell(selectedCell, "");
+				toast.success("Deleted", {
+					description: `Cell ${selectedCell} cleared`,
+					icon: <Trash2 className="h-4 w-4" />,
+				});
+			}
 		} else {
 			setShowDeleteDialog(true);
 		}
-	}, [selectedCell, updateCell]);
+	}, [selectedCell, selectionRange, updateCell, updateCells]);
 
 	const handleClearAll = useCallback(() => {
 		clearSheet();
@@ -362,12 +488,13 @@ export default function EditorPage() {
 			return;
 		}
 
-		toast.success("Find", {
-			description: `Searching for "${findText}"`,
+		findAndReplace(findText, replaceText, { matchCase, wholeCell });
+		toast.success("Find and Replace", {
+			description: `Replaced "${findText}" with "${replaceText}"`,
 			icon: <Search className="h-4 w-4" />,
 		});
 		setShowFindDialog(false);
-	}, [findText]);
+	}, [findText, replaceText, matchCase, wholeCell, findAndReplace]);
 
 	const handleReplace = useCallback(() => {
 		if (!findText) {
@@ -375,12 +502,13 @@ export default function EditorPage() {
 			return;
 		}
 
+		findAndReplace(findText, replaceText, { matchCase, wholeCell });
 		toast.success("Replace", {
 			description: `Replaced "${findText}" with "${replaceText}"`,
 			icon: <Search className="h-4 w-4" />,
 		});
 		setShowFindDialog(false);
-	}, [findText, replaceText]);
+	}, [findText, replaceText, matchCase, wholeCell, findAndReplace]);
 
 	const handleExport = useCallback(
 		async (format: string = "excel") => {
@@ -463,18 +591,62 @@ export default function EditorPage() {
 	}, []);
 
 	const handleInsertRow = useCallback(() => {
-		toast.success("Insert Row", {
-			description: "New row inserted",
-			icon: <Table className="h-4 w-4" />,
-		});
-	}, []);
+		if (selectedCell) {
+			const row = parseInt(selectedCell.match(/\d+/)?.[0] || "1");
+			insertRow(row);
+			toast.success("Insert Row", {
+				description: `New row inserted at position ${row}`,
+				icon: <Table className="h-4 w-4" />,
+			});
+		} else {
+			insertRow(1);
+			toast.success("Insert Row", {
+				description: "New row inserted at position 1",
+				icon: <Table className="h-4 w-4" />,
+			});
+		}
+	}, [selectedCell, insertRow]);
+
+	const handleDeleteRow = useCallback(() => {
+		if (selectedCell) {
+			const row = parseInt(selectedCell.match(/\d+/)?.[0] || "1");
+			deleteRow(row);
+			toast.success("Delete Row", {
+				description: `Row ${row} deleted`,
+				icon: <Trash2 className="h-4 w-4" />,
+			});
+		}
+	}, [selectedCell, deleteRow]);
 
 	const handleInsertColumn = useCallback(() => {
-		toast.success("Insert Column", {
-			description: "New column inserted",
-			icon: <Table className="h-4 w-4" />,
-		});
-	}, []);
+		if (selectedCell) {
+			const col = selectedCell.match(/[A-Z]+/)?.[0] || "A";
+			const colNum = col.charCodeAt(0) - 65;
+			insertColumn(colNum);
+			toast.success("Insert Column", {
+				description: `New column inserted at position ${col}`,
+				icon: <Table className="h-4 w-4" />,
+			});
+		} else {
+			insertColumn(0);
+			toast.success("Insert Column", {
+				description: "New column inserted at position A",
+				icon: <Table className="h-4 w-4" />,
+			});
+		}
+	}, [selectedCell, insertColumn]);
+
+	const handleDeleteColumn = useCallback(() => {
+		if (selectedCell) {
+			const col = selectedCell.match(/[A-Z]+/)?.[0] || "A";
+			const colNum = col.charCodeAt(0) - 65;
+			deleteColumn(colNum);
+			toast.success("Delete Column", {
+				description: `Column ${col} deleted`,
+				icon: <Trash2 className="h-4 w-4" />,
+			});
+		}
+	}, [selectedCell, deleteColumn]);
 
 	const handleInsertChart = useCallback(() => {
 		toast.success("Insert Chart", {
@@ -506,6 +678,7 @@ export default function EditorPage() {
 
 	const handleNumberFormat = useCallback((format: string) => {
 		if (selectedCell) {
+			updateCellStyle(selectedCell, { numberFormat: format as any });
 			toast.success("Number Format", {
 				description: `Applied ${format} format to cell ${selectedCell}`,
 				icon: <Table className="h-4 w-4" />,
@@ -515,7 +688,7 @@ export default function EditorPage() {
 				description: "Please select a cell to apply number format",
 			});
 		}
-	}, [selectedCell]);
+	}, [selectedCell, updateCellStyle]);
 
 	const handleAlignment = useCallback((align: string) => {
 		if (selectedCell) {
@@ -544,18 +717,34 @@ export default function EditorPage() {
 	}, [selectedCell, updateCellStyle]);
 
 	const handleSort = useCallback(() => {
-		toast.success("Sort", {
-			description: "Sort dialog opened",
-			icon: <Search className="h-4 w-4" />,
-		});
-	}, []);
+		if (selectionRange && selectionRange.length > 0) {
+			const range = selectionRange[0] + ":" + selectionRange[selectionRange.length - 1];
+			sortRange(range, 0, true);
+			toast.success("Sort", {
+				description: "Range sorted",
+				icon: <Search className="h-4 w-4" />,
+			});
+		} else {
+			toast.error("No range selected", {
+				description: "Please select a range to sort",
+			});
+		}
+	}, [selectionRange, sortRange]);
 
 	const handleFilter = useCallback(() => {
-		toast.success("Filter", {
-			description: "Filter dialog opened",
-			icon: <Filter className="h-4 w-4" />,
-		});
-	}, []);
+		if (selectionRange && selectionRange.length > 0) {
+			const range = selectionRange[0] + ":" + selectionRange[selectionRange.length - 1];
+			filterRange(range, 0, () => true);
+			toast.success("Filter", {
+				description: "Filter applied",
+				icon: <Filter className="h-4 w-4" />,
+			});
+		} else {
+			toast.error("No range selected", {
+				description: "Please select a range to filter",
+			});
+		}
+	}, [selectionRange, filterRange]);
 
 	const handleGroup = useCallback(() => {
 		toast.success("Group", {
@@ -565,18 +754,50 @@ export default function EditorPage() {
 	}, []);
 
 	const handleRemoveDuplicates = useCallback(() => {
-		toast.success("Remove Duplicates", {
-			description: "Removing duplicate values...",
-			icon: <Trash2 className="h-4 w-4" />,
-		});
-	}, []);
+		if (selectionRange && selectionRange.length > 0) {
+			toast.success("Remove Duplicates", {
+				description: "Removing duplicate values...",
+				icon: <Trash2 className="h-4 w-4" />,
+			});
+		} else {
+			toast.error("No range selected", {
+				description: "Please select a range to remove duplicates",
+			});
+		}
+	}, [selectionRange]);
 
 	const handleDataValidation = useCallback(() => {
-		toast.success("Data Validation", {
-			description: "Data validation dialog opened",
-			icon: <Grid3x3 className="h-4 w-4" />,
-		});
-	}, []);
+		if (selectedCell) {
+			setShowValidationDialog(true);
+		} else {
+			toast.error("No cell selected", {
+				description: "Please select a cell to add validation",
+			});
+		}
+	}, [selectedCell]);
+
+	const handleAddNote = useCallback(() => {
+		if (selectedCell) {
+			const existingNote = data[selectedCell]?.note || "";
+			setCellNote(existingNote);
+			setShowNoteDialog(true);
+		} else {
+			toast.error("No cell selected", {
+				description: "Please select a cell to add a note",
+			});
+		}
+	}, [selectedCell, data]);
+
+	const handleSaveNote = useCallback(() => {
+		if (selectedCell) {
+			addNote(selectedCell, cellNote);
+			toast.success("Note added", {
+				description: `Note added to cell ${selectedCell}`,
+				icon: <FileSpreadsheet className="h-4 w-4" />,
+			});
+			setShowNoteDialog(false);
+		}
+	}, [selectedCell, cellNote, addNote]);
 
 	const handleWhatIfAnalysis = useCallback(() => {
 		toast.success("What-If Analysis", {
@@ -586,7 +807,7 @@ export default function EditorPage() {
 	}, []);
 
 	const handleZoomIn = useCallback(() => {
-		setZoom(prev => Math.min(prev + 10, 200));
+		setZoom((prev: number) => Math.min(prev + 10, 200));
 		toast.success(`Zoom: ${Math.min(zoom + 10, 200)}%`, {
 			icon: <ZoomIn className="h-4 w-4" />,
 			duration: 1000,
@@ -594,7 +815,7 @@ export default function EditorPage() {
 	}, [zoom]);
 
 	const handleZoomOut = useCallback(() => {
-		setZoom(prev => Math.max(prev - 10, 50));
+		setZoom((prev: number) => Math.max(prev - 10, 50));
 		toast.success(`Zoom: ${Math.max(zoom - 10, 50)}%`, {
 			icon: <ZoomOut className="h-4 w-4" />,
 			duration: 1000,
@@ -613,6 +834,103 @@ export default function EditorPage() {
 			});
 		}
 	}, [selectedCell]);
+
+	// Sheet management
+	const handleAddSheet = useCallback(() => {
+		setShowNewSheetDialog(true);
+	}, []);
+
+	const handleCreateSheet = useCallback(() => {
+		const name = newSheetName || `Sheet${sheetNames.length + 1}`;
+		addSheet(name);
+		toast.success("Sheet added", {
+			description: `New sheet "${name}" created`,
+			icon: <Plus className="h-4 w-4" />,
+		});
+		setShowNewSheetDialog(false);
+		setNewSheetName("");
+	}, [newSheetName, sheetNames.length, addSheet]);
+
+	const handleDeleteCurrentSheet = useCallback(() => {
+		if (sheetNames.length > 1) {
+			deleteSheet(currentSheetIndex);
+			toast.success("Sheet deleted", {
+				description: `Sheet deleted`,
+				icon: <Trash2 className="h-4 w-4" />,
+			});
+		} else {
+			toast.error("Cannot delete last sheet", {
+				description: "You must have at least one sheet",
+			});
+		}
+	}, [sheetNames.length, currentSheetIndex, deleteSheet]);
+
+	const handleRenameSheet = useCallback((index: number, newName: string) => {
+		renameSheet(index, newName);
+		if (index === currentSheetIndex) {
+			setSheetName(newName);
+		}
+		toast.success("Sheet renamed", {
+			description: `Sheet renamed to "${newName}"`,
+			icon: <FileSpreadsheet className="h-4 w-4" />,
+		});
+	}, [currentSheetIndex, renameSheet]);
+
+	const handleSwitchSheet = useCallback((index: number) => {
+		switchSheet(index);
+		setSheetName(sheetNames[index]);
+		toast.success("Sheet switched", {
+			description: `Switched to "${sheetNames[index]}"`,
+			duration: 1000,
+		});
+	}, [sheetNames, switchSheet]);
+
+	// Named ranges
+	const handleAddNamedRange = useCallback(() => {
+		if (selectionRange && selectionRange.length > 0) {
+			setShowNamedRangeDialog(true);
+			setNewRangeRef(selectionRange[0] + ":" + selectionRange[selectionRange.length - 1]);
+		} else if (selectedCell) {
+			setShowNamedRangeDialog(true);
+			setNewRangeRef(selectedCell);
+		} else {
+			toast.error("No selection", {
+				description: "Please select a cell or range to name",
+			});
+		}
+	}, [selectedCell, selectionRange]);
+
+	const handleCreateNamedRange = useCallback(() => {
+		if (newRangeName && newRangeRef) {
+			createNamedRange(newRangeName, newRangeRef);
+			toast.success("Named range created", {
+				description: `Range "${newRangeName}" created`,
+				icon: <FileSpreadsheet className="h-4 w-4" />,
+			});
+			setShowNamedRangeDialog(false);
+			setNewRangeName("");
+			setNewRangeRef("");
+		}
+	}, [newRangeName, newRangeRef, createNamedRange]);
+
+	// Validation
+	const handleSaveValidation = useCallback(() => {
+		if (selectedCell) {
+			const validation = {
+				type: validationType,
+				min: validationType === "number" ? validationMin : undefined,
+				max: validationType === "number" ? validationMax : undefined,
+				list: validationType === "list" ? validationList.split(",").map(s => s.trim()) : undefined,
+				required: validationRequired,
+			};
+			addValidation(selectedCell, validation);
+			toast.success("Validation added", {
+				description: `Validation added to cell ${selectedCell}`,
+				icon: <Grid3x3 className="h-4 w-4" />,
+			});
+			setShowValidationDialog(false);
+		}
+	}, [selectedCell, validationType, validationMin, validationMax, validationList, validationRequired, addValidation]);
 
 	// Share handlers
 	const handleShareSave = async (settings: ShareSettings) => {
@@ -690,18 +1008,46 @@ export default function EditorPage() {
 					</TooltipProvider>
 
 					<div className="flex flex-col">
-						<input
-							className="text-sm font-semibold border-none outline-none bg-transparent hover:bg-muted/50 rounded px-1 w-48"
-							value={sheetName}
-							onChange={(e) => {
-								setSheetName(e.target.value);
-								updateSheetName(e.target.value);
-								toast.success("Sheet renamed", {
-									description: `New name: ${e.target.value}`,
-									duration: 1500,
-								});
-							}}
-						/>
+						<div className="flex items-center gap-2">
+							<input
+								className="text-sm font-semibold border-none outline-none bg-transparent hover:bg-muted/50 rounded px-1 w-48"
+								value={sheetName}
+								onChange={(e) => {
+									setSheetName(e.target.value);
+									handleRenameSheet(currentSheetIndex, e.target.value);
+								}}
+							/>
+							<DropdownMenu>
+								<DropdownMenuTrigger asChild>
+									<Button variant="ghost" size="icon" className="h-6 w-6">
+										<ChevronDown className="h-4 w-4" />
+									</Button>
+								</DropdownMenuTrigger>
+								<DropdownMenuContent align="start">
+									<DropdownMenuLabel>Sheets</DropdownMenuLabel>
+									<DropdownMenuSeparator />
+									{sheetNames.map((name, index) => (
+										<DropdownMenuItem 
+											key={index}
+											onClick={() => handleSwitchSheet(index)}
+											className={index === currentSheetIndex ? "bg-accent" : ""}
+										>
+											<FileSpreadsheet className="mr-2 h-4 w-4" />
+											{name}
+										</DropdownMenuItem>
+									))}
+									<DropdownMenuSeparator />
+									<DropdownMenuItem onClick={handleAddSheet}>
+										<Plus className="mr-2 h-4 w-4" />
+										Add Sheet
+									</DropdownMenuItem>
+									<DropdownMenuItem onClick={handleDeleteCurrentSheet}>
+										<Trash2 className="mr-2 h-4 w-4" />
+										Delete Sheet
+									</DropdownMenuItem>
+								</DropdownMenuContent>
+							</DropdownMenu>
+						</div>
 						<div className="text-xs text-muted-foreground flex gap-2">
 							{/* File Menu */}
 							<DropdownMenu>
@@ -787,7 +1133,7 @@ export default function EditorPage() {
 										Delete
 										<DropdownMenuShortcut>Del</DropdownMenuShortcut>
 									</DropdownMenuItem>
-									<DropdownMenuItem onClick={selectAll}>
+									<DropdownMenuItem onClick={handleSelectAll}>
 										<Grid3x3 className="mr-2 h-4 w-4" />
 										Select All
 										<DropdownMenuShortcut>⌘A</DropdownMenuShortcut>
@@ -891,9 +1237,18 @@ export default function EditorPage() {
 										<Table className="mr-2 h-4 w-4" />
 										Insert Row
 									</DropdownMenuItem>
+									<DropdownMenuItem onClick={handleDeleteRow}>
+										<Trash2 className="mr-2 h-4 w-4" />
+										Delete Row
+									</DropdownMenuItem>
+									<DropdownMenuSeparator />
 									<DropdownMenuItem onClick={handleInsertColumn}>
 										<Table className="mr-2 h-4 w-4 rotate-90" />
 										Insert Column
+									</DropdownMenuItem>
+									<DropdownMenuItem onClick={handleDeleteColumn}>
+										<Trash2 className="mr-2 h-4 w-4 rotate-90" />
+										Delete Column
 									</DropdownMenuItem>
 									<DropdownMenuSeparator />
 									<DropdownMenuItem onClick={handleInsertChart}>
@@ -933,28 +1288,28 @@ export default function EditorPage() {
 										</DropdownMenuSubTrigger>
 										<DropdownMenuPortal>
 											<DropdownMenuSubContent>
-												<DropdownMenuItem onClick={() => handleNumberFormat("General")}>
+												<DropdownMenuItem onClick={() => handleNumberFormat("general")}>
 													General
 												</DropdownMenuItem>
-												<DropdownMenuItem onClick={() => handleNumberFormat("Number")}>
+												<DropdownMenuItem onClick={() => handleNumberFormat("number")}>
 													Number
 												</DropdownMenuItem>
-												<DropdownMenuItem onClick={() => handleNumberFormat("Currency")}>
+												<DropdownMenuItem onClick={() => handleNumberFormat("currency")}>
 													Currency
 												</DropdownMenuItem>
-												<DropdownMenuItem onClick={() => handleNumberFormat("Date")}>
+												<DropdownMenuItem onClick={() => handleNumberFormat("date")}>
 													Date
 												</DropdownMenuItem>
-												<DropdownMenuItem onClick={() => handleNumberFormat("Time")}>
+												<DropdownMenuItem onClick={() => handleNumberFormat("time")}>
 													Time
 												</DropdownMenuItem>
-												<DropdownMenuItem onClick={() => handleNumberFormat("Percentage")}>
+												<DropdownMenuItem onClick={() => handleNumberFormat("percentage")}>
 													Percentage
 												</DropdownMenuItem>
-												<DropdownMenuItem onClick={() => handleNumberFormat("Fraction")}>
+												<DropdownMenuItem onClick={() => handleNumberFormat("fraction")}>
 													Fraction
 												</DropdownMenuItem>
-												<DropdownMenuItem onClick={() => handleNumberFormat("Scientific")}>
+												<DropdownMenuItem onClick={() => handleNumberFormat("scientific")}>
 													Scientific
 												</DropdownMenuItem>
 											</DropdownMenuSubContent>
@@ -988,6 +1343,19 @@ export default function EditorPage() {
 											</DropdownMenuSubContent>
 										</DropdownMenuPortal>
 									</DropdownMenuSub>
+									<DropdownMenuSeparator />
+									<DropdownMenuItem onClick={handleAddNamedRange}>
+										<FileSpreadsheet className="mr-2 h-4 w-4" />
+										Define Named Range
+									</DropdownMenuItem>
+									<DropdownMenuItem onClick={handleAddNote}>
+										<FileSpreadsheet className="mr-2 h-4 w-4" />
+										Add Note
+									</DropdownMenuItem>
+									<DropdownMenuItem onClick={handleDataValidation}>
+										<Grid3x3 className="mr-2 h-4 w-4" />
+										Data Validation
+									</DropdownMenuItem>
 								</DropdownMenuContent>
 							</DropdownMenu>
 
@@ -1155,6 +1523,180 @@ export default function EditorPage() {
 						</Button>
 						<Button onClick={handleFind}>Find Next</Button>
 						<Button onClick={handleReplace}>Replace</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			{/* New Sheet Dialog */}
+			<Dialog open={showNewSheetDialog} onOpenChange={setShowNewSheetDialog}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Add New Sheet</DialogTitle>
+						<DialogDescription>
+							Enter a name for the new sheet.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="space-y-4 py-4">
+						<div className="space-y-2">
+							<Label htmlFor="sheet-name">Sheet Name</Label>
+							<Input
+								id="sheet-name"
+								value={newSheetName}
+								onChange={(e) => setNewSheetName(e.target.value)}
+								placeholder={`Sheet${sheetNames.length + 1}`}
+							/>
+						</div>
+					</div>
+					<DialogFooter>
+						<Button variant="outline" onClick={() => setShowNewSheetDialog(false)}>
+							Cancel
+						</Button>
+						<Button onClick={handleCreateSheet}>Create Sheet</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			{/* Named Range Dialog */}
+			<Dialog open={showNamedRangeDialog} onOpenChange={setShowNamedRangeDialog}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Define Named Range</DialogTitle>
+						<DialogDescription>
+							Give a name to the selected cell or range.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="space-y-4 py-4">
+						<div className="space-y-2">
+							<Label htmlFor="range-name">Range Name</Label>
+							<Input
+								id="range-name"
+								value={newRangeName}
+								onChange={(e) => setNewRangeName(e.target.value)}
+								placeholder="e.g., SalesData"
+							/>
+						</div>
+						<div className="space-y-2">
+							<Label htmlFor="range-ref">Refers to</Label>
+							<Input
+								id="range-ref"
+								value={newRangeRef}
+								onChange={(e) => setNewRangeRef(e.target.value)}
+								placeholder="e.g., A1:B10"
+							/>
+						</div>
+					</div>
+					<DialogFooter>
+						<Button variant="outline" onClick={() => setShowNamedRangeDialog(false)}>
+							Cancel
+						</Button>
+						<Button onClick={handleCreateNamedRange}>Create</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			{/* Note Dialog */}
+			<Dialog open={showNoteDialog} onOpenChange={setShowNoteDialog}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Add Note</DialogTitle>
+						<DialogDescription>
+							Add a note to cell {selectedCell}.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="space-y-4 py-4">
+						<div className="space-y-2">
+							<Label htmlFor="cell-note">Note</Label>
+							<Input
+								id="cell-note"
+								value={cellNote}
+								onChange={(e) => setCellNote(e.target.value)}
+								placeholder="Enter your note here..."
+							/>
+						</div>
+					</div>
+					<DialogFooter>
+						<Button variant="outline" onClick={() => setShowNoteDialog(false)}>
+							Cancel
+						</Button>
+						<Button onClick={handleSaveNote}>Save Note</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			{/* Validation Dialog */}
+			<Dialog open={showValidationDialog} onOpenChange={setShowValidationDialog}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Data Validation</DialogTitle>
+						<DialogDescription>
+							Set validation rules for cell {selectedCell}.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="space-y-4 py-4">
+						<div className="space-y-2">
+							<Label htmlFor="validation-type">Validation Type</Label>
+							<Select value={validationType} onValueChange={(value: any) => setValidationType(value)}>
+								<SelectTrigger>
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="number">Number</SelectItem>
+									<SelectItem value="text">Text</SelectItem>
+									<SelectItem value="list">List</SelectItem>
+									<SelectItem value="date">Date</SelectItem>
+								</SelectContent>
+							</Select>
+						</div>
+
+						{validationType === "number" && (
+							<>
+								<div className="space-y-2">
+									<Label htmlFor="validation-min">Minimum</Label>
+									<Input
+										id="validation-min"
+										type="number"
+										value={validationMin}
+										onChange={(e) => setValidationMin(Number(e.target.value))}
+									/>
+								</div>
+								<div className="space-y-2">
+									<Label htmlFor="validation-max">Maximum</Label>
+									<Input
+										id="validation-max"
+										type="number"
+										value={validationMax}
+										onChange={(e) => setValidationMax(Number(e.target.value))}
+									/>
+								</div>
+							</>
+						)}
+
+						{validationType === "list" && (
+							<div className="space-y-2">
+								<Label htmlFor="validation-list">List Items (comma separated)</Label>
+								<Input
+									id="validation-list"
+									value={validationList}
+									onChange={(e) => setValidationList(e.target.value)}
+									placeholder="Option1, Option2, Option3"
+								/>
+							</div>
+						)}
+
+						<div className="flex items-center space-x-2">
+							<Switch
+								id="validation-required"
+								checked={validationRequired}
+								onCheckedChange={setValidationRequired}
+							/>
+							<Label htmlFor="validation-required">Required</Label>
+						</div>
+					</div>
+					<DialogFooter>
+						<Button variant="outline" onClick={() => setShowValidationDialog(false)}>
+							Cancel
+						</Button>
+						<Button onClick={handleSaveValidation}>Apply Validation</Button>
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
