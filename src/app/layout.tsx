@@ -9,8 +9,8 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
 	title: {
-		default: "Excel Editor - Online Spreadsheet Application",
-		template: "%s | Excel Editor",
+		default: "ArtXcel - Online Spreadsheet Application",
+		template: "%s | ArtXcel",
 	},
 	description:
 		"Free online spreadsheet editor with Excel compatibility. Create, edit, and share spreadsheets online with real-time collaboration and advanced formatting.",
@@ -48,17 +48,17 @@ export const metadata: Metadata = {
 		},
 	},
 	openGraph: {
-		title: "Excel Editor - Online Spreadsheet Application",
+		title: "ArtXcel - Online Spreadsheet Application",
 		description:
 			"Free online spreadsheet editor with Excel compatibility. Create, edit, and share spreadsheets online.",
 		url: "https://excel-editor.com",
-		siteName: "Excel Editor",
+		siteName: "ArtXcel",
 		images: [
 			{
 				url: "/og-image.png", // Make sure to add this image to your public folder
 				width: 1200,
 				height: 630,
-				alt: "Excel Editor - Online Spreadsheet Application",
+				alt: "ArtXcel - Online Spreadsheet Application",
 			},
 		],
 		locale: "en_US",
@@ -66,7 +66,7 @@ export const metadata: Metadata = {
 	},
 	twitter: {
 		card: "summary_large_image",
-		title: "Excel Editor - Online Spreadsheet Application",
+		title: "ArtXcel - Online Spreadsheet Application",
 		description:
 			"Free online spreadsheet editor with Excel compatibility. Create, edit, and share spreadsheets online.",
 		images: ["/twitter-image.png"], // Make sure to add this image to your public folder
@@ -110,10 +110,10 @@ export default function RootLayout({
 		<html lang="en" suppressHydrationWarning>
 			<head>
 				{/* Additional meta tags for Excel compatibility */}
-				<meta name="application-name" content="Excel Editor" />
+				<meta name="application-name" content="ArtXcel" />
 				<meta name="apple-mobile-web-app-capable" content="yes" />
 				<meta name="apple-mobile-web-app-status-bar-style" content="default" />
-				<meta name="apple-mobile-web-app-title" content="Excel Editor" />
+				<meta name="apple-mobile-web-app-title" content="ArtXcel" />
 				<meta name="format-detection" content="telephone=no" />
 				<meta name="mobile-web-app-capable" content="yes" />
 				<meta name="msapplication-TileColor" content="#1D6F42" />
