@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, Suspense } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSpreadsheet } from "@/hooks/use-spreadsheet";
 import { useExcelService } from "@/hooks/use-excel-service";
@@ -83,8 +83,72 @@ import {
 	ShareDialog,
 	ShareSettings,
 } from "@/components/share-dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 
-export default function EditorPage() {
+// Preload component for the editor
+const EditorPreload = () => {
+	return (
+		<div className="h-screen flex flex-col font-sans overflow-hidden">
+			{/* Header Skeleton */}
+			<header className="h-14 border-b flex items-center justify-between px-4 bg-background">
+				<div className="flex items-center gap-4">
+					<Skeleton className="h-9 w-9 rounded" />
+					<div className="flex flex-col gap-1">
+						<div className="flex items-center gap-2">
+							<Skeleton className="h-6 w-48" />
+							<Skeleton className="h-6 w-6 rounded" />
+						</div>
+						<div className="flex gap-2">
+							<Skeleton className="h-5 w-12" />
+							<Skeleton className="h-5 w-12" />
+							<Skeleton className="h-5 w-12" />
+							<Skeleton className="h-5 w-12" />
+							<Skeleton className="h-5 w-12" />
+							<Skeleton className="h-5 w-12" />
+						</div>
+					</div>
+				</div>
+				<div className="flex items-center gap-2">
+					<Skeleton className="h-9 w-9 rounded" />
+					<Skeleton className="h-9 w-9 rounded" />
+					<Skeleton className="h-8 w-8 rounded-full" />
+				</div>
+			</header>
+
+			{/* Toolbar Skeleton */}
+			<div className="h-12 border-b flex items-center px-4 gap-2">
+				<Skeleton className="h-8 w-8" />
+				<Skeleton className="h-8 w-8" />
+				<Skeleton className="h-8 w-8" />
+				<div className="w-px h-6 bg-border mx-2" />
+				<Skeleton className="h-8 w-8" />
+				<Skeleton className="h-8 w-8" />
+				<Skeleton className="h-8 w-8" />
+				<div className="w-px h-6 bg-border mx-2" />
+				<Skeleton className="h-8 w-20" />
+				<Skeleton className="h-8 w-20" />
+			</div>
+
+			{/* Formula Bar Skeleton */}
+			<div className="h-10 border-b flex items-center px-4 gap-2">
+				<Skeleton className="h-6 w-16" />
+				<Skeleton className="h-6 flex-1" />
+			</div>
+
+			{/* Grid Skeleton */}
+			<div className="flex-1 overflow-auto p-4">
+				<div className="grid grid-cols-8 gap-1">
+					{[...Array(40)].map((_, i) => (
+						<Skeleton key={i} className="h-8 w-24" />
+					))}
+				</div>
+			</div>
+		</div>
+	);
+};
+
+// Main Editor Component with Suspense
+function EditorContent() {
 	const params = useParams();
 	const id = params.id as string;
 	const router = useRouter();
@@ -176,6 +240,7 @@ export default function EditorPage() {
 	const [validationMax, setValidationMax] = useState<number>(100);
 	const [validationList, setValidationList] = useState<string>("");
 	const [validationRequired, setValidationRequired] = useState(false);
+	const [isLoading, setIsLoading] = useState(true);
 
 	// Share state
 	const [shareSettings, setShareSettings] = useState<ShareSettings>({
@@ -188,29 +253,44 @@ export default function EditorPage() {
 
 	// Load data from localStorage
 	useEffect(() => {
-		const stored = localStorage.getItem("excel-editor-files");
-		if (stored) {
+		const loadData = async () => {
 			try {
-				const spreadsheets = JSON.parse(stored);
-				const currentSheet = spreadsheets.find((s: any) => s.id === id);
-				if (currentSheet) {
-					setSheetName(currentSheet.name);
-					if (currentSheet.data) {
-						setData(currentSheet.data);
-					}
-					// Load share settings if they exist
-					if (currentSheet.shareSettings) {
-						setShareSettings(currentSheet.shareSettings);
+				setIsLoading(true);
+				// Simulate loading delay for better UX
+				await new Promise(resolve => setTimeout(resolve, 500));
+				
+				const stored = localStorage.getItem("excel-editor-files");
+				if (stored) {
+					const spreadsheets = JSON.parse(stored);
+					const currentSheet = spreadsheets.find((s: any) => s.id === id);
+					if (currentSheet) {
+						setSheetName(currentSheet.name);
+						if (currentSheet.data) {
+							setData(currentSheet.data);
+						}
+						// Load share settings if they exist
+						if (currentSheet.shareSettings) {
+							setShareSettings(currentSheet.shareSettings);
+						}
 					}
 				}
 			} catch (e) {
 				console.error(e);
+				toast.error("Failed to load spreadsheet", {
+					description: "There was an error loading your spreadsheet.",
+				});
+			} finally {
+				setIsLoading(false);
 			}
-		}
+		};
+
+		loadData();
 	}, [id, setData]);
 
 	// Auto-save
 	useEffect(() => {
+		if (isLoading) return;
+		
 		const save = () => {
 			const stored = localStorage.getItem("excel-editor-files");
 			if (stored) {
@@ -238,7 +318,7 @@ export default function EditorPage() {
 
 		const timer = setTimeout(save, 1000);
 		return () => clearTimeout(timer);
-	}, [data, id, sheetName, shareSettings]);
+	}, [data, id, sheetName, shareSettings, isLoading]);
 
 	// Keyboard shortcuts
 	useEffect(() => {
@@ -986,6 +1066,10 @@ export default function EditorPage() {
 			icon: <Copy className="h-4 w-4" />,
 		});
 	};
+
+	if (isLoading) {
+		return <EditorPreload />;
+	}
 
 	return (
 		<div className="h-screen flex flex-col font-sans overflow-hidden">
@@ -1892,5 +1976,14 @@ export default function EditorPage() {
 				</DialogContent>
 			</Dialog>
 		</div>
+	);
+}
+
+// Main export with Suspense
+export default function EditorPage() {
+	return (
+		<Suspense fallback={<EditorPreload />}>
+			<EditorContent />
+		</Suspense>
 	);
 }
