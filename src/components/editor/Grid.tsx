@@ -2,8 +2,15 @@
 
 import React, { memo, useState, useEffect, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
-import { SheetData, CellData } from "@/hooks/use-spreadsheet";
+import { SheetData, CellData, ChartData, ImageData } from "@/hooks/use-spreadsheet";
 import { useVirtualizer } from "@tanstack/react-virtual";
+
+import { CellContextMenu } from "./CellContextMenu";
+import { ChartComponent } from "./ChartComponent";
+import { ImageComponent } from "./ImageComponent";
+import { ShapeComponent } from "./ShapeComponent";
+import { IconComponent } from "./IconComponent";
+import { ShapeData, IconData } from "@/hooks/use-spreadsheet";
 
 interface GridProps {
 	data: SheetData;
@@ -13,6 +20,28 @@ interface GridProps {
 	showGrid?: boolean;
 	showHeaders?: boolean;
 	freezePanes?: boolean;
+	onCopy: () => void;
+	onCut: () => void;
+	onPaste: () => void;
+	onInsertRow: (index: number) => void;
+	onDeleteRow: (index: number) => void;
+	onInsertColumn: (index: number) => void;
+	onDeleteColumn: (index: number) => void;
+	onClearCell: (cellId: string) => void;
+	hiddenRows?: Set<number>;
+	charts?: ChartData[];
+	images?: ImageData[];
+	onRemoveChart?: (id: string) => void;
+	onRemoveImage?: (id: string) => void;
+	onUpdateChart?: (id: string, updates: Partial<ChartData>) => void;
+	onUpdateImage?: (id: string, updates: Partial<ImageData>) => void;
+	shapes?: ShapeData[];
+	icons?: IconData[];
+	onRemoveShape?: (id: string) => void;
+	onRemoveIcon?: (id: string) => void;
+	onUpdateShape?: (id: string, updates: Partial<ShapeData>) => void;
+	onUpdateIcon?: (id: string, updates: Partial<IconData>) => void;
+	onShowShortcuts?: () => void;
 }
 
 const DEFAULT_ROW_HEIGHT = 32;
@@ -61,6 +90,18 @@ interface CellProps {
 	onBlur: () => void;
 	inputRef?: React.RefCallback<HTMLInputElement>;
 	onResize?: (e: React.MouseEvent) => void;
+	// Context Menu Props
+	onCopy: () => void;
+	onCut: () => void;
+	onPaste: () => void;
+	onInsertRowAbove: () => void;
+	onInsertRowBelow: () => void;
+	onDeleteRow: () => void;
+	onInsertColumnLeft: () => void;
+	onInsertColumnRight: () => void;
+	onDeleteColumn: () => void;
+	onClearCell: () => void;
+	onShowShortcuts?: () => void;
 }
 
 const Cell = memo(
@@ -80,60 +121,85 @@ const Cell = memo(
 		onBlur,
 		inputRef,
 		onResize,
+		onCopy,
+		onCut,
+		onPaste,
+		onInsertRowAbove,
+		onInsertRowBelow,
+		onDeleteRow,
+		onInsertColumnLeft,
+		onInsertColumnRight,
+		onDeleteColumn,
+		onClearCell,
+		onShowShortcuts,
 	}: CellProps) => {
 		const displayValue = isEditing ? formula || value : value;
 
 		return (
-			<div
-				className={cn(
-					"flex items-center relative group",
-					isSelected ? "ring-2 ring-primary z-10" : "",
-					isEditing && "ring-2 ring-blue-500 z-20",
-					showGrid ? "border-r border-b" : "border-0",
-				)}
-				style={{
-					backgroundColor: style?.backgroundColor,
-					width: `${width}px`,
-					height: `${height}px`,
-					minWidth: `${width}px`,
-					maxWidth: `${width}px`,
-				}}
-				onClick={onClick}
+			<CellContextMenu
+				onCopy={onCopy}
+				onCut={onCut}
+				onPaste={onPaste}
+				onInsertRowAbove={onInsertRowAbove}
+				onInsertRowBelow={onInsertRowBelow}
+				onDeleteRow={onDeleteRow}
+				onInsertColumnLeft={onInsertColumnLeft}
+				onInsertColumnRight={onInsertColumnRight}
+				onDeleteColumn={onDeleteColumn}
+				onClearCell={onClearCell}
+				onShowShortcuts={onShowShortcuts}
 			>
-				<input
-					ref={inputRef}
-					className={cn(
-						"w-full h-full px-1 outline-none bg-transparent",
-						style?.bold && "font-bold",
-						style?.italic && "italic",
-						style?.underline && "underline",
-						style?.align === "center" && "text-center",
-						style?.align === "right" && "text-right",
-						style?.align === "left" && "text-left",
-					)}
-					style={{ color: style?.color }}
-					value={displayValue}
-					onChange={onChange}
-					onKeyDown={onKeyDown}
-					onBlur={onBlur}
-					autoFocus={isEditing}
-				/>
-
-				{formula && !isEditing && (
-					<div
-						className="absolute top-0 right-0 w-2 h-2 bg-green-500 rounded-full"
-						title="Contains formula"
-					/>
-				)}
-
-				{/* Resize handle for columns */}
 				<div
-					className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-blue-500 opacity-0 group-hover:opacity-100"
-					onMouseDown={(e) => onResize?.(e)}
-					data-resize="col"
-					data-cell={id}
-				/>
-			</div>
+					className={cn(
+						"flex items-center relative group transition-all duration-75",
+						isSelected ? "ring-2 ring-primary z-10 shadow-sm shadow-primary/20" : "",
+						isEditing && "ring-2 ring-blue-500 z-20",
+						showGrid ? "border-r border-b" : "border-0",
+					)}
+					style={{
+						backgroundColor: style?.backgroundColor || (isSelected ? "hsl(var(--primary) / 0.05)" : undefined),
+						width: `${width}px`,
+						height: `${height}px`,
+						minWidth: `${width}px`,
+						maxWidth: `${width}px`,
+					}}
+					onClick={onClick}
+				>
+					<input
+						ref={inputRef}
+						className={cn(
+							"w-full h-full px-2 outline-none bg-transparent text-[13px]",
+							style?.bold && "font-bold",
+							style?.italic && "italic",
+							style?.underline && "underline",
+							style?.align === "center" && "text-center",
+							style?.align === "right" && "text-right",
+							style?.align === "left" && "text-left",
+						)}
+						style={{ color: style?.color }}
+						value={displayValue}
+						onChange={onChange}
+						onKeyDown={onKeyDown}
+						onBlur={onBlur}
+						autoFocus={isEditing}
+					/>
+
+					{formula && !isEditing && (
+						<div
+							className="absolute top-0 right-0 w-0 h-0 border-t-[6px] border-l-[6px] border-t-green-500 border-l-transparent"
+							title="Contains formula"
+						/>
+					)}
+
+					{/* Resize handle for columns */}
+					<div
+						className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-primary transition-colors opacity-0 group-hover:opacity-100 z-30"
+						onMouseDown={(e) => onResize?.(e)}
+						data-resize="col"
+						data-cell={id}
+					/>
+				</div>
+			</CellContextMenu>
 		);
 	},
 );
@@ -143,22 +209,26 @@ Cell.displayName = "Cell";
 interface RowHeaderProps {
 	rowIndex: number;
 	height: number;
+	isActive: boolean;
 	showHeaders?: boolean;
 	onResize?: (e: React.MouseEvent) => void;
 }
 
-const RowHeader = memo(({ rowIndex, height, showHeaders = true, onResize }: RowHeaderProps) => {
+const RowHeader = memo(({ rowIndex, height, isActive, showHeaders = true, onResize }: RowHeaderProps) => {
 	if (!showHeaders) return null;
 
 	return (
 		<div
-			className="w-10 shrink-0 bg-muted border-r border-b flex items-center justify-center font-bold text-xs text-muted-foreground sticky left-0 z-10 group"
+			className={cn(
+				"w-10 shrink-0 border-r border-b flex items-center justify-center font-medium text-[11px] transition-colors sticky left-0 z-10 group",
+				isActive ? "bg-primary text-primary-foreground shadow-md" : "bg-muted text-muted-foreground"
+			)}
 			style={{ height: `${height}px`, minHeight: `${height}px` }}
 		>
 			{rowIndex}
 			{/* Resize handle for rows */}
 			<div
-				className="absolute bottom-0 left-0 w-full h-1 cursor-row-resize hover:bg-blue-500 opacity-0 group-hover:opacity-100"
+				className="absolute bottom-0 left-0 w-full h-1 cursor-row-resize hover:bg-primary transition-colors opacity-0 group-hover:opacity-100 z-20"
 				onMouseDown={onResize}
 				data-resize="row"
 				data-row={rowIndex}
@@ -177,13 +247,35 @@ export const Grid = ({
 	showGrid = true,
 	showHeaders = true,
 	freezePanes = false,
+	onCopy,
+	onCut,
+	onPaste,
+	onInsertRow,
+	onDeleteRow,
+	onInsertColumn,
+	onDeleteColumn,
+	onClearCell,
+	hiddenRows = new Set(),
+	charts = [],
+	images = [],
+	onRemoveChart,
+	onRemoveImage,
+	onUpdateChart,
+	onUpdateImage,
+	shapes = [],
+	icons = [],
+	onRemoveShape,
+	onRemoveIcon,
+	onUpdateShape,
+	onUpdateIcon,
+	onShowShortcuts,
 }: GridProps) => {
 	const [editingCell, setEditingCell] = useState<string | null>(null);
 	const [editValue, setEditValue] = useState<string>("");
 	const [rowHeights, setRowHeights] = useState<Record<number, number>>({});
 	const [colWidths, setColWidths] = useState<Record<string, number>>({});
 	const [totalRows, setTotalRows] = useState(100);
-	const [totalCols, setTotalCols] = useState(26); // Začíname s A-Z
+	const [totalCols, setTotalCols] = useState(26);
 	const [scrollPosition, setScrollPosition] = useState({ left: 0, top: 0 });
 
 	const inputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
@@ -195,6 +287,10 @@ export const Grid = ({
 		startPos: number;
 		startSize: number;
 	} | null>(null);
+
+	// Get active row and col for highlighting
+	const activeRow = selectedCell ? parseInt(selectedCell.match(/\d+/)?.[0] || "0") : null;
+	const activeCol = selectedCell ? selectedCell.match(/[A-Z]+/)?.[0] : null;
 
 	// Funkcia pre získanie výšky riadku
 	const getRowHeight = useCallback(
@@ -217,7 +313,10 @@ export const Grid = ({
 	const rowVirtualizer = useVirtualizer({
 		count: totalRows,
 		getScrollElement: () => gridRef.current,
-		estimateSize: (index) => getRowHeight(index),
+		estimateSize: (index) => {
+			if (hiddenRows.has(index + 1)) return 0;
+			return getRowHeight(index);
+		},
 		overscan: OVERSCAN,
 		rangeExtractor: (range) => {
 			// Dynamické načítanie riadkov
@@ -515,10 +614,14 @@ export const Grid = ({
 					>
 						{colVirtualizer.getVirtualItems().map((virtualCol) => {
 							const col = numberToColLabel(virtualCol.index);
+							const isActive = activeCol === col;
 							return (
 								<div
 									key={col}
-									className="absolute top-0 h-full bg-muted border-r flex items-center justify-center font-bold text-xs text-muted-foreground group"
+									className={cn(
+										"absolute top-0 h-full border-r flex items-center justify-center font-medium text-[11px] transition-colors group",
+										isActive ? "bg-primary text-primary-foreground shadow-sm" : "bg-muted text-muted-foreground"
+									)}
 									style={{
 										left: 0,
 										width: virtualCol.size,
@@ -528,7 +631,7 @@ export const Grid = ({
 								>
 									{col}
 									<div
-										className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-blue-500 opacity-0 group-hover:opacity-100"
+										className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-primary transition-colors opacity-0 group-hover:opacity-100 z-20"
 										onMouseDown={handleResizeStart}
 										data-resize="col"
 										data-cell={`${col}1`}
@@ -548,7 +651,7 @@ export const Grid = ({
 			{renderHeader()}
 
 			{/* Grid s virtuálnymi riadkami */}
-			<div ref={gridRef} className="flex-1 overflow-auto bg-background">
+			<div ref={gridRef} className="flex-1 overflow-auto bg-background selection:bg-primary/20">
 				<div
 					style={{
 						width: colVirtualizer.getTotalSize() + (showHeaders ? ROW_HEADER_WIDTH : 0),
@@ -558,7 +661,10 @@ export const Grid = ({
 				>
 					{rowVirtualizer.getVirtualItems().map((virtualRow) => {
 						const row = virtualRow.index + 1;
+						if (hiddenRows.has(row)) return null;
+
 						const rowHeight = virtualRow.size;
+						const isRowActive = activeRow === row;
 
 						return (
 							<div
@@ -574,6 +680,7 @@ export const Grid = ({
 							>
 								<RowHeader
 									rowIndex={row}
+									isActive={isRowActive}
 									height={rowHeight}
 									showHeaders={showHeaders}
 									onResize={handleResizeStart}
@@ -620,6 +727,18 @@ export const Grid = ({
 													onBlur={() => handleBlur(cellId)}
 													inputRef={setInputRef(cellId)}
 													onResize={handleResizeStart}
+													// Context Menu Actions
+													onCopy={onCopy}
+													onCut={onCut}
+													onPaste={onPaste}
+													onInsertRowAbove={() => onInsertRow(row)}
+													onInsertRowBelow={() => onInsertRow(row + 1)}
+													onDeleteRow={() => onDeleteRow(row)}
+													onInsertColumnLeft={() => onInsertColumn(virtualCol.index)}
+													onInsertColumnRight={() => onInsertColumn(virtualCol.index + 1)}
+													onDeleteColumn={() => onDeleteColumn(virtualCol.index)}
+													onClearCell={() => onClearCell(cellId)}
+													onShowShortcuts={onShowShortcuts}
 												/>
 											</div>
 										);
@@ -628,6 +747,48 @@ export const Grid = ({
 							</div>
 						);
 					})}
+
+					{/* Charts Layer */}
+					{charts.map((chart) => (
+						<ChartComponent
+							key={chart.id}
+							{...chart}
+							data={data}
+							onRemove={() => onRemoveChart?.(chart.id)}
+							onUpdatePosition={(x, y) => onUpdateChart?.(chart.id, { position: { x, y } })}
+						/>
+					))}
+
+					{/* Images Layer */}
+					{images.map((image) => (
+						<ImageComponent
+							key={image.id}
+							{...image}
+							onRemove={() => onRemoveImage?.(image.id)}
+							onUpdatePosition={(x, y) => onUpdateImage?.(image.id, { position: { x, y } })}
+							onUpdateSize={(width, height) => onUpdateImage?.(image.id, { size: { width, height } })}
+						/>
+					))}
+
+					{/* Floating Shapes */}
+					{shapes.map((shape) => (
+						<ShapeComponent
+							key={shape.id}
+							{...shape}
+							onRemove={() => onRemoveShape?.(shape.id)}
+							onUpdatePosition={(x, y) => onUpdateShape?.(shape.id, { position: { x, y } })}
+						/>
+					))}
+
+					{/* Floating Icons */}
+					{icons.map((icon) => (
+						<IconComponent
+							key={icon.id}
+							{...icon}
+							onRemove={() => onRemoveIcon?.(icon.id)}
+							onUpdatePosition={(x, y) => onUpdateIcon?.(icon.id, { position: { x, y } })}
+						/>
+					))}
 				</div>
 			</div>
 		</div>
