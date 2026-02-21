@@ -15,7 +15,8 @@ import {
     PlusCircle,
     MinusCircle,
     Trash2,
-    Eraser
+    Eraser,
+    Keyboard
 } from "lucide-react";
 
 interface CellContextMenuProps {
@@ -30,6 +31,7 @@ interface CellContextMenuProps {
     onInsertColumnRight: () => void;
     onDeleteColumn: () => void;
     onClearCell: () => void;
+    onShowShortcuts?: () => void;
 }
 
 export const CellContextMenu = ({
@@ -44,6 +46,7 @@ export const CellContextMenu = ({
     onInsertColumnRight,
     onDeleteColumn,
     onClearCell,
+    onShowShortcuts,
 }: CellContextMenuProps) => {
     return (
         <ContextMenu>
@@ -101,6 +104,14 @@ export const CellContextMenu = ({
                     <Eraser className="h-4 w-4" />
                     <span>Clear Contents</span>
                     <span className="ml-auto text-xs text-muted-foreground">Delete</span>
+                </ContextMenuItem>
+
+                <ContextMenuSeparator />
+
+                <ContextMenuItem onClick={onShowShortcuts} className="gap-2">
+                    <Keyboard className="h-4 w-4" />
+                    <span>Available Shortcuts</span>
+                    <span className="ml-auto text-xs text-muted-foreground">Ctrl+/</span>
                 </ContextMenuItem>
             </ContextMenuContent>
         </ContextMenu>

@@ -101,12 +101,12 @@ export default function TrashPage() {
 									Restore
 								</Button>
 								<Button
-									variant="destructive"
+									variant="outline"
 									size="sm"
 									onClick={() => permanentlyDelete(sheet.id)}
 									title="Delete Permanently"
 								>
-									<Trash2 className="h-4 w-4" />
+									<Trash2 className="h-4 w-4 text-red-900" />
 								</Button>
 							</CardContent>
 						</Card>

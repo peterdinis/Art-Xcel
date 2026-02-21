@@ -9,6 +9,7 @@ import { Ribbon } from "@/components/editor/Ribbon";
 import { StatusBar } from "@/components/editor/StatusBar";
 import { FormulaBar } from "@/components/editor/FormulaBar";
 import { Button } from "@/components/ui/button";
+import { saveSpreadsheetAction } from "./actions";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import {
 	Plus,
@@ -46,6 +47,8 @@ import {
 	Grid3x3,
 	Table,
 	Eye,
+	Keyboard,
+	Cloud,
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -204,6 +207,14 @@ function EditorContent() {
 		addImage,
 		removeImage,
 		updateImage,
+		shapes,
+		icons,
+		addShape,
+		removeShape,
+		updateShape,
+		addIcon,
+		removeIcon,
+		updateIcon,
 
 		// Data operations
 		sortRange,
@@ -266,8 +277,13 @@ function EditorContent() {
 	// Insertion states
 	const [showChartDialog, setShowChartDialog] = useState(false);
 	const [showImageDialog, setShowImageDialog] = useState(false);
+	const [showShapeDialog, setShowShapeDialog] = useState(false);
+	const [showIconDialog, setShowIconDialog] = useState(false);
+	const [iconName, setIconName] = useState("Activity");
+	const [shapeType, setShapeType] = useState<"rectangle" | "circle" | "line">("rectangle");
 	const [chartType, setChartType] = useState<"bar" | "line" | "pie">("bar");
 	const [chartTitle, setChartTitle] = useState("New Chart");
+	const [showShortcutsDialog, setShowShortcutsDialog] = useState(false);
 
 	// Share state
 	const [shareSettings, setShareSettings] = useState<ShareSettings>({
@@ -395,12 +411,32 @@ function EditorContent() {
 		}
 	};
 
-	const handleSave = useCallback(() => {
-		toast.success("Saved", {
-			description: "Your spreadsheet has been saved.",
-			icon: <Save className="h-4 w-4" />,
-		});
-	}, []);
+	const handleSave = useCallback(async () => {
+		const result = await saveSpreadsheetAction(id as string, data);
+		if (result.success) {
+			toast.success("Saved to Cloud", {
+				description: `Version updated at ${new Date(result.timestamp).toLocaleTimeString()}`,
+				icon: <Cloud className="h-4 w-4" />,
+			});
+		} else {
+			toast.error("Save failed", {
+				description: "Could not synchronize with the server",
+			});
+		}
+	}, [id, data, id]);
+
+	const handleFormulaClick = useCallback((formula: string) => {
+		if (selectedCell) {
+			updateCell(selectedCell, `=${formula}( )`);
+			toast.info(`Inserted ${formula}`, {
+				description: `Formula template inserted for ${formula}`,
+			});
+		} else {
+			toast.error("No cell selected", {
+				description: "Please select a cell to insert a formula",
+			});
+		}
+	}, [selectedCell, updateCell]);
 
 	const handleUndo = useCallback(() => {
 		undo();
@@ -843,6 +879,31 @@ function EditorContent() {
 		}
 	}, [addImage]);
 
+	const handleInsertShape = useCallback((type: "rectangle" | "circle" | "line") => {
+		addShape({
+			type,
+			position: { x: 200, y: 200 },
+			size: { width: 150, height: 100 },
+			style: {
+				fill: "rgba(59, 130, 246, 0.5)",
+				stroke: "#2563eb",
+				strokeWidth: 2,
+			}
+		});
+		toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} Inserted`);
+	}, [addShape]);
+
+	const handleInsertIcon = useCallback((name: string) => {
+		addIcon({
+			iconName: name,
+			position: { x: 250, y: 250 },
+			size: 48,
+			color: "#3b82f6",
+		});
+		setShowIconDialog(false);
+		toast.success("Icon Inserted");
+	}, [addIcon]);
+
 	const handleDataValidation = useCallback(() => {
 		if (selectedCell) {
 			setShowValidationDialog(true);
@@ -1094,6 +1155,9 @@ function EditorContent() {
 				onTextToColumns={handleTextToColumns}
 				onInsertChart={() => setShowChartDialog(true)}
 				onInsertImage={handleInsertImage}
+				onInsertShape={handleInsertShape}
+				onInsertIcon={() => setShowIconDialog(true)}
+				onInsertFunction={handleFormulaClick}
 			/>
 
 			{/* Formula Bar */}
@@ -1129,6 +1193,13 @@ function EditorContent() {
 					onRemoveImage={removeImage}
 					onUpdateChart={updateChart}
 					onUpdateImage={updateImage}
+					shapes={shapes}
+					icons={icons}
+					onRemoveShape={removeShape}
+					onRemoveIcon={removeIcon}
+					onUpdateShape={updateShape}
+					onUpdateIcon={updateIcon}
+					onShowShortcuts={() => setShowShortcutsDialog(true)}
 				/>
 			</div>
 
@@ -1595,6 +1666,106 @@ function EditorContent() {
 							Cancel
 						</Button>
 						<Button onClick={handleInsertChart}>Insert Chart</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			{/* Icon Dialog */}
+			<Dialog open={showIconDialog} onOpenChange={setShowIconDialog}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Insert Icon</DialogTitle>
+						<DialogDescription>
+							Enter a Lucide icon name (e.g., Star, Heart, Activity) or pick from favorites.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="space-y-4 py-4">
+						<div className="space-y-2">
+							<Label>Icon Name</Label>
+							<Select value={iconName} onValueChange={setIconName}>
+								<SelectTrigger>
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="Activity">Activity</SelectItem>
+									<SelectItem value="Star">Star</SelectItem>
+									<SelectItem value="Heart">Heart</SelectItem>
+									<SelectItem value="Info">Info</SelectItem>
+									<SelectItem value="Shield">Shield</SelectItem>
+									<SelectItem value="Database">Database</SelectItem>
+									<SelectItem value="Zap">Zap</SelectItem>
+									<SelectItem value="Trophy">Trophy</SelectItem>
+								</SelectContent>
+							</Select>
+						</div>
+					</div>
+					<DialogFooter>
+						<Button variant="outline" onClick={() => setShowIconDialog(false)}>
+							Cancel
+						</Button>
+						<Button onClick={() => handleInsertIcon(iconName)}>Insert Icon</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			{/* Shortcuts Dialog */}
+			<Dialog open={showShortcutsDialog} onOpenChange={setShowShortcutsDialog}>
+				<DialogContent className="max-w-2xl">
+					<DialogHeader>
+						<DialogTitle className="flex items-center gap-2">
+							<Keyboard className="h-5 w-5" />
+							Available Shortcuts
+						</DialogTitle>
+						<DialogDescription>
+							Master the spreadsheet with these keyboard shortcuts.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="grid grid-cols-2 gap-6 py-4">
+						<div className="space-y-4">
+							<h4 className="font-semibold text-sm text-primary">General</h4>
+							<div className="space-y-2">
+								<div className="flex justify-between text-sm">
+									<span>Undo / Redo</span>
+									<kbd className="bg-muted px-1.5 rounded">Ctrl+Z / Y</kbd>
+								</div>
+								<div className="flex justify-between text-sm">
+									<span>Save</span>
+									<kbd className="bg-muted px-1.5 rounded">Ctrl+S</kbd>
+								</div>
+								<div className="flex justify-between text-sm">
+									<span>Find</span>
+									<kbd className="bg-muted px-1.5 rounded">Ctrl+F</kbd>
+								</div>
+								<div className="flex justify-between text-sm">
+									<span>Help / Shortcuts</span>
+									<kbd className="bg-muted px-1.5 rounded">Ctrl+/</kbd>
+								</div>
+							</div>
+						</div>
+						<div className="space-y-4">
+							<h4 className="font-semibold text-sm text-primary">Editing</h4>
+							<div className="space-y-2">
+								<div className="flex justify-between text-sm">
+									<span>Copy / Cut / Paste</span>
+									<kbd className="bg-muted px-1.5 rounded">Ctrl+C / X / V</kbd>
+								</div>
+								<div className="flex justify-between text-sm">
+									<span>Clear Cell</span>
+									<kbd className="bg-muted px-1.5 rounded">Delete</kbd>
+								</div>
+								<div className="flex justify-between text-sm">
+									<span>Edit Cell</span>
+									<kbd className="bg-muted px-1.5 rounded">Enter</kbd>
+								</div>
+								<div className="flex justify-between text-sm">
+									<span>Bold / Italic</span>
+									<kbd className="bg-muted px-1.5 rounded">Ctrl+B / I</kbd>
+								</div>
+							</div>
+						</div>
+					</div>
+					<DialogFooter>
+						<Button onClick={() => setShowShortcutsDialog(false)}>Got it</Button>
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>

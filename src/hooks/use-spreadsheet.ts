@@ -97,6 +97,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 	const [namedRanges, setNamedRanges] = useState<Record<string, string>>({});
 	const [formulaCells, setFormulaCells] = useState<Set<string>>(new Set());
 	const [hiddenRows, setHiddenRows] = useState<Set<number>>(new Set());
+	const [formulaCache, setFormulaCache] = useState<Record<string, string>>({});
 	const [charts, setCharts] = useState<ChartData[]>([]);
 	const [images, setImages] = useState<ImageData[]>([]);
 	const [shapes, setShapes] = useState<ShapeData[]>([]);
@@ -366,24 +367,35 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 			});
 
 			try {
+				// Check cache
+				if (formulaCache[expression]) {
+					return formulaCache[expression];
+				}
+
 				const result = math.evaluate(expression);
+				let finalResult: string;
 
 				if (Array.isArray(result)) {
-					return result.length > 0 ? String(result[0]) : "";
+					finalResult = result.length > 0 ? String(result[0]) : "";
+				} else {
+					const cellId = targetCellId || selectedCell;
+					if (cellId && currentData[cellId]?.style?.numberFormat) {
+						finalResult = formatNumber(result, currentData[cellId].style.numberFormat);
+					} else {
+						finalResult = String(result);
+					}
 				}
 
-				const cellId = targetCellId || selectedCell;
-				if (cellId && currentData[cellId]?.style?.numberFormat) {
-					return formatNumber(result, currentData[cellId].style.numberFormat);
-				}
+				// Update cache
+				setFormulaCache(prev => ({ ...prev, [expression]: finalResult }));
 
-				return String(result);
+				return finalResult;
 			} catch (e) {
 				console.error("Formula evaluation error:", e, "Expression:", expression);
 				return "#REF!";
 			}
 		},
-		[formatNumber, getRange2D, getRangeValues, getVal, namedRanges, registerCustomFunctions, selectedCell],
+		[formatNumber, getRange2D, getRangeValues, getVal, namedRanges, registerCustomFunctions, selectedCell, formulaCache],
 	);
 
 	// Save state to undo stack

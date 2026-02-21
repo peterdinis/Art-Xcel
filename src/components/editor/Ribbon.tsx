@@ -24,6 +24,13 @@ import {
     Trash2,
     PieChart,
     Sigma,
+    Clock,
+    Landmark,
+    Calculator,
+    BarChart,
+    ChevronDown,
+    Activity,
+    BookOpen,
     Filter,
     ArrowUpDown,
     CheckSquare
@@ -61,6 +68,9 @@ interface RibbonProps {
     onTextToColumns?: () => void;
     onInsertChart?: () => void;
     onInsertImage?: (event: React.ChangeEvent<HTMLInputElement>) => void;
+    onInsertShape?: (type: "rectangle" | "circle" | "line") => void;
+    onInsertIcon?: () => void;
+    onInsertFunction?: (formula: string) => void;
 }
 
 const RibbonGroup = ({ children, label }: { children: React.ReactNode; label: string }) => (
@@ -129,7 +139,10 @@ export const Ribbon = ({
     onRemoveDuplicates,
     onTextToColumns,
     onInsertChart,
-    onInsertImage
+    onInsertImage,
+    onInsertShape,
+    onInsertIcon,
+    onInsertFunction
 }: RibbonProps) => {
     const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -226,12 +239,29 @@ export const Ribbon = ({
                                 <RibbonButton icon={Palette} label="Pictures" tooltip="Insert Picture" onClick={() => { }} />
                                 <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={onInsertImage} accept="image/*" />
                             </div>
+                            <div className="flex gap-1">
+                                <RibbonButton icon={PlusSquare} label="Shapes" tooltip="Insert Shapes" onClick={() => onInsertShape?.("rectangle")} />
+                                <RibbonButton icon={Type} label="Icons" tooltip="Insert Icons" onClick={onInsertIcon} />
+                            </div>
                         </RibbonGroup>
                     </TabsContent>
 
                     <TabsContent value="formulas" className="m-0 h-full flex items-center gap-2">
                         <RibbonGroup label="Function Library">
-                            <RibbonButton icon={Sigma} label="AutoSum" tooltip="Sum of selected cells" onClick={() => { }} />
+                            <RibbonButton icon={Sigma} label="AutoSum" tooltip="Sum of selected cells" onClick={() => onInsertFunction?.("SUM")} />
+                            <RibbonButton icon={Clock} label="Recently Used" tooltip="Recent formulas" onClick={() => { }} />
+                        </RibbonGroup>
+                        <RibbonGroup label="Financial">
+                            <RibbonButton icon={Landmark} label="Financial" tooltip="PMT, FV, PV" onClick={() => onInsertFunction?.("PMT")} />
+                        </RibbonGroup>
+                        <RibbonGroup label="Logical">
+                            <RibbonButton icon={Activity} label="Logical" tooltip="AND, OR, NOT, IF" onClick={() => onInsertFunction?.("IF")} />
+                        </RibbonGroup>
+                        <RibbonGroup label="Text">
+                            <RibbonButton icon={Type} label="Text" tooltip="LEN, CONCAT, UPPER" onClick={() => onInsertFunction?.("LEN")} />
+                        </RibbonGroup>
+                        <RibbonGroup label="Statistical">
+                            <RibbonButton icon={BarChart} label="Statistical" tooltip="STDEV, VAR, MEDIAN" onClick={() => onInsertFunction?.("AVERAGE")} />
                         </RibbonGroup>
                     </TabsContent>
 

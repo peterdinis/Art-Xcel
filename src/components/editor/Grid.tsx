@@ -41,6 +41,7 @@ interface GridProps {
 	onRemoveIcon?: (id: string) => void;
 	onUpdateShape?: (id: string, updates: Partial<ShapeData>) => void;
 	onUpdateIcon?: (id: string, updates: Partial<IconData>) => void;
+	onShowShortcuts?: () => void;
 }
 
 const DEFAULT_ROW_HEIGHT = 32;
@@ -100,6 +101,7 @@ interface CellProps {
 	onInsertColumnRight: () => void;
 	onDeleteColumn: () => void;
 	onClearCell: () => void;
+	onShowShortcuts?: () => void;
 }
 
 const Cell = memo(
@@ -129,6 +131,7 @@ const Cell = memo(
 		onInsertColumnRight,
 		onDeleteColumn,
 		onClearCell,
+		onShowShortcuts,
 	}: CellProps) => {
 		const displayValue = isEditing ? formula || value : value;
 
@@ -144,6 +147,7 @@ const Cell = memo(
 				onInsertColumnRight={onInsertColumnRight}
 				onDeleteColumn={onDeleteColumn}
 				onClearCell={onClearCell}
+				onShowShortcuts={onShowShortcuts}
 			>
 				<div
 					className={cn(
@@ -264,6 +268,7 @@ export const Grid = ({
 	onRemoveIcon,
 	onUpdateShape,
 	onUpdateIcon,
+	onShowShortcuts,
 }: GridProps) => {
 	const [editingCell, setEditingCell] = useState<string | null>(null);
 	const [editValue, setEditValue] = useState<string>("");
@@ -733,6 +738,7 @@ export const Grid = ({
 													onInsertColumnRight={() => onInsertColumn(virtualCol.index + 1)}
 													onDeleteColumn={() => onDeleteColumn(virtualCol.index)}
 													onClearCell={() => onClearCell(cellId)}
+													onShowShortcuts={onShowShortcuts}
 												/>
 											</div>
 										);
