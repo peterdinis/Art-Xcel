@@ -23,6 +23,7 @@ interface GridProps {
 	onInsertColumn: (index: number) => void;
 	onDeleteColumn: (index: number) => void;
 	onClearCell: (cellId: string) => void;
+	hiddenRows?: Set<number>;
 }
 
 const DEFAULT_ROW_HEIGHT = 32;
@@ -233,6 +234,7 @@ export const Grid = ({
 	onInsertColumn,
 	onDeleteColumn,
 	onClearCell,
+	hiddenRows = new Set(),
 }: GridProps) => {
 	const [editingCell, setEditingCell] = useState<string | null>(null);
 	const [editValue, setEditValue] = useState<string>("");
@@ -277,7 +279,10 @@ export const Grid = ({
 	const rowVirtualizer = useVirtualizer({
 		count: totalRows,
 		getScrollElement: () => gridRef.current,
-		estimateSize: (index) => getRowHeight(index),
+		estimateSize: (index) => {
+			if (hiddenRows.has(index + 1)) return 0;
+			return getRowHeight(index);
+		},
 		overscan: OVERSCAN,
 		rangeExtractor: (range) => {
 			// Dynamické načítanie riadkov
@@ -622,6 +627,8 @@ export const Grid = ({
 				>
 					{rowVirtualizer.getVirtualItems().map((virtualRow) => {
 						const row = virtualRow.index + 1;
+						if (hiddenRows.has(row)) return null;
+
 						const rowHeight = virtualRow.size;
 						const isRowActive = activeRow === row;
 

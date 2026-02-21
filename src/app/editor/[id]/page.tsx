@@ -163,6 +163,7 @@ function EditorContent() {
 		sheetNames,
 		currentSheetIndex,
 		namedRanges,
+		hiddenRows,
 
 		// Cell operations
 		updateCell,
@@ -744,9 +745,9 @@ function EditorContent() {
 	const handleFilter = useCallback(() => {
 		if (selectionRange && selectionRange.length > 0) {
 			const range = selectionRange[0] + ":" + selectionRange[selectionRange.length - 1];
-			filterRange(range, 0, () => true);
+			filterRange(range, 0, (val) => val !== "");
 			toast.success("Filter", {
-				description: "Filter applied",
+				description: "Filter applied (hiding empty cells)",
 				icon: <Filter className="h-4 w-4" />,
 			});
 		} else {
@@ -1051,6 +1052,7 @@ function EditorContent() {
 					onInsertColumn={insertColumn}
 					onDeleteColumn={deleteColumn}
 					onClearCell={(id) => updateCell(id, "")}
+					hiddenRows={hiddenRows}
 				/>
 			</div>
 
