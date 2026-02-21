@@ -32,6 +32,8 @@ import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface RibbonProps {
+    sheetName: string;
+    onSheetNameChange: (name: string) => void;
     onStyleChange: (style: {
         bold?: boolean;
         italic?: boolean;
@@ -40,6 +42,7 @@ interface RibbonProps {
         color?: string;
         backgroundColor?: string;
     }) => void;
+    onAlignChange: (align: "left" | "center" | "right") => void;
     onUndo: () => void;
     onRedo: () => void;
     onSave: () => void;
@@ -50,6 +53,10 @@ interface RibbonProps {
     onDeleteRow: () => void;
     onInsertColumn: () => void;
     onDeleteColumn: () => void;
+    onSort: () => void;
+    onFilter: () => void;
+    onFind: () => void;
+    onDataValidation: () => void;
 }
 
 const RibbonGroup = ({ children, label }: { children: React.ReactNode; label: string }) => (
@@ -97,7 +104,10 @@ const RibbonButton = ({
 );
 
 export const Ribbon = ({
+    sheetName,
+    onSheetNameChange,
     onStyleChange,
+    onAlignChange,
     onUndo,
     onRedo,
     onSave,
@@ -107,7 +117,11 @@ export const Ribbon = ({
     onInsertRow,
     onDeleteRow,
     onInsertColumn,
-    onDeleteColumn
+    onDeleteColumn,
+    onSort,
+    onFilter,
+    onFind,
+    onDataValidation
 }: RibbonProps) => {
     const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -127,7 +141,13 @@ export const Ribbon = ({
                         <TabsTrigger value="formulas" className="px-3 h-7 data-[state=active]:bg-background data-[state=active]:border-b-0 rounded-t-sm rounded-b-none text-xs">Formulas</TabsTrigger>
                         <TabsTrigger value="data" className="px-3 h-7 data-[state=active]:bg-background data-[state=active]:border-b-0 rounded-t-sm rounded-b-none text-xs">Data</TabsTrigger>
                     </TabsList>
-                    <div className="ml-auto flex items-center gap-1 pb-1">
+                    <div className="ml-auto flex items-center gap-2 pb-1">
+                        <input
+                            className="text-xs font-medium bg-transparent hover:bg-muted/50 rounded px-2 h-6 w-32 outline-none border-b border-transparent focus:border-primary transition-colors"
+                            value={sheetName}
+                            onChange={(e) => onSheetNameChange(e.target.value)}
+                        />
+                        <Separator orientation="vertical" className="h-4" />
                         <RibbonButton icon={Save} tooltip="Save" shortcut="Ctrl+S" onClick={onSave} />
                         <RibbonButton icon={RotateCcw} tooltip="Undo" shortcut="Ctrl+Z" onClick={onUndo} />
                         <RibbonButton icon={RotateCw} tooltip="Redo" shortcut="Ctrl+Y" onClick={onRedo} />
@@ -167,9 +187,9 @@ export const Ribbon = ({
 
                         <RibbonGroup label="Alignment">
                             <div className="grid grid-cols-3 gap-1">
-                                <RibbonButton icon={AlignLeft} tooltip="Align Left" onClick={() => onStyleChange({ align: "left" })} />
-                                <RibbonButton icon={AlignCenter} tooltip="Align Center" onClick={() => onStyleChange({ align: "center" })} />
-                                <RibbonButton icon={AlignRight} tooltip="Align Right" onClick={() => onStyleChange({ align: "right" })} />
+                                <RibbonButton icon={AlignLeft} tooltip="Align Left" onClick={() => onAlignChange("left")} />
+                                <RibbonButton icon={AlignCenter} tooltip="Align Center" onClick={() => onAlignChange("center")} />
+                                <RibbonButton icon={AlignRight} tooltip="Align Right" onClick={() => onAlignChange("right")} />
                             </div>
                         </RibbonGroup>
 
@@ -181,8 +201,8 @@ export const Ribbon = ({
                         </RibbonGroup>
 
                         <RibbonGroup label="Editing">
-                            <RibbonButton icon={Search} label="Find" tooltip="Find and replace" onClick={() => { }} />
-                            <RibbonButton icon={CheckSquare} label="Validate" tooltip="Data validation" onClick={() => { }} />
+                            <RibbonButton icon={Search} label="Find" tooltip="Find and replace" onClick={onFind} />
+                            <RibbonButton icon={CheckSquare} label="Validate" tooltip="Data validation" onClick={onDataValidation} />
                         </RibbonGroup>
                     </TabsContent>
 
@@ -203,8 +223,8 @@ export const Ribbon = ({
 
                     <TabsContent value="data" className="m-0 h-full flex items-center gap-2">
                         <RibbonGroup label="Sort & Filter">
-                            <RibbonButton icon={ArrowUpDown} label="Sort" tooltip="Sort selection" onClick={() => { }} />
-                            <RibbonButton icon={Filter} label="Filter" tooltip="Filter data" onClick={() => { }} />
+                            <RibbonButton icon={ArrowUpDown} label="Sort" tooltip="Sort selection" onClick={onSort} />
+                            <RibbonButton icon={Filter} label="Filter" tooltip="Filter data" onClick={onFilter} />
                         </RibbonGroup>
                     </TabsContent>
                 </div>

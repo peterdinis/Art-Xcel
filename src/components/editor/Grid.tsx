@@ -225,13 +225,21 @@ export const Grid = ({
 	showGrid = true,
 	showHeaders = true,
 	freezePanes = false,
+	onCopy,
+	onCut,
+	onPaste,
+	onInsertRow,
+	onDeleteRow,
+	onInsertColumn,
+	onDeleteColumn,
+	onClearCell,
 }: GridProps) => {
 	const [editingCell, setEditingCell] = useState<string | null>(null);
 	const [editValue, setEditValue] = useState<string>("");
 	const [rowHeights, setRowHeights] = useState<Record<number, number>>({});
 	const [colWidths, setColWidths] = useState<Record<string, number>>({});
 	const [totalRows, setTotalRows] = useState(100);
-	const [totalCols, setTotalCols] = useState(26); // Začíname s A-Z
+	const [totalCols, setTotalCols] = useState(26);
 	const [scrollPosition, setScrollPosition] = useState({ left: 0, top: 0 });
 
 	const inputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
@@ -243,6 +251,10 @@ export const Grid = ({
 		startPos: number;
 		startSize: number;
 	} | null>(null);
+
+	// Get active row and col for highlighting
+	const activeRow = selectedCell ? parseInt(selectedCell.match(/\d+/)?.[0] || "0") : null;
+	const activeCol = selectedCell ? selectedCell.match(/[A-Z]+/)?.[0] : null;
 
 	// Funkcia pre získanie výšky riadku
 	const getRowHeight = useCallback(
@@ -563,10 +575,14 @@ export const Grid = ({
 					>
 						{colVirtualizer.getVirtualItems().map((virtualCol) => {
 							const col = numberToColLabel(virtualCol.index);
+							const isActive = activeCol === col;
 							return (
 								<div
 									key={col}
-									className="absolute top-0 h-full bg-muted border-r flex items-center justify-center font-bold text-xs text-muted-foreground group"
+									className={cn(
+										"absolute top-0 h-full border-r flex items-center justify-center font-medium text-[11px] transition-colors group",
+										isActive ? "bg-primary text-primary-foreground shadow-sm" : "bg-muted text-muted-foreground"
+									)}
 									style={{
 										left: 0,
 										width: virtualCol.size,
@@ -576,7 +592,7 @@ export const Grid = ({
 								>
 									{col}
 									<div
-										className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-blue-500 opacity-0 group-hover:opacity-100"
+										className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-primary transition-colors opacity-0 group-hover:opacity-100 z-20"
 										onMouseDown={handleResizeStart}
 										data-resize="col"
 										data-cell={`${col}1`}
@@ -596,7 +612,7 @@ export const Grid = ({
 			{renderHeader()}
 
 			{/* Grid s virtuálnymi riadkami */}
-			<div ref={gridRef} className="flex-1 overflow-auto bg-background">
+			<div ref={gridRef} className="flex-1 overflow-auto bg-background selection:bg-primary/20">
 				<div
 					style={{
 						width: colVirtualizer.getTotalSize() + (showHeaders ? ROW_HEADER_WIDTH : 0),
@@ -607,6 +623,7 @@ export const Grid = ({
 					{rowVirtualizer.getVirtualItems().map((virtualRow) => {
 						const row = virtualRow.index + 1;
 						const rowHeight = virtualRow.size;
+						const isRowActive = activeRow === row;
 
 						return (
 							<div
@@ -622,6 +639,7 @@ export const Grid = ({
 							>
 								<RowHeader
 									rowIndex={row}
+									isActive={isRowActive}
 									height={rowHeight}
 									showHeaders={showHeaders}
 									onResize={handleResizeStart}
@@ -668,6 +686,17 @@ export const Grid = ({
 													onBlur={() => handleBlur(cellId)}
 													inputRef={setInputRef(cellId)}
 													onResize={handleResizeStart}
+													// Context Menu Actions
+													onCopy={onCopy}
+													onCut={onCut}
+													onPaste={onPaste}
+													onInsertRowAbove={() => onInsertRow(row)}
+													onInsertRowBelow={() => onInsertRow(row + 1)}
+													onDeleteRow={() => onDeleteRow(row)}
+													onInsertColumnLeft={() => onInsertColumn(virtualCol.index)}
+													onInsertColumnRight={() => onInsertColumn(virtualCol.index + 1)}
+													onDeleteColumn={() => onDeleteColumn(virtualCol.index)}
+													onClearCell={() => onClearCell(cellId)}
 												/>
 											</div>
 										);

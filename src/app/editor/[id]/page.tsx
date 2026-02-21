@@ -5,9 +5,11 @@ import { useParams, useRouter } from "next/navigation";
 import { useSpreadsheet } from "@/hooks/use-spreadsheet";
 import { useExcelService } from "@/hooks/use-excel-service";
 import { Grid } from "@/components/editor/Grid";
-import { Toolbar } from "@/components/editor/Toolbar";
+import { Ribbon } from "@/components/editor/Ribbon";
+import { StatusBar } from "@/components/editor/StatusBar";
 import { FormulaBar } from "@/components/editor/FormulaBar";
 import { Button } from "@/components/ui/button";
+import { useHotkey } from "@tanstack/react-hotkeys";
 import {
 	ArrowLeft,
 	Save,
@@ -161,7 +163,7 @@ function EditorContent() {
 		sheetNames,
 		currentSheetIndex,
 		namedRanges,
-		
+
 		// Cell operations
 		updateCell,
 		updateCells,
@@ -170,47 +172,47 @@ function EditorContent() {
 		getCellValue,
 		selectCell,
 		selectRange,
-		
+
 		// Row/Column operations
 		insertRow,
 		deleteRow,
 		insertColumn,
 		deleteColumn,
-		
+
 		// Clipboard
 		copyCells,
 		cutCells,
 		pasteCells,
-		
+
 		// Undo/Redo
 		undo,
 		redo,
-		
+
 		// Data operations
 		sortRange,
 		filterRange,
 		findAndReplace,
-		
+
 		// Cell features
 		addNote,
 		addValidation,
 		validateCell,
-		
+
 		// Named ranges
 		createNamedRange,
 		deleteNamedRange,
-		
+
 		// Sheet management
 		addSheet,
 		deleteSheet,
 		renameSheet,
 		switchSheet,
-		
+
 		// Utilities
 		clearSheet,
 		updateSheetName,
 	} = useSpreadsheet();
-	
+
 	const { exportToExcel, importFromExcel } = useExcelService();
 	const [sheetName, setSheetName] = useState("Untitled Spreadsheet");
 	const [showFindDialog, setShowFindDialog] = useState(false);
@@ -258,7 +260,7 @@ function EditorContent() {
 				setIsLoading(true);
 				// Simulate loading delay for better UX
 				await new Promise(resolve => setTimeout(resolve, 500));
-				
+
 				const stored = localStorage.getItem("excel-editor-files");
 				if (stored) {
 					const spreadsheets = JSON.parse(stored);
@@ -290,7 +292,7 @@ function EditorContent() {
 	// Auto-save
 	useEffect(() => {
 		if (isLoading) return;
-		
+
 		const save = () => {
 			const stored = localStorage.getItem("excel-editor-files");
 			if (stored) {
@@ -320,92 +322,20 @@ function EditorContent() {
 		return () => clearTimeout(timer);
 	}, [data, id, sheetName, shareSettings, isLoading]);
 
-	// Keyboard shortcuts
-	useEffect(() => {
-		const handleKeyDown = (e: KeyboardEvent) => {
-			if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey) {
-				switch (e.key.toLowerCase()) {
-					case "s":
-						e.preventDefault();
-						handleSave();
-						break;
-					case "o":
-						e.preventDefault();
-						setShowImportDialog(true);
-						break;
-					case "p":
-						e.preventDefault();
-						setShowPrintDialog(true);
-						break;
-					case "f":
-						e.preventDefault();
-						setShowFindDialog(true);
-						break;
-					case "z":
-						e.preventDefault();
-						handleUndo();
-						break;
-					case "y":
-						e.preventDefault();
-						handleRedo();
-						break;
-					case "a":
-						e.preventDefault();
-						handleSelectAll();
-						break;
-					case "c":
-						if (!e.shiftKey) {
-							e.preventDefault();
-							handleCopy();
-						}
-						break;
-					case "x":
-						e.preventDefault();
-						handleCut();
-						break;
-					case "v":
-						e.preventDefault();
-						handlePaste();
-						break;
-				}
-			}
-
-			if (selectedCell) {
-				if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey) {
-					if (e.key.toLowerCase() === "b") {
-						e.preventDefault();
-						const currentStyle = data[selectedCell]?.style || {};
-						updateCellStyle(selectedCell, { bold: !currentStyle.bold });
-						toast.success("Bold style toggled", {
-							icon: <Bold className="h-4 w-4" />,
-							duration: 1500,
-						});
-					}
-					if (e.key.toLowerCase() === "i") {
-						e.preventDefault();
-						const currentStyle = data[selectedCell]?.style || {};
-						updateCellStyle(selectedCell, { italic: !currentStyle.italic });
-						toast.success("Italic style toggled", {
-							icon: <Italic className="h-4 w-4" />,
-							duration: 1500,
-						});
-					}
-					if (e.key.toLowerCase() === "u") {
-						e.preventDefault();
-						const currentStyle = data[selectedCell]?.style || {};
-						updateCellStyle(selectedCell, { underline: !currentStyle.underline });
-						toast.success("Underline style toggled", {
-							icon: <Underline className="h-4 w-4" />,
-							duration: 1500,
-						});
-					}
-				}
-			}
-		};
-
-		window.addEventListener("keydown", handleKeyDown);
-		return () => window.removeEventListener("keydown", handleKeyDown);
-	}, [selectedCell, data, updateCellStyle]);
+	// Keyboard shortcuts with @tanstack/react-hotkeys
+	// Keyboard shortcuts with @tanstack/react-hotkeys
+	useHotkey("Mod+S", (e: KeyboardEvent) => { e.preventDefault(); handleSave(); });
+	useHotkey("Mod+Z", (e: KeyboardEvent) => { e.preventDefault(); handleUndo(); });
+	useHotkey("Mod+Y", (e: KeyboardEvent) => { e.preventDefault(); handleRedo(); });
+	useHotkey("Mod+Shift+Z", (e: KeyboardEvent) => { e.preventDefault(); handleRedo(); });
+	useHotkey("Mod+B", (e: KeyboardEvent) => { e.preventDefault(); if (selectedCell) updateCellStyle(selectedCell, { bold: !data[selectedCell]?.style?.bold }); });
+	useHotkey("Mod+I", (e: KeyboardEvent) => { e.preventDefault(); if (selectedCell) updateCellStyle(selectedCell, { italic: !data[selectedCell]?.style?.italic }); });
+	useHotkey("Mod+U", (e: KeyboardEvent) => { e.preventDefault(); if (selectedCell) updateCellStyle(selectedCell, { underline: !data[selectedCell]?.style?.underline }); });
+	useHotkey("Mod+C", (e: KeyboardEvent) => { e.preventDefault(); handleCopy(); });
+	useHotkey("Mod+X", (e: KeyboardEvent) => { e.preventDefault(); handleCut(); });
+	useHotkey("Mod+V", (e: KeyboardEvent) => { e.preventDefault(); handlePaste(); });
+	useHotkey("Delete", (e: KeyboardEvent) => { e.preventDefault(); if (selectedCell) updateCell(selectedCell, ""); });
+	useHotkey("Backspace", (e: KeyboardEvent) => { if (selectedCell) updateCell(selectedCell, ""); });
 
 	const handleCellChange = (cellId: string, value: string) => {
 		// Validate before update
@@ -415,7 +345,7 @@ function EditorContent() {
 			});
 			return;
 		}
-		
+
 		updateCell(cellId, value);
 		toast.success(`Cell ${cellId} updated`, {
 			duration: 1000,
@@ -433,7 +363,7 @@ function EditorContent() {
 			const currentStyle = data[selectedCell]?.style || {};
 			const newStyle = { ...currentStyle, ...style };
 			updateCellStyle(selectedCell, newStyle);
-			
+
 			toast.success("Style applied", {
 				duration: 1000,
 			});
@@ -597,9 +527,9 @@ function EditorContent() {
 					id: "export-toast",
 					description: `Exporting as ${format.toUpperCase()}`,
 				});
-				
+
 				await exportToExcel(data, sheetName);
-				
+
 				toast.success("Export Successful", {
 					id: "export-toast",
 					description: `Your spreadsheet has been exported as ${format.toUpperCase()}.`,
@@ -623,12 +553,12 @@ function EditorContent() {
 					id: "import-toast",
 					description: `Importing ${file.name}`,
 				});
-				
+
 				const { data: importedData, name: importedName } =
 					await importFromExcel(file);
 				setData(importedData);
 				setSheetName(importedName);
-				
+
 				toast.success("Import Successful", {
 					id: "import-toast",
 					description: "Your Excel file has been imported.",
@@ -650,7 +580,7 @@ function EditorContent() {
 			id: "print-toast",
 			description: "Preparing document for printing...",
 		});
-		
+
 		setTimeout(() => {
 			toast.success("Ready to print", {
 				id: "print-toast",
@@ -658,7 +588,7 @@ function EditorContent() {
 				icon: <Printer className="h-4 w-4" />,
 			});
 		}, 1500);
-		
+
 		setShowPrintDialog(false);
 	}, []);
 
@@ -774,20 +704,20 @@ function EditorContent() {
 		if (selectedCell) {
 			// Map alignment to style
 			let alignValue: "left" | "center" | "right" | undefined;
-			
+
 			if (align === "Left") alignValue = "left";
 			else if (align === "Center") alignValue = "center";
 			else if (align === "Right") alignValue = "right";
-			
+
 			if (alignValue) {
 				updateCellStyle(selectedCell, { align: alignValue });
 			}
-			
+
 			toast.success("Alignment", {
 				description: `Applied ${align} alignment to cell ${selectedCell}`,
-				icon: align === "Left" ? <AlignLeft className="h-4 w-4" /> : 
-					   align === "Center" ? <AlignCenter className="h-4 w-4" /> : 
-					   <AlignRight className="h-4 w-4" />,
+				icon: align === "Left" ? <AlignLeft className="h-4 w-4" /> :
+					align === "Center" ? <AlignCenter className="h-4 w-4" /> :
+						<AlignRight className="h-4 w-4" />,
 			});
 		} else {
 			toast.error("No cell selected", {
@@ -1015,19 +945,19 @@ function EditorContent() {
 	// Share handlers
 	const handleShareSave = async (settings: ShareSettings) => {
 		setShareSettings(settings);
-		
+
 		toast.loading("Updating share settings...", {
 			id: "share-toast",
 		});
-		
+
 		await new Promise((resolve) => setTimeout(resolve, 1000));
-		
+
 		toast.success("Share settings updated", {
 			id: "share-toast",
 			description: "Your sharing preferences have been saved",
 			icon: <Copy className="h-4 w-4" />,
 		});
-		
+
 		return Promise.resolve();
 	};
 
@@ -1036,9 +966,9 @@ function EditorContent() {
 			id: "invite-toast",
 			description: `Inviting ${emails.length} collaborator(s)`,
 		});
-		
+
 		await new Promise((resolve) => setTimeout(resolve, 1500));
-		
+
 		toast.success("Invitations sent", {
 			id: "invite-toast",
 			description: `Invited ${emails.length} collaborator(s) with ${permission} permission`,
@@ -1050,9 +980,9 @@ function EditorContent() {
 		toast.loading("Removing collaborator...", {
 			id: "remove-toast",
 		});
-		
+
 		await new Promise((resolve) => setTimeout(resolve, 500));
-		
+
 		toast.success("Collaborator removed", {
 			id: "remove-toast",
 			icon: <Trash2 className="h-4 w-4" />,
@@ -1072,468 +1002,27 @@ function EditorContent() {
 	}
 
 	return (
-		<div className="h-screen flex flex-col font-sans overflow-hidden">
-			{/* Top Header */}
-			<header className="h-14 border-b flex items-center justify-between px-4 bg-background">
-				<div className="flex items-center gap-4">
-					<TooltipProvider>
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Link href="/">
-									<Button variant="ghost" size="icon">
-										<ArrowLeft className="h-5 w-5" />
-									</Button>
-								</Link>
-							</TooltipTrigger>
-							<TooltipContent>
-								<p>Back to home</p>
-							</TooltipContent>
-						</Tooltip>
-					</TooltipProvider>
-
-					<div className="flex flex-col">
-						<div className="flex items-center gap-2">
-							<input
-								className="text-sm font-semibold border-none outline-none bg-transparent hover:bg-muted/50 rounded px-1 w-48"
-								value={sheetName}
-								onChange={(e) => {
-									setSheetName(e.target.value);
-									handleRenameSheet(currentSheetIndex, e.target.value);
-								}}
-							/>
-							<DropdownMenu>
-								<DropdownMenuTrigger asChild>
-									<Button variant="ghost" size="icon" className="h-6 w-6">
-										<ChevronDown className="h-4 w-4" />
-									</Button>
-								</DropdownMenuTrigger>
-								<DropdownMenuContent align="start">
-									<DropdownMenuLabel>Sheets</DropdownMenuLabel>
-									<DropdownMenuSeparator />
-									{sheetNames.map((name, index) => (
-										<DropdownMenuItem 
-											key={index}
-											onClick={() => handleSwitchSheet(index)}
-											className={index === currentSheetIndex ? "bg-accent" : ""}
-										>
-											<FileSpreadsheet className="mr-2 h-4 w-4" />
-											{name}
-										</DropdownMenuItem>
-									))}
-									<DropdownMenuSeparator />
-									<DropdownMenuItem onClick={handleAddSheet}>
-										<Plus className="mr-2 h-4 w-4" />
-										Add Sheet
-									</DropdownMenuItem>
-									<DropdownMenuItem onClick={handleDeleteCurrentSheet}>
-										<Trash2 className="mr-2 h-4 w-4" />
-										Delete Sheet
-									</DropdownMenuItem>
-								</DropdownMenuContent>
-							</DropdownMenu>
-						</div>
-						<div className="text-xs text-muted-foreground flex gap-2">
-							{/* File Menu */}
-							<DropdownMenu>
-								<DropdownMenuTrigger asChild>
-									<Button variant="ghost" size="sm" className="h-6 px-1 text-xs hover:bg-accent">
-										File
-									</Button>
-								</DropdownMenuTrigger>
-								<DropdownMenuContent className="w-56">
-									<DropdownMenuLabel>File Operations</DropdownMenuLabel>
-									<DropdownMenuSeparator />
-									<DropdownMenuItem onClick={handleSave}>
-										<Save className="mr-2 h-4 w-4" />
-										Save
-										<DropdownMenuShortcut>⌘S</DropdownMenuShortcut>
-									</DropdownMenuItem>
-									<DropdownMenuItem onClick={() => setShowImportDialog(true)}>
-										<Upload className="mr-2 h-4 w-4" />
-										Import
-										<DropdownMenuShortcut>⌘O</DropdownMenuShortcut>
-									</DropdownMenuItem>
-									<DropdownMenuItem onClick={() => setShowExportDialog(true)}>
-										<Download className="mr-2 h-4 w-4" />
-										Export
-									</DropdownMenuItem>
-									<DropdownMenuSeparator />
-									<DropdownMenuItem onClick={() => setShowPrintDialog(true)}>
-										<Printer className="mr-2 h-4 w-4" />
-										Print
-										<DropdownMenuShortcut>⌘P</DropdownMenuShortcut>
-									</DropdownMenuItem>
-									<DropdownMenuItem onClick={() => setShowPageSetupDialog(true)}>
-										<Grid3x3 className="mr-2 h-4 w-4" />
-										Page Setup
-									</DropdownMenuItem>
-									<DropdownMenuSeparator />
-									<DropdownMenuItem onClick={() => setShowDeleteDialog(true)}>
-										<Trash2 className="mr-2 h-4 w-4 text-destructive" />
-										<span className="text-destructive">Clear Sheet</span>
-									</DropdownMenuItem>
-								</DropdownMenuContent>
-							</DropdownMenu>
-
-							{/* Edit Menu */}
-							<DropdownMenu>
-								<DropdownMenuTrigger asChild>
-									<Button variant="ghost" size="sm" className="h-6 px-1 text-xs hover:bg-accent">
-										Edit
-									</Button>
-								</DropdownMenuTrigger>
-								<DropdownMenuContent className="w-56">
-									<DropdownMenuLabel>Edit Actions</DropdownMenuLabel>
-									<DropdownMenuSeparator />
-									<DropdownMenuItem onClick={handleUndo}>
-										<Undo className="mr-2 h-4 w-4" />
-										Undo
-										<DropdownMenuShortcut>⌘Z</DropdownMenuShortcut>
-									</DropdownMenuItem>
-									<DropdownMenuItem onClick={handleRedo}>
-										<Redo className="mr-2 h-4 w-4" />
-										Redo
-										<DropdownMenuShortcut>⌘Y</DropdownMenuShortcut>
-									</DropdownMenuItem>
-									<DropdownMenuSeparator />
-									<DropdownMenuItem onClick={handleCut}>
-										<Scissors className="mr-2 h-4 w-4" />
-										Cut
-										<DropdownMenuShortcut>⌘X</DropdownMenuShortcut>
-									</DropdownMenuItem>
-									<DropdownMenuItem onClick={handleCopy}>
-										<Copy className="mr-2 h-4 w-4" />
-										Copy
-										<DropdownMenuShortcut>⌘C</DropdownMenuShortcut>
-									</DropdownMenuItem>
-									<DropdownMenuItem onClick={handlePaste}>
-										<ClipboardPaste className="mr-2 h-4 w-4" />
-										Paste
-										<DropdownMenuShortcut>⌘V</DropdownMenuShortcut>
-									</DropdownMenuItem>
-									<DropdownMenuSeparator />
-									<DropdownMenuItem onClick={handleDelete}>
-										<Trash2 className="mr-2 h-4 w-4" />
-										Delete
-										<DropdownMenuShortcut>Del</DropdownMenuShortcut>
-									</DropdownMenuItem>
-									<DropdownMenuItem onClick={handleSelectAll}>
-										<Grid3x3 className="mr-2 h-4 w-4" />
-										Select All
-										<DropdownMenuShortcut>⌘A</DropdownMenuShortcut>
-									</DropdownMenuItem>
-									<DropdownMenuItem onClick={() => setShowFindDialog(true)}>
-										<Search className="mr-2 h-4 w-4" />
-										Find & Replace
-										<DropdownMenuShortcut>⌘F</DropdownMenuShortcut>
-									</DropdownMenuItem>
-								</DropdownMenuContent>
-							</DropdownMenu>
-
-							{/* View Menu */}
-							<DropdownMenu>
-								<DropdownMenuTrigger asChild>
-									<Button variant="ghost" size="sm" className="h-6 px-1 text-xs hover:bg-accent">
-										View
-									</Button>
-								</DropdownMenuTrigger>
-								<DropdownMenuContent className="w-56">
-									<DropdownMenuLabel>View Options</DropdownMenuLabel>
-									<DropdownMenuSeparator />
-									<DropdownMenuItem onClick={handleZoomIn}>
-										<ZoomIn className="mr-2 h-4 w-4" />
-										Zoom In
-										<DropdownMenuShortcut>⌘+</DropdownMenuShortcut>
-									</DropdownMenuItem>
-									<DropdownMenuItem onClick={handleZoomOut}>
-										<ZoomOut className="mr-2 h-4 w-4" />
-										Zoom Out
-										<DropdownMenuShortcut>⌘-</DropdownMenuShortcut>
-									</DropdownMenuItem>
-									<DropdownMenuItem onClick={() => setZoom(100)}>
-										<Grid3x3 className="mr-2 h-4 w-4" />
-										Reset Zoom
-									</DropdownMenuItem>
-									<DropdownMenuItem onClick={handleZoomToSelection}>
-										<Search className="mr-2 h-4 w-4" />
-										Zoom to Selection
-									</DropdownMenuItem>
-									<DropdownMenuSeparator />
-									<DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-										<div className="flex items-center justify-between w-full">
-											<span>Show Grid</span>
-											<Switch 
-												checked={showGrid} 
-												onCheckedChange={(checked) => {
-													setShowGrid(checked);
-													toast.success(checked ? "Grid shown" : "Grid hidden", {
-														duration: 1000,
-													});
-												}} 
-												className="scale-75"
-											/>
-										</div>
-									</DropdownMenuItem>
-									<DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-										<div className="flex items-center justify-between w-full">
-											<span>Show Headers</span>
-											<Switch 
-												checked={showHeaders} 
-												onCheckedChange={(checked) => {
-													setShowHeaders(checked);
-													toast.success(checked ? "Headers shown" : "Headers hidden", {
-														duration: 1000,
-													});
-												}} 
-												className="scale-75"
-											/>
-										</div>
-									</DropdownMenuItem>
-									<DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-										<div className="flex items-center justify-between w-full">
-											<span>Freeze Panes</span>
-											<Switch 
-												checked={freezePanes} 
-												onCheckedChange={(checked) => {
-													setFreezePanes(checked);
-													toast.success(checked ? "Panes frozen" : "Panes unfrozen", {
-														duration: 1000,
-													});
-												}} 
-												className="scale-75"
-											/>
-										</div>
-									</DropdownMenuItem>
-								</DropdownMenuContent>
-							</DropdownMenu>
-
-							{/* Insert Menu */}
-							<DropdownMenu>
-								<DropdownMenuTrigger asChild>
-									<Button variant="ghost" size="sm" className="h-6 px-1 text-xs hover:bg-accent">
-										Insert
-									</Button>
-								</DropdownMenuTrigger>
-								<DropdownMenuContent className="w-56">
-									<DropdownMenuLabel>Insert Elements</DropdownMenuLabel>
-									<DropdownMenuSeparator />
-									<DropdownMenuItem onClick={handleInsertRow}>
-										<Table className="mr-2 h-4 w-4" />
-										Insert Row
-									</DropdownMenuItem>
-									<DropdownMenuItem onClick={handleDeleteRow}>
-										<Trash2 className="mr-2 h-4 w-4" />
-										Delete Row
-									</DropdownMenuItem>
-									<DropdownMenuSeparator />
-									<DropdownMenuItem onClick={handleInsertColumn}>
-										<Table className="mr-2 h-4 w-4 rotate-90" />
-										Insert Column
-									</DropdownMenuItem>
-									<DropdownMenuItem onClick={handleDeleteColumn}>
-										<Trash2 className="mr-2 h-4 w-4 rotate-90" />
-										Delete Column
-									</DropdownMenuItem>
-									<DropdownMenuSeparator />
-									<DropdownMenuItem onClick={handleInsertChart}>
-										<BarChart className="mr-2 h-4 w-4" />
-										Chart
-									</DropdownMenuItem>
-									<DropdownMenuItem onClick={handleInsertImage}>
-										<Upload className="mr-2 h-4 w-4" />
-										Image
-									</DropdownMenuItem>
-								</DropdownMenuContent>
-							</DropdownMenu>
-
-							{/* Format Menu */}
-							<DropdownMenu>
-								<DropdownMenuTrigger asChild>
-									<Button variant="ghost" size="sm" className="h-6 px-1 text-xs hover:bg-accent">
-										Format
-									</Button>
-								</DropdownMenuTrigger>
-								<DropdownMenuContent className="w-56">
-									<DropdownMenuLabel>Format Options</DropdownMenuLabel>
-									<DropdownMenuSeparator />
-									<DropdownMenuItem onClick={handleFormatCells}>
-										<Bold className="mr-2 h-4 w-4" />
-										Format Cells
-									</DropdownMenuItem>
-									<DropdownMenuItem onClick={handleConditionalFormatting}>
-										<Eye className="mr-2 h-4 w-4" />
-										Conditional Formatting
-									</DropdownMenuItem>
-									<DropdownMenuSeparator />
-									<DropdownMenuSub>
-										<DropdownMenuSubTrigger>
-											<Table className="mr-2 h-4 w-4" />
-											<span>Number Format</span>
-										</DropdownMenuSubTrigger>
-										<DropdownMenuPortal>
-											<DropdownMenuSubContent>
-												<DropdownMenuItem onClick={() => handleNumberFormat("general")}>
-													General
-												</DropdownMenuItem>
-												<DropdownMenuItem onClick={() => handleNumberFormat("number")}>
-													Number
-												</DropdownMenuItem>
-												<DropdownMenuItem onClick={() => handleNumberFormat("currency")}>
-													Currency
-												</DropdownMenuItem>
-												<DropdownMenuItem onClick={() => handleNumberFormat("date")}>
-													Date
-												</DropdownMenuItem>
-												<DropdownMenuItem onClick={() => handleNumberFormat("time")}>
-													Time
-												</DropdownMenuItem>
-												<DropdownMenuItem onClick={() => handleNumberFormat("percentage")}>
-													Percentage
-												</DropdownMenuItem>
-												<DropdownMenuItem onClick={() => handleNumberFormat("fraction")}>
-													Fraction
-												</DropdownMenuItem>
-												<DropdownMenuItem onClick={() => handleNumberFormat("scientific")}>
-													Scientific
-												</DropdownMenuItem>
-											</DropdownMenuSubContent>
-										</DropdownMenuPortal>
-									</DropdownMenuSub>
-									<DropdownMenuSub>
-										<DropdownMenuSubTrigger>
-											<AlignLeft className="mr-2 h-4 w-4" />
-											<span>Alignment</span>
-										</DropdownMenuSubTrigger>
-										<DropdownMenuPortal>
-											<DropdownMenuSubContent>
-												<DropdownMenuItem onClick={() => handleAlignment("Left")}>
-													Left
-												</DropdownMenuItem>
-												<DropdownMenuItem onClick={() => handleAlignment("Center")}>
-													Center
-												</DropdownMenuItem>
-												<DropdownMenuItem onClick={() => handleAlignment("Right")}>
-													Right
-												</DropdownMenuItem>
-												<DropdownMenuItem onClick={() => handleAlignment("Top")}>
-													Top
-												</DropdownMenuItem>
-												<DropdownMenuItem onClick={() => handleAlignment("Middle")}>
-													Middle
-												</DropdownMenuItem>
-												<DropdownMenuItem onClick={() => handleAlignment("Bottom")}>
-													Bottom
-												</DropdownMenuItem>
-											</DropdownMenuSubContent>
-										</DropdownMenuPortal>
-									</DropdownMenuSub>
-									<DropdownMenuSeparator />
-									<DropdownMenuItem onClick={handleAddNamedRange}>
-										<FileSpreadsheet className="mr-2 h-4 w-4" />
-										Define Named Range
-									</DropdownMenuItem>
-									<DropdownMenuItem onClick={handleAddNote}>
-										<FileSpreadsheet className="mr-2 h-4 w-4" />
-										Add Note
-									</DropdownMenuItem>
-									<DropdownMenuItem onClick={handleDataValidation}>
-										<Grid3x3 className="mr-2 h-4 w-4" />
-										Data Validation
-									</DropdownMenuItem>
-								</DropdownMenuContent>
-							</DropdownMenu>
-
-							{/* Data Menu */}
-							<DropdownMenu>
-								<DropdownMenuTrigger asChild>
-									<Button variant="ghost" size="sm" className="h-6 px-1 text-xs hover:bg-accent">
-										Data
-									</Button>
-								</DropdownMenuTrigger>
-								<DropdownMenuContent className="w-56">
-									<DropdownMenuLabel>Data Tools</DropdownMenuLabel>
-									<DropdownMenuSeparator />
-									<DropdownMenuItem onClick={handleSort}>
-										<Search className="mr-2 h-4 w-4" />
-										Sort
-									</DropdownMenuItem>
-									<DropdownMenuItem onClick={handleFilter}>
-										<Filter className="mr-2 h-4 w-4" />
-										Filter
-									</DropdownMenuItem>
-									<DropdownMenuItem onClick={handleGroup}>
-										<Table className="mr-2 h-4 w-4" />
-										Group
-									</DropdownMenuItem>
-									<DropdownMenuSeparator />
-									<DropdownMenuItem onClick={handleRemoveDuplicates}>
-										<Trash2 className="mr-2 h-4 w-4" />
-										Remove Duplicates
-									</DropdownMenuItem>
-									<DropdownMenuItem onClick={handleDataValidation}>
-										<Grid3x3 className="mr-2 h-4 w-4" />
-										Data Validation
-									</DropdownMenuItem>
-									<DropdownMenuItem onClick={handleWhatIfAnalysis}>
-										<BarChart className="mr-2 h-4 w-4" />
-										What-If Analysis
-									</DropdownMenuItem>
-								</DropdownMenuContent>
-							</DropdownMenu>
-						</div>
-					</div>
-				</div>
-
-				<div className="flex items-center gap-2">
-					{/* Share Dialog komponent */}
-					<ShareDialog
-						resourceName={sheetName}
-						resourceType="spreadsheet"
-						initialSettings={shareSettings}
-						currentUserEmail="user@example.com"
-						currentUserId="current-user-id"
-						onSave={handleShareSave}
-						onInvite={handleInvite}
-						onRemoveCollaborator={handleRemoveCollaborator}
-						onCopyLink={handleCopyLink}
-						isLoading={false}
-					/>
-					
-					{/* Help Button */}
-					<TooltipProvider>
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Button
-									variant="ghost"
-									size="icon"
-									className="h-8 w-8"
-									onClick={() => {
-										toast.info("Help", {
-											description: "Press ⌘? for keyboard shortcuts",
-										});
-									}}
-								>
-									<HelpCircle className="h-4 w-4" />
-								</Button>
-							</TooltipTrigger>
-							<TooltipContent>
-								<p>Help</p>
-							</TooltipContent>
-						</Tooltip>
-					</TooltipProvider>
-
-					<div className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold text-sm">
-						U
-					</div>
-				</div>
-			</header>
-
-			{/* Toolbar */}
-			<Toolbar
-				onStyleChange={handleStyleChange}
-				onExport={handleExport}
-				onImport={handleImport}
+		<div className="h-screen flex flex-col font-sans overflow-hidden bg-background">
+			{/* Ribbon UI */}
+			<Ribbon
+				sheetName={sheetName}
+				onSheetNameChange={setSheetName}
 				onSave={handleSave}
+				onUndo={handleUndo}
+				onRedo={handleRedo}
+				onExport={() => setShowExportDialog(true)}
+				onImport={() => setShowImportDialog(true)}
+				onClear={() => setShowDeleteDialog(true)}
+				onStyleChange={handleStyleChange}
+				onAlignChange={(align: "left" | "center" | "right") => handleAlignment(align)}
+				onInsertRow={handleInsertRow}
+				onDeleteRow={handleDeleteRow}
+				onInsertColumn={handleInsertColumn}
+				onDeleteColumn={handleDeleteColumn}
+				onSort={handleSort}
+				onFilter={handleFilter}
+				onFind={() => setShowFindDialog(true)}
+				onDataValidation={handleDataValidation}
 			/>
 
 			{/* Formula Bar */}
@@ -1543,8 +1032,8 @@ function EditorContent() {
 				onChange={handleFormulaBarChange}
 			/>
 
-			{/* Grid */}
-			<div className="flex-1 overflow-auto" style={{ zoom: `${zoom}%` }}>
+			{/* Main Grid Area */}
+			<div className="flex-1 overflow-hidden relative" style={{ zoom: `${zoom}%` }}>
 				<Grid
 					data={data}
 					selectedCell={selectedCell}
@@ -1553,8 +1042,24 @@ function EditorContent() {
 					showGrid={showGrid}
 					showHeaders={showHeaders}
 					freezePanes={freezePanes}
+					// Context Menu Actions
+					onCopy={handleCopy}
+					onCut={handleCut}
+					onPaste={handlePaste}
+					onInsertRow={insertRow}
+					onDeleteRow={deleteRow}
+					onInsertColumn={insertColumn}
+					onDeleteColumn={deleteColumn}
+					onClearCell={(id) => updateCell(id, "")}
 				/>
 			</div>
+
+			{/* Status Bar */}
+			<StatusBar
+				data={data}
+				selectedCell={selectedCell}
+				selectionRange={selectionRange}
+			/>
 
 			{/* Find & Replace Dialog */}
 			<Dialog open={showFindDialog} onOpenChange={setShowFindDialog}>
