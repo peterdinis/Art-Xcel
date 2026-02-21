@@ -3,10 +3,10 @@
 import React, { useState } from "react";
 import { FilePond, registerPlugin } from "react-filepond";
 import FilePondPluginFileValidateType from "filepond-plugin-file-validate-type";
-import { useExcelService } from "@/hooks/use-excel-service";
 import { Spreadsheet } from "@/app/(dashboard)/page";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { parseExcelAction } from "@/app/editor/[id]/actions";
 
 // Import FilePond styles
 import "filepond/dist/filepond.min.css";
@@ -20,7 +20,6 @@ interface ExcelUploadProps {
 
 export const ExcelUpload = ({ onUploadComplete }: ExcelUploadProps) => {
     const [files, setFiles] = useState<any[]>([]);
-    const { importFromExcel } = useExcelService();
     const router = useRouter();
 
     const handleProcessFile = async (
@@ -32,13 +31,26 @@ export const ExcelUpload = ({ onUploadComplete }: ExcelUploadProps) => {
         _progress: any,
         _abort: any
     ) => {
+        // FilePond can sometimes pass a FilePond item instead of a raw file/blob
+        const actualFile = file instanceof Blob ? file : (file as any).file;
+
+        if (!actualFile || !(actualFile instanceof Blob)) {
+            console.error("Invalid file object received from FilePond:", file);
+            error("Invalid file object");
+            toast.error("An error occurred during upload. Please try again.");
+            return;
+        }
+
         try {
-            const result = await importFromExcel(file);
+            const formData = new FormData();
+            formData.append("file", actualFile);
+
+            const result = await parseExcelAction(formData);
 
             const newId = crypto.randomUUID();
             const newFile: Spreadsheet = {
                 id: newId,
-                name: result.name || file.name.replace(/\.[^/.]+$/, ""),
+                name: result.name || (actualFile as any).name?.replace(/\.[^/.]+$/, "") || "Uploaded Sheet",
                 lastModified: Date.now(),
             };
 
@@ -49,22 +61,37 @@ export const ExcelUpload = ({ onUploadComplete }: ExcelUploadProps) => {
             const updated = [newFileWithData, ...allFiles];
             localStorage.setItem("excel-editor-files", JSON.stringify(updated));
 
-            // Notify parent
+            // Notify parent immediately to show in grid
             onUploadComplete(newFile);
 
-            // Success
-            load(newId);
-            toast.success("Excel file uploaded and parsed successfully!");
+            // Clear FilePond UI
+            setFiles([]);
 
-            // Redirect after a short delay
+            // Show toast
+            toast.success("Workbook uploaded!", {
+                description: `"${newFile.name}" is now available.`,
+            });
+
+            // Success callback for FilePond
+            load(newId);
+
+            // Redirect after shorter delay
             setTimeout(() => {
                 router.push(`/editor/${newId}`);
-            }, 1000);
+            }, 800);
 
         } catch (err) {
             console.error("Failed to parse Excel file:", err);
             error("Error parsing file");
-            toast.error("Failed to parse Excel file. Please make sure it's a valid .xlsx file.");
+
+            const msg = (err as Error).message;
+            let friendlyMessage = "Failed to parse Excel file. Please make sure it's a valid .xlsx file.";
+
+            if (msg.includes("central directory") || msg.includes("Invalid file format")) {
+                friendlyMessage = "Unsupported file format. Please use a modern .xlsx file (Legacy .xls are not supported).";
+            }
+
+            toast.error(friendlyMessage);
         }
     };
 
@@ -79,10 +106,9 @@ export const ExcelUpload = ({ onUploadComplete }: ExcelUploadProps) => {
                     process: handleProcessFile
                 }}
                 name="excel-file"
-                labelIdle='Drag & Drop your Excel file or <span class="filepond--label-action">Browse</span>'
+                labelIdle='Drag & Drop your Excel file (.xlsx) or <span class="filepond--label-action">Browse</span>'
                 acceptedFileTypes={[
-                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    "application/vnd.ms-excel"
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 ]}
                 className="shadow-md rounded-lg"
             />

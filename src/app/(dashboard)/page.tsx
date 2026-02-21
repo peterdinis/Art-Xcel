@@ -13,7 +13,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { ExcelUpload } from "@/components/dashboard/ExcelUpload";
 
 import { SheetData } from "@/hooks/use-spreadsheet";
@@ -217,91 +217,97 @@ function DashboardContent() {
 				</Button>
 			</motion.div>
 
-			<ExcelUpload onUploadComplete={(newFile) => setSpreadsheets((prev) => [newFile, ...prev])} />
+			<ExcelUpload onUploadComplete={(newFile) => {
+				console.log("Upload complete, adding to state:", newFile);
+				setSpreadsheets((prev) => [newFile, ...prev]);
+			}} />
 
-			{spreadsheets.length === 0 ? (
-				<motion.div
-					initial={{ scale: 0.95, opacity: 0 }}
-					animate={{ scale: 1, opacity: 1 }}
-					className="flex flex-col items-center justify-center p-20 border-2 border-dashed rounded-xl bg-background/50 backdrop-blur-sm text-center"
-				>
-					<div className="bg-primary/10 p-4 rounded-full mb-4">
-						<FileSpreadsheet className="h-10 w-10 text-primary" />
-					</div>
-					<h3 className="text-xl font-semibold mb-2">No spreadsheets yet</h3>
-					<p className="text-muted-foreground mb-6 max-w-sm">
-						Get started by creating your first spreadsheet to organize your
-						data.
-					</p>
-					<Button
-						onClick={createNewSpreadsheet}
-						variant="outline"
-						disabled={isCreating}
+			<AnimatePresence mode="wait">
+				{spreadsheets.length === 0 ? (
+					<motion.div
+						initial={{ scale: 0.95, opacity: 0 }}
+						animate={{ scale: 1, opacity: 1 }}
+						exit={{ opacity: 0, scale: 0.95 }}
+						className="flex flex-col items-center justify-center p-20 border-2 border-dashed rounded-xl bg-background/50 backdrop-blur-sm text-center"
 					>
-						{isCreating ? (
-							<>
-								<Loader2 className="h-4 w-4 mr-2 animate-spin" />
-								Creating...
-							</>
-						) : (
-							"Create Spreadsheet"
-						)}
-					</Button>
-				</motion.div>
-			) : (
-				<motion.div
-					variants={containerVariants}
-					initial="hidden"
-					animate="show"
-					className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
-				>
-					{spreadsheets.map((sheet) => (
-						<motion.div key={sheet.id} variants={itemVariants}>
-							<Link
-								href={`/editor/${sheet.id}`}
-								className="group block h-full"
-							>
-								<Card className="h-full transition-all duration-300 hover:shadow-2xl hover:border-primary/50 cursor-pointer overflow-hidden relative border-muted-foreground/10 flex flex-col">
-									{isDeleting === sheet.id && (
-										<div className="absolute inset-0 bg-background/80 flex items-center justify-center z-10 backdrop-blur-[1px]">
-											<Loader2 className="h-6 w-6 animate-spin text-primary" />
+						<div className="bg-primary/10 p-4 rounded-full mb-4">
+							<FileSpreadsheet className="h-10 w-10 text-primary" />
+						</div>
+						<h3 className="text-xl font-semibold mb-2">No spreadsheets yet</h3>
+						<p className="text-muted-foreground mb-6 max-w-sm">
+							Get started by creating your first spreadsheet to organize your
+							data.
+						</p>
+						<Button
+							onClick={createNewSpreadsheet}
+							variant="outline"
+							disabled={isCreating}
+						>
+							{isCreating ? (
+								<>
+									<Loader2 className="h-4 w-4 mr-2 animate-spin" />
+									Creating...
+								</>
+							) : (
+								"Create Spreadsheet"
+							)}
+						</Button>
+					</motion.div>
+				) : (
+					<motion.div
+						variants={containerVariants}
+						initial="hidden"
+						animate="show"
+						className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+					>
+						{spreadsheets.map((sheet) => (
+							<motion.div key={sheet.id} variants={itemVariants}>
+								<Link
+									href={`/editor/${sheet.id}`}
+									className="group block h-full"
+								>
+									<Card className="h-full transition-all duration-300 hover:shadow-2xl hover:border-primary/50 cursor-pointer overflow-hidden relative border-muted-foreground/10 flex flex-col">
+										{isDeleting === sheet.id && (
+											<div className="absolute inset-0 bg-background/80 flex items-center justify-center z-10 backdrop-blur-[1px]">
+												<Loader2 className="h-6 w-6 animate-spin text-primary" />
+											</div>
+										)}
+										<div className="h-32 bg-secondary/30 flex items-center justify-center border-b group-hover:bg-secondary/50 transition-colors relative overflow-hidden">
+											<div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+											<FileSpreadsheet className="h-12 w-12 text-muted-foreground/40 group-hover:text-primary group-hover:scale-110 transition-all duration-300" />
 										</div>
-									)}
-									<div className="h-32 bg-secondary/30 flex items-center justify-center border-b group-hover:bg-secondary/50 transition-colors relative overflow-hidden">
-										<div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-										<FileSpreadsheet className="h-12 w-12 text-muted-foreground/40 group-hover:text-primary group-hover:scale-110 transition-all duration-300" />
-									</div>
-									<CardHeader className="p-4 flex-1">
-										<CardTitle className="truncate pr-4 text-base font-semibold group-hover:text-primary transition-colors" title={sheet.name}>
-											{sheet.name}
-										</CardTitle>
-										<CardDescription className="flex items-center justify-between mt-2 text-xs">
-											<span>
-												Last modified: {new Date(sheet.lastModified).toLocaleDateString()}
-											</span>
-										</CardDescription>
-									</CardHeader>
-									<CardContent className="flex justify-end p-2 pt-0">
-										<Button
-											variant="ghost"
-											size="icon"
-											className="h-8 w-8 text-destructive/60 hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"
-											onClick={(e) => deleteSpreadsheet(e, sheet.id)}
-											disabled={isDeleting === sheet.id}
-										>
-											{isDeleting === sheet.id ? (
-												<Loader2 className="h-4 w-4 animate-spin" />
-											) : (
-												<Trash2 className="h-4 w-4" />
-											)}
-										</Button>
-									</CardContent>
-								</Card>
-							</Link>
-						</motion.div>
-					))}
-				</motion.div>
-			)}
+										<CardHeader className="p-4 flex-1">
+											<CardTitle className="truncate pr-4 text-base font-semibold group-hover:text-primary transition-colors" title={sheet.name}>
+												{sheet.name}
+											</CardTitle>
+											<CardDescription className="flex items-center justify-between mt-2 text-xs">
+												<span>
+													Last modified: {new Date(sheet.lastModified).toLocaleDateString()}
+												</span>
+											</CardDescription>
+										</CardHeader>
+										<CardContent className="flex justify-end p-2 pt-0">
+											<Button
+												variant="ghost"
+												size="icon"
+												className="h-8 w-8 text-destructive/60 hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"
+												onClick={(e) => deleteSpreadsheet(e, sheet.id)}
+												disabled={isDeleting === sheet.id}
+											>
+												{isDeleting === sheet.id ? (
+													<Loader2 className="h-4 w-4 animate-spin" />
+												) : (
+													<Trash2 className="h-4 w-4" />
+												)}
+											</Button>
+										</CardContent>
+									</Card>
+								</Link>
+							</motion.div>
+						))}
+					</motion.div>
+				)}
+			</AnimatePresence>
 		</main>
 	);
 }

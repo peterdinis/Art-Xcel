@@ -102,10 +102,34 @@ export const useExcelService = () => {
 	const importFromExcel = useCallback(
 		async (file: File): Promise<{ data: SheetData; name: string }> => {
 			const workbook = new ExcelJS.Workbook();
-			const buffer = await file.arrayBuffer();
-			await workbook.xlsx.load(buffer);
+
+			// Detect if it's a FilePond file wrapper or a real File/Blob
+			const fileBlob = (file as any).file instanceof Blob ? (file as any).file : file;
+
+			const arrayBuffer = await fileBlob.arrayBuffer();
+
+			// Basic ZIP validation (Excel files are ZIPs)
+			const header = new Uint8Array(arrayBuffer.slice(0, 4));
+			const isZip = header[0] === 0x50 && header[1] === 0x4B; // PK
+
+			if (!isZip) {
+				console.error("File header check failed. Header:", header);
+				throw new Error("Invalid file format. The file does not appear to be a valid modern Excel (.xlsx) file. Please ensure it is not a legacy (.xls) or corrupted file.");
+			}
+
+			try {
+				// In browser, passing the ArrayBuffer directly to xlsx.load
+				await (workbook.xlsx as any).load(arrayBuffer);
+			} catch (loadErr) {
+				console.error("ExcelJS load error:", loadErr);
+				throw new Error(`Failed to load workbook: ${(loadErr as Error).message}`);
+			}
 
 			const worksheet = workbook.worksheets[0];
+			if (!worksheet) {
+				throw new Error("No worksheets found in the Excel file.");
+			}
+
 			const data: SheetData = {};
 			const sheetName = worksheet.name;
 
