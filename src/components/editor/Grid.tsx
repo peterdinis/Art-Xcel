@@ -2,10 +2,12 @@
 
 import React, { memo, useState, useEffect, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
-import { SheetData, CellData } from "@/hooks/use-spreadsheet";
+import { SheetData, CellData, ChartData, ImageData } from "@/hooks/use-spreadsheet";
 import { useVirtualizer } from "@tanstack/react-virtual";
 
 import { CellContextMenu } from "./CellContextMenu";
+import { ChartComponent } from "./ChartComponent";
+import { ImageComponent } from "./ImageComponent";
 
 interface GridProps {
 	data: SheetData;
@@ -24,6 +26,12 @@ interface GridProps {
 	onDeleteColumn: (index: number) => void;
 	onClearCell: (cellId: string) => void;
 	hiddenRows?: Set<number>;
+	charts?: ChartData[];
+	images?: ImageData[];
+	onRemoveChart?: (id: string) => void;
+	onRemoveImage?: (id: string) => void;
+	onUpdateChart?: (id: string, updates: Partial<ChartData>) => void;
+	onUpdateImage?: (id: string, updates: Partial<ImageData>) => void;
 }
 
 const DEFAULT_ROW_HEIGHT = 32;
@@ -235,6 +243,12 @@ export const Grid = ({
 	onDeleteColumn,
 	onClearCell,
 	hiddenRows = new Set(),
+	charts = [],
+	images = [],
+	onRemoveChart,
+	onRemoveImage,
+	onUpdateChart,
+	onUpdateImage,
 }: GridProps) => {
 	const [editingCell, setEditingCell] = useState<string | null>(null);
 	const [editValue, setEditValue] = useState<string>("");
@@ -712,6 +726,28 @@ export const Grid = ({
 							</div>
 						);
 					})}
+
+					{/* Charts Layer */}
+					{charts.map((chart) => (
+						<ChartComponent
+							key={chart.id}
+							{...chart}
+							data={data}
+							onRemove={() => onRemoveChart?.(chart.id)}
+							onUpdatePosition={(x, y) => onUpdateChart?.(chart.id, { position: { x, y } })}
+						/>
+					))}
+
+					{/* Images Layer */}
+					{images.map((image) => (
+						<ImageComponent
+							key={image.id}
+							{...image}
+							onRemove={() => onRemoveImage?.(image.id)}
+							onUpdatePosition={(x, y) => onUpdateImage?.(image.id, { position: { x, y } })}
+							onUpdateSize={(width, height) => onUpdateImage?.(image.id, { size: { width, height } })}
+						/>
+					))}
 				</div>
 			</div>
 		</div>

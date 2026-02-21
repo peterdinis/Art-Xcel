@@ -57,6 +57,10 @@ interface RibbonProps {
     onFilter: () => void;
     onFind: () => void;
     onDataValidation: () => void;
+    onRemoveDuplicates?: () => void;
+    onTextToColumns?: () => void;
+    onInsertChart?: () => void;
+    onInsertImage?: () => void;
 }
 
 const RibbonGroup = ({ children, label }: { children: React.ReactNode; label: string }) => (
@@ -121,7 +125,11 @@ export const Ribbon = ({
     onSort,
     onFilter,
     onFind,
-    onDataValidation
+    onDataValidation,
+    onRemoveDuplicates,
+    onTextToColumns,
+    onInsertChart,
+    onInsertImage
 }: RibbonProps) => {
     const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -211,7 +219,13 @@ export const Ribbon = ({
                             <RibbonButton icon={TableIcon} label="Table" tooltip="Create table" onClick={() => { }} />
                         </RibbonGroup>
                         <RibbonGroup label="Charts">
-                            <RibbonButton icon={PieChart} label="Chart" tooltip="Insert chart" onClick={() => { }} />
+                            <RibbonButton icon={PieChart} label="Chart" tooltip="Insert chart" onClick={onInsertChart} />
+                        </RibbonGroup>
+                        <RibbonGroup label="Illustrations">
+                            <div className="relative">
+                                <RibbonButton icon={Palette} label="Pictures" tooltip="Insert Picture" onClick={() => { }} />
+                                <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={onInsertImage} accept="image/*" />
+                            </div>
                         </RibbonGroup>
                     </TabsContent>
 
@@ -225,6 +239,10 @@ export const Ribbon = ({
                         <RibbonGroup label="Sort & Filter">
                             <RibbonButton icon={ArrowUpDown} label="Sort" tooltip="Sort selection" onClick={onSort} />
                             <RibbonButton icon={Filter} label="Filter" tooltip="Filter data" onClick={onFilter} />
+                        </RibbonGroup>
+                        <RibbonGroup label="Data Tools">
+                            <RibbonButton icon={Trash2} label="Remove Duplicates" tooltip="Remove Duplicates" onClick={onRemoveDuplicates} />
+                            <RibbonButton icon={Type} label="Text to Columns" tooltip="Text to Columns" onClick={onTextToColumns} />
                         </RibbonGroup>
                     </TabsContent>
                 </div>

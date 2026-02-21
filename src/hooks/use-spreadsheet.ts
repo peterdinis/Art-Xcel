@@ -49,6 +49,22 @@ export interface SpreadsheetState {
 
 const math = create(all);
 
+export interface ChartData {
+	id: string;
+	type: "bar" | "line" | "pie";
+	range: string;
+	title: string;
+	position: { x: number; y: number };
+	size: { width: number; height: number };
+}
+
+export interface ImageData {
+	id: string;
+	src: string;
+	position: { x: number; y: number };
+	size: { width: number; height: number };
+}
+
 export const useSpreadsheet = (initialData: SheetData = {}) => {
 	const [data, setData] = useState<SheetData>(initialData);
 	const [selectedCell, setSelectedCell] = useState<string | null>("A1");
@@ -58,37 +74,39 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 	const [redoStack, setRedoStack] = useState<SheetData[]>([]);
 	const [sheetNames, setSheetNames] = useState<string[]>(["Sheet1"]);
 	const [currentSheetIndex, setCurrentSheetIndex] = useState(0);
-	const [formulas, setFormulas] = useState<Record<string, string>>({});
 	const [namedRanges, setNamedRanges] = useState<Record<string, string>>({});
 	const [formulaCells, setFormulaCells] = useState<Set<string>>(new Set());
 	const [hiddenRows, setHiddenRows] = useState<Set<number>>(new Set());
+	const [charts, setCharts] = useState<ChartData[]>([]);
+	const [images, setImages] = useState<ImageData[]>([]);
 
 	// Helper to get cell value as number (or 0)
-	const getVal = (cellId: string, currentData: SheetData) => {
+	const getVal = useCallback((cellId: string, currentData: SheetData) => {
 		const val = currentData[cellId]?.value;
 		return val && !isNaN(Number(val)) ? Number(val) : 0;
-	};
+	}, []);
 
 	// Helper to expand ranges like A1:A5 to array of values
-	const getRangeValues = (range: string, currentData: SheetData) => {
+	const getRangeValues = useCallback((range: string, currentData: SheetData) => {
 		const [start, end] = range.split(":");
 		const startCol = start.match(/[A-Z]+/)?.[0] || "";
 		const startRow = parseInt(start.match(/[0-9]+/)?.[0] || "1");
 		const endCol = end.match(/[A-Z]+/)?.[0] || "";
 		const endRow = parseInt(end.match(/[0-9]+/)?.[0] || "1");
 
-		const values: number[] = [];
+		const values: (number | string)[] = [];
 		const startColIdx = startCol.charCodeAt(0);
 		const endColIdx = endCol.charCodeAt(0);
 
 		for (let c = startColIdx; c <= endColIdx; c++) {
 			for (let r = startRow; r <= endRow; r++) {
 				const cellId = `${String.fromCharCode(c)}${r}`;
-				values.push(getVal(cellId, currentData));
+				const val = currentData[cellId]?.value || "";
+				values.push(!isNaN(Number(val)) && val !== "" ? Number(val) : val);
 			}
 		}
 		return values;
-	};
+	}, []);
 
 	// Get range of cells as strings
 	const getRange = useCallback((range: string): string[] => {
@@ -118,19 +136,41 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 		const endCol = end.match(/[A-Z]+/)?.[0] || "";
 		const endRow = parseInt(end.match(/[0-9]+/)?.[0] || "1");
 
-		const grid: any[][] = [];
+		const grid: unknown[][] = [];
 		const startColIdx = startCol.charCodeAt(0);
 		const endColIdx = endCol.charCodeAt(0);
 
 		for (let r = startRow; r <= endRow; r++) {
-			const row: any[] = [];
+			const row: unknown[] = [];
 			for (let c = startColIdx; c <= endColIdx; c++) {
 				const cellId = `${String.fromCharCode(c)}${r}`;
-				row.push(currentData[cellId]?.value || "");
+				const val = currentData[cellId]?.value || "";
+				row.push(!isNaN(Number(val)) && val !== "" ? Number(val) : val);
 			}
 			grid.push(row);
 		}
 		return grid;
+	}, []);
+
+	// Format number based on format type
+	const formatNumber = useCallback((value: unknown, format: string): string => {
+		const num = Number(value);
+		if (isNaN(num)) return String(value);
+
+		switch (format) {
+			case "currency":
+				return new Intl.NumberFormat("sk-SK", { style: "currency", currency: "EUR" }).format(num);
+			case "percentage":
+				return new Intl.NumberFormat("sk-SK", { style: "percent", minimumFractionDigits: 2 }).format(num / 100);
+			case "date":
+				return new Date(num).toLocaleDateString("sk-SK");
+			case "time":
+				return new Date(num).toLocaleTimeString("sk-SK");
+			case "number":
+				return new Intl.NumberFormat("sk-SK").format(num);
+			default:
+				return String(value);
+		}
 	}, []);
 
 	// Custom MathJS functions for Excel compatibility
@@ -215,7 +255,6 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 			// 1. Pre-process Ranges: Replace A1:B2 with [val1, val2, ...] or [[val1, val2], ...]
 			const rangeRegex = /\b([a-zA-Z]+[0-9]+:[a-zA-Z]+[0-9]+)\b/g;
 			expression = expression.replace(rangeRegex, (match) => {
-				// Special handling for VLOOKUP/TABLE functions that need 2D arrays
 				if (expression.toLowerCase().includes("vlookup")) {
 					const values2D = getRange2D(match.toUpperCase(), currentData);
 					return JSON.stringify(values2D);
@@ -265,12 +304,10 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 			try {
 				const result = math.evaluate(expression);
 
-				// Handle array results
 				if (Array.isArray(result)) {
 					return result.length > 0 ? String(result[0]) : "";
 				}
 
-				// Format based on cell's number format
 				const cellId = targetCellId || selectedCell;
 				if (cellId && currentData[cellId]?.style?.numberFormat) {
 					return formatNumber(result, currentData[cellId].style.numberFormat);
@@ -284,24 +321,6 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 		},
 		[formatNumber, getRange2D, getRangeValues, getVal, namedRanges, registerCustomFunctions, selectedCell],
 	);
-
-	// Format number based on format type
-	const formatNumber = (value: number, format: string): string => {
-		switch (format) {
-			case "currency":
-				return new Intl.NumberFormat("sk-SK", { style: "currency", currency: "EUR" }).format(value);
-			case "percentage":
-				return new Intl.NumberFormat("sk-SK", { style: "percent", minimumFractionDigits: 2 }).format(value / 100);
-			case "date":
-				return new Date(value).toLocaleDateString("sk-SK");
-			case "time":
-				return new Date(value).toLocaleTimeString("sk-SK");
-			case "number":
-				return new Intl.NumberFormat("sk-SK").format(value);
-			default:
-				return String(value);
-		}
-	};
 
 	// Save state to undo stack
 	const saveToUndo = useCallback(() => {
@@ -738,6 +757,67 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 			return rest;
 		});
 	}, []);
+	// Remove duplicates from a range based on a column
+	const removeDuplicates = useCallback((range: string, column: number) => {
+		saveToUndo();
+		const cells = getRange(range);
+		const rowsInRange = Array.from(new Set(cells.map(c => parseInt(c.match(/\d+/)?.[0] || "1")))).sort((a, b) => a - b);
+
+		const seen = new Set();
+		const rowsToDelete: number[] = [];
+
+		rowsInRange.forEach(row => {
+			const colIdx = column + 65;
+			const cellId = `${String.fromCharCode(colIdx)}${row}`;
+			const val = data[cellId]?.value || "";
+			if (seen.has(val)) {
+				rowsToDelete.push(row);
+			} else {
+				seen.add(val);
+			}
+		});
+
+		setData(prev => {
+			const newData = { ...prev };
+			rowsToDelete.forEach(row => {
+				cells.forEach(cellId => {
+					if (parseInt(cellId.match(/\d+/)?.[0] || "0") === row) {
+						delete newData[cellId];
+					}
+				});
+			});
+			return newData;
+		});
+	}, [data, getRange, saveToUndo]);
+
+	// Text to columns (split by delimiter)
+	const textToColumns = useCallback((range: string, delimiter: string) => {
+		saveToUndo();
+		const cells = getRange(range);
+
+		setData(prev => {
+			const newData = { ...prev };
+			cells.forEach(cellId => {
+				const val = prev[cellId]?.value || "";
+				if (val.includes(delimiter)) {
+					const parts = val.split(delimiter);
+					const colMatch = cellId.match(/[A-Z]+/)?.[0] || "";
+					const row = cellId.match(/\d+/)?.[0] || "";
+					const startColNum = colMatch.charCodeAt(0);
+
+					parts.forEach((part, i) => {
+						const newCol = String.fromCharCode(startColNum + i);
+						const newCellId = `${newCol}${row}`;
+						newData[newCellId] = {
+							...(newData[newCellId] || { formula: "" }),
+							value: part.trim(),
+						};
+					});
+				}
+			});
+			return newData;
+		});
+	}, [getRange, saveToUndo]);
 
 	// Find and replace
 	const findAndReplace = useCallback((find: string, replace: string, options?: { matchCase?: boolean; wholeCell?: boolean }) => {
@@ -808,6 +888,34 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 	const switchSheet = useCallback((index: number) => {
 		setCurrentSheetIndex(index);
 		// You might want to load different data for each sheet
+	}, []);
+
+	// Chart operations
+	const addChart = useCallback((chart: Omit<ChartData, "id">) => {
+		const newChart = { ...chart, id: `chart-${Date.now()}` };
+		setCharts(prev => [...prev, newChart]);
+	}, []);
+
+	const removeChart = useCallback((id: string) => {
+		setCharts(prev => prev.filter(c => c.id !== id));
+	}, []);
+
+	const updateChart = useCallback((id: string, updates: Partial<ChartData>) => {
+		setCharts(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
+	}, []);
+
+	// Image operations
+	const addImage = useCallback((image: Omit<ImageData, "id">) => {
+		const newImage = { ...image, id: `image-${Date.now()}` };
+		setImages(prev => [...prev, newImage]);
+	}, []);
+
+	const removeImage = useCallback((id: string) => {
+		setImages(prev => prev.filter(i => i.id !== id));
+	}, []);
+
+	const updateImage = useCallback((id: string, updates: Partial<ImageData>) => {
+		setImages(prev => prev.map(i => i.id === id ? { ...i, ...updates } : i));
 	}, []);
 
 	// Get cell formula
@@ -885,6 +993,8 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 		sortRange,
 		filterRange,
 		findAndReplace,
+		removeDuplicates,
+		textToColumns,
 
 		// Cell features
 		addNote,
@@ -900,6 +1010,16 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 		deleteSheet,
 		renameSheet,
 		switchSheet,
+
+		// Charts and Images
+		charts,
+		images,
+		addChart,
+		removeChart,
+		updateChart,
+		addImage,
+		removeImage,
+		updateImage,
 
 		// Utilities
 		clearSheet,

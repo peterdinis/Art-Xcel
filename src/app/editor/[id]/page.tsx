@@ -11,13 +11,14 @@ import { FormulaBar } from "@/components/editor/FormulaBar";
 import { Button } from "@/components/ui/button";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import {
-	ArrowLeft,
+	Plus,
+	ChevronDown,
+	FileSpreadsheet,
+	ShieldCheck,
+	Columns,
+	BarChart2,
+	Image as ImageIcon,
 	Save,
-	Download,
-	Upload,
-	Printer,
-	HelpCircle,
-	Filter,
 	Undo,
 	Redo,
 	Scissors,
@@ -25,21 +26,26 @@ import {
 	ClipboardPaste,
 	Trash2,
 	Search,
+	BarChart,
+	PlusSquare,
+	MinusSquare,
+	ArrowLeft,
+	Download,
+	Upload,
+	Printer,
+	HelpCircle,
+	Filter,
+	Bold,
+	Italic,
+	Underline,
+	AlignLeft,
+	AlignCenter,
+	AlignRight,
 	ZoomIn,
 	ZoomOut,
 	Grid3x3,
 	Table,
-	BarChart,
-	Bold,
 	Eye,
-	AlignLeft,
-	AlignCenter,
-	AlignRight,
-	Underline,
-	Italic,
-	Plus,
-	ChevronDown,
-	FileSpreadsheet,
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -189,10 +195,22 @@ function EditorContent() {
 		undo,
 		redo,
 
+		// Charts and Images
+		charts,
+		images,
+		addChart,
+		removeChart,
+		updateChart,
+		addImage,
+		removeImage,
+		updateImage,
+
 		// Data operations
 		sortRange,
 		filterRange,
 		findAndReplace,
+		removeDuplicates,
+		textToColumns,
 
 		// Cell features
 		addNote,
@@ -244,6 +262,12 @@ function EditorContent() {
 	const [validationList, setValidationList] = useState<string>("");
 	const [validationRequired, setValidationRequired] = useState(false);
 	const [isLoading, setIsLoading] = useState(true);
+
+	// Insertion states
+	const [showChartDialog, setShowChartDialog] = useState(false);
+	const [showImageDialog, setShowImageDialog] = useState(false);
+	const [chartType, setChartType] = useState<"bar" | "line" | "pie">("bar");
+	const [chartTitle, setChartTitle] = useState("New Chart");
 
 	// Share state
 	const [shareSettings, setShareSettings] = useState<ShareSettings>({
@@ -659,19 +683,6 @@ function EditorContent() {
 		}
 	}, [selectedCell, deleteColumn]);
 
-	const handleInsertChart = useCallback(() => {
-		toast.success("Insert Chart", {
-			description: "Chart wizard opened",
-			icon: <BarChart className="h-4 w-4" />,
-		});
-	}, []);
-
-	const handleInsertImage = useCallback(() => {
-		toast.success("Insert Image", {
-			description: "Image upload dialog opened",
-			icon: <Upload className="h-4 w-4" />,
-		});
-	}, []);
 
 	const handleFormatCells = useCallback(() => {
 		toast.success("Format Cells", {
@@ -766,16 +777,71 @@ function EditorContent() {
 
 	const handleRemoveDuplicates = useCallback(() => {
 		if (selectionRange && selectionRange.length > 0) {
+			const range = selectionRange[0] + ":" + selectionRange[selectionRange.length - 1];
+			removeDuplicates(range, 0);
 			toast.success("Remove Duplicates", {
-				description: "Removing duplicate values...",
-				icon: <Trash2 className="h-4 w-4" />,
+				description: "Duplicates removed from selected range",
+				icon: <ShieldCheck className="h-4 w-4" />,
 			});
 		} else {
 			toast.error("No range selected", {
 				description: "Please select a range to remove duplicates",
 			});
 		}
-	}, [selectionRange]);
+	}, [selectionRange, removeDuplicates]);
+
+	const handleTextToColumns = useCallback(() => {
+		if (selectionRange && selectionRange.length > 0) {
+			const range = selectionRange[0] + ":" + selectionRange[selectionRange.length - 1];
+			textToColumns(range, ",");
+			toast.success("Text to Columns", {
+				description: "Text split by comma",
+				icon: <Columns className="h-4 w-4" />,
+			});
+		} else {
+			toast.error("No range selected");
+		}
+	}, [selectionRange, textToColumns]);
+
+	const handleInsertChart = useCallback(() => {
+		if (selectionRange && selectionRange.length > 0) {
+			const range = selectionRange[0] + ":" + selectionRange[selectionRange.length - 1];
+			addChart({
+				type: chartType,
+				range,
+				title: chartTitle,
+				position: { x: 100, y: 100 },
+				size: { width: 400, height: 300 },
+			});
+			setShowChartDialog(false);
+			toast.success("Chart Inserted", {
+				description: "Your chart has been added to the sheet",
+				icon: <BarChart2 className="h-4 w-4" />,
+			});
+		} else {
+			toast.error("No range selected", {
+				description: "Please select data for the chart",
+			});
+		}
+	}, [selectionRange, chartType, chartTitle, addChart]);
+
+	const handleInsertImage = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0];
+		if (file) {
+			const reader = new FileReader();
+			reader.onload = (event) => {
+				addImage({
+					src: event.target?.result as string,
+					position: { x: 150, y: 150 },
+					size: { width: 300, height: 200 },
+				});
+				toast.success("Image Inserted", {
+					icon: <ImageIcon className="h-4 w-4" />,
+				});
+			};
+			reader.readAsDataURL(file);
+		}
+	}, [addImage]);
 
 	const handleDataValidation = useCallback(() => {
 		if (selectedCell) {
@@ -1024,6 +1090,10 @@ function EditorContent() {
 				onFilter={handleFilter}
 				onFind={() => setShowFindDialog(true)}
 				onDataValidation={handleDataValidation}
+				onRemoveDuplicates={handleRemoveDuplicates}
+				onTextToColumns={handleTextToColumns}
+				onInsertChart={() => setShowChartDialog(true)}
+				onInsertImage={handleInsertImage}
 			/>
 
 			{/* Formula Bar */}
@@ -1053,6 +1123,12 @@ function EditorContent() {
 					onDeleteColumn={deleteColumn}
 					onClearCell={(id) => updateCell(id, "")}
 					hiddenRows={hiddenRows}
+					charts={charts}
+					images={images}
+					onRemoveChart={removeChart}
+					onRemoveImage={removeImage}
+					onUpdateChart={updateChart}
+					onUpdateImage={updateImage}
 				/>
 			</div>
 
@@ -1479,6 +1555,46 @@ function EditorContent() {
 						<Button variant="destructive" onClick={handleClearAll}>
 							Clear All
 						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+			{/* Chart Dialog */}
+			<Dialog open={showChartDialog} onOpenChange={setShowChartDialog}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Insert Chart</DialogTitle>
+						<DialogDescription>
+							Select a chart type and title for your data.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="space-y-4 py-4">
+						<div className="space-y-2">
+							<Label>Chart Title</Label>
+							<Input
+								value={chartTitle}
+								onChange={(e) => setChartTitle(e.target.value)}
+								placeholder="Enter chart title..."
+							/>
+						</div>
+						<div className="space-y-2">
+							<Label>Chart Type</Label>
+							<Select value={chartType} onValueChange={(v: any) => setChartType(v)}>
+								<SelectTrigger>
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="bar">Bar Chart</SelectItem>
+									<SelectItem value="line">Line Chart</SelectItem>
+									<SelectItem value="pie">Pie Chart</SelectItem>
+								</SelectContent>
+							</Select>
+						</div>
+					</div>
+					<DialogFooter>
+						<Button variant="outline" onClick={() => setShowChartDialog(false)}>
+							Cancel
+						</Button>
+						<Button onClick={handleInsertChart}>Insert Chart</Button>
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
