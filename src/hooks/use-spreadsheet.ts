@@ -65,6 +65,26 @@ export interface ImageData {
 	size: { width: number; height: number };
 }
 
+export interface ShapeData {
+	id: string;
+	type: "rectangle" | "circle" | "line";
+	position: { x: number; y: number };
+	size: { width: number; height: number };
+	style?: {
+		fill?: string;
+		stroke?: string;
+		strokeWidth?: number;
+	};
+}
+
+export interface IconData {
+	id: string;
+	iconName: string;
+	position: { x: number; y: number };
+	size: number;
+	color?: string;
+}
+
 export const useSpreadsheet = (initialData: SheetData = {}) => {
 	const [data, setData] = useState<SheetData>(initialData);
 	const [selectedCell, setSelectedCell] = useState<string | null>("A1");
@@ -79,6 +99,8 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 	const [hiddenRows, setHiddenRows] = useState<Set<number>>(new Set());
 	const [charts, setCharts] = useState<ChartData[]>([]);
 	const [images, setImages] = useState<ImageData[]>([]);
+	const [shapes, setShapes] = useState<ShapeData[]>([]);
+	const [icons, setIcons] = useState<IconData[]>([]);
 
 	// Helper to get cell value as number (or 0)
 	const getVal = useCallback((cellId: string, currentData: SheetData) => {
@@ -230,6 +252,48 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				and: (...args: boolean[]) => args.every(Boolean),
 				or: (...args: boolean[]) => args.some(Boolean),
 				not: (arg: boolean) => !arg,
+				// Financial Functions (Simplified)
+				pmt: (rate: number, nper: number, pv: number) => {
+					const r = rate / 12;
+					const pmt = (pv * r * Math.pow(1 + r, nper)) / (Math.pow(1 + r, nper) - 1);
+					return isFinite(pmt) ? pmt : 0;
+				},
+				fv: (rate: number, nper: number, pmt: number, pv = 0) => {
+					const r = rate;
+					const fv = pv * Math.pow(1 + r, nper) + pmt * ((Math.pow(1 + r, nper) - 1) / r);
+					return isFinite(fv) ? fv : 0;
+				},
+				pv: (rate: number, nper: number, pmt: number, fv = 0) => {
+					const r = rate;
+					const pv = (fv - pmt * ((Math.pow(1 + r, nper) - 1) / r)) / Math.pow(1 + r, nper);
+					return isFinite(pv) ? pv : 0;
+				},
+				// Statistical Functions
+				stdev: (...args: number[]) => {
+					const nums = args.map(Number).filter(n => !isNaN(n));
+					if (nums.length === 0) return 0;
+					const avg = nums.reduce((a, b) => a + b, 0) / nums.length;
+					const std = Math.sqrt(nums.map(x => Math.pow(x - avg, 2)).reduce((a, b) => a + b, 0) / nums.length);
+					return isFinite(std) ? std : 0;
+				},
+				var: (...args: number[]) => {
+					const nums = args.map(Number).filter(n => !isNaN(n));
+					if (nums.length === 0) return 0;
+					const avg = nums.reduce((a, b) => a + b, 0) / nums.length;
+					const v = nums.map(x => Math.pow(x - avg, 2)).reduce((a, b) => a + b, 0) / nums.length;
+					return isFinite(v) ? v : 0;
+				},
+				median: (...args: number[]) => {
+					const nums = args.map(Number).filter(n => !isNaN(n));
+					if (nums.length === 0) return 0;
+					const sorted = [...nums].sort((a, b) => a - b);
+					const mid = Math.floor(sorted.length / 2);
+					return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+				},
+				// Information Functions
+				isnumber: (val: unknown) => typeof val === "number" && !isNaN(val),
+				istext: (val: unknown) => typeof val === "string",
+				isblank: (val: unknown) => val === undefined || val === null || val === "",
 			}, { override: true });
 		} catch (e) {
 			console.warn("MathJS custom functions registration failed:", e);
@@ -660,7 +724,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 
 			return newData;
 		});
-	}, [data, saveToUndo]);
+	}, [data, saveToUndo, getRange]);
 
 	// Filter range
 	const filterRange = useCallback((range: string, column: number, predicate: (value: string) => boolean) => {
@@ -918,6 +982,34 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 		setImages(prev => prev.map(i => i.id === id ? { ...i, ...updates } : i));
 	}, []);
 
+	// Shape operations
+	const addShape = useCallback((shape: Omit<ShapeData, "id">) => {
+		const newShape = { ...shape, id: `shape-${Date.now()}` };
+		setShapes(prev => [...prev, newShape]);
+	}, []);
+
+	const removeShape = useCallback((id: string) => {
+		setShapes(prev => prev.filter(s => s.id !== id));
+	}, []);
+
+	const updateShape = useCallback((id: string, updates: Partial<ShapeData>) => {
+		setShapes(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
+	}, []);
+
+	// Icon operations
+	const addIcon = useCallback((icon: Omit<IconData, "id">) => {
+		const newIcon = { ...icon, id: `icon-${Date.now()}` };
+		setIcons(prev => [...prev, newIcon]);
+	}, []);
+
+	const removeIcon = useCallback((id: string) => {
+		setIcons(prev => prev.filter(i => i.id !== id));
+	}, []);
+
+	const updateIcon = useCallback((id: string, updates: Partial<IconData>) => {
+		setIcons(prev => prev.map(i => i.id === id ? { ...i, ...updates } : i));
+	}, []);
+
 	// Get cell formula
 	const getCellFormula = useCallback(
 		(cellId: string) => {
@@ -1020,6 +1112,14 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 		addImage,
 		removeImage,
 		updateImage,
+		shapes,
+		icons,
+		addShape,
+		removeShape,
+		updateShape,
+		addIcon,
+		removeIcon,
+		updateIcon,
 
 		// Utilities
 		clearSheet,

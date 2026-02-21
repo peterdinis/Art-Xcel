@@ -60,7 +60,7 @@ interface RibbonProps {
     onRemoveDuplicates?: () => void;
     onTextToColumns?: () => void;
     onInsertChart?: () => void;
-    onInsertImage?: () => void;
+    onInsertImage?: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 const RibbonGroup = ({ children, label }: { children: React.ReactNode; label: string }) => (

@@ -8,6 +8,9 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { CellContextMenu } from "./CellContextMenu";
 import { ChartComponent } from "./ChartComponent";
 import { ImageComponent } from "./ImageComponent";
+import { ShapeComponent } from "./ShapeComponent";
+import { IconComponent } from "./IconComponent";
+import { ShapeData, IconData } from "@/hooks/use-spreadsheet";
 
 interface GridProps {
 	data: SheetData;
@@ -32,6 +35,12 @@ interface GridProps {
 	onRemoveImage?: (id: string) => void;
 	onUpdateChart?: (id: string, updates: Partial<ChartData>) => void;
 	onUpdateImage?: (id: string, updates: Partial<ImageData>) => void;
+	shapes?: ShapeData[];
+	icons?: IconData[];
+	onRemoveShape?: (id: string) => void;
+	onRemoveIcon?: (id: string) => void;
+	onUpdateShape?: (id: string, updates: Partial<ShapeData>) => void;
+	onUpdateIcon?: (id: string, updates: Partial<IconData>) => void;
 }
 
 const DEFAULT_ROW_HEIGHT = 32;
@@ -249,6 +258,12 @@ export const Grid = ({
 	onRemoveImage,
 	onUpdateChart,
 	onUpdateImage,
+	shapes = [],
+	icons = [],
+	onRemoveShape,
+	onRemoveIcon,
+	onUpdateShape,
+	onUpdateIcon,
 }: GridProps) => {
 	const [editingCell, setEditingCell] = useState<string | null>(null);
 	const [editValue, setEditValue] = useState<string>("");
@@ -746,6 +761,26 @@ export const Grid = ({
 							onRemove={() => onRemoveImage?.(image.id)}
 							onUpdatePosition={(x, y) => onUpdateImage?.(image.id, { position: { x, y } })}
 							onUpdateSize={(width, height) => onUpdateImage?.(image.id, { size: { width, height } })}
+						/>
+					))}
+
+					{/* Floating Shapes */}
+					{shapes.map((shape) => (
+						<ShapeComponent
+							key={shape.id}
+							{...shape}
+							onRemove={() => onRemoveShape?.(shape.id)}
+							onUpdatePosition={(x, y) => onUpdateShape?.(shape.id, { position: { x, y } })}
+						/>
+					))}
+
+					{/* Floating Icons */}
+					{icons.map((icon) => (
+						<IconComponent
+							key={icon.id}
+							{...icon}
+							onRemove={() => onRemoveIcon?.(icon.id)}
+							onUpdatePosition={(x, y) => onUpdateIcon?.(icon.id, { position: { x, y } })}
 						/>
 					))}
 				</div>
