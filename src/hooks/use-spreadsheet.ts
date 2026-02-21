@@ -631,7 +631,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 			const newData = { ...prev };
 			const firstRow = Math.min(...Array.from(rows.keys()));
 
-			sortedRows.forEach(([originalRow, rowData], index) => {
+			sortedRows.forEach(([, rowData], index) => {
 				const newRow = firstRow + index;
 				rowData.forEach((cellData, colNum) => {
 					const cellId = `${String.fromCharCode(colNum)}${newRow}`;
