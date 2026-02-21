@@ -14,12 +14,16 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
+import { ExcelUpload } from "@/components/dashboard/ExcelUpload";
 
-interface Spreadsheet {
+import { SheetData } from "@/hooks/use-spreadsheet";
+
+export interface Spreadsheet {
 	id: string;
 	name: string;
 	lastModified: number;
 	deletedAt?: number;
+	data?: SheetData;
 }
 
 // Loading komponent pre jednotlivú kartu
@@ -212,6 +216,8 @@ function DashboardContent() {
 					)}
 				</Button>
 			</motion.div>
+
+			<ExcelUpload onUploadComplete={(newFile) => setSpreadsheets((prev) => [newFile, ...prev])} />
 
 			{spreadsheets.length === 0 ? (
 				<motion.div
