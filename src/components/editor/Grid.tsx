@@ -5,6 +5,8 @@ import { cn } from "@/lib/utils";
 import { SheetData, CellData } from "@/hooks/use-spreadsheet";
 import { useVirtualizer } from "@tanstack/react-virtual";
 
+import { CellContextMenu } from "./CellContextMenu";
+
 interface GridProps {
 	data: SheetData;
 	selectedCell: string | null;
@@ -13,6 +15,14 @@ interface GridProps {
 	showGrid?: boolean;
 	showHeaders?: boolean;
 	freezePanes?: boolean;
+	onCopy: () => void;
+	onCut: () => void;
+	onPaste: () => void;
+	onInsertRow: (index: number) => void;
+	onDeleteRow: (index: number) => void;
+	onInsertColumn: (index: number) => void;
+	onDeleteColumn: (index: number) => void;
+	onClearCell: (cellId: string) => void;
 }
 
 const DEFAULT_ROW_HEIGHT = 32;
@@ -61,6 +71,17 @@ interface CellProps {
 	onBlur: () => void;
 	inputRef?: React.RefCallback<HTMLInputElement>;
 	onResize?: (e: React.MouseEvent) => void;
+	// Context Menu Props
+	onCopy: () => void;
+	onCut: () => void;
+	onPaste: () => void;
+	onInsertRowAbove: () => void;
+	onInsertRowBelow: () => void;
+	onDeleteRow: () => void;
+	onInsertColumnLeft: () => void;
+	onInsertColumnRight: () => void;
+	onDeleteColumn: () => void;
+	onClearCell: () => void;
 }
 
 const Cell = memo(
@@ -80,60 +101,83 @@ const Cell = memo(
 		onBlur,
 		inputRef,
 		onResize,
+		onCopy,
+		onCut,
+		onPaste,
+		onInsertRowAbove,
+		onInsertRowBelow,
+		onDeleteRow,
+		onInsertColumnLeft,
+		onInsertColumnRight,
+		onDeleteColumn,
+		onClearCell,
 	}: CellProps) => {
 		const displayValue = isEditing ? formula || value : value;
 
 		return (
-			<div
-				className={cn(
-					"flex items-center relative group",
-					isSelected ? "ring-2 ring-primary z-10" : "",
-					isEditing && "ring-2 ring-blue-500 z-20",
-					showGrid ? "border-r border-b" : "border-0",
-				)}
-				style={{
-					backgroundColor: style?.backgroundColor,
-					width: `${width}px`,
-					height: `${height}px`,
-					minWidth: `${width}px`,
-					maxWidth: `${width}px`,
-				}}
-				onClick={onClick}
+			<CellContextMenu
+				onCopy={onCopy}
+				onCut={onCut}
+				onPaste={onPaste}
+				onInsertRowAbove={onInsertRowAbove}
+				onInsertRowBelow={onInsertRowBelow}
+				onDeleteRow={onDeleteRow}
+				onInsertColumnLeft={onInsertColumnLeft}
+				onInsertColumnRight={onInsertColumnRight}
+				onDeleteColumn={onDeleteColumn}
+				onClearCell={onClearCell}
 			>
-				<input
-					ref={inputRef}
-					className={cn(
-						"w-full h-full px-1 outline-none bg-transparent",
-						style?.bold && "font-bold",
-						style?.italic && "italic",
-						style?.underline && "underline",
-						style?.align === "center" && "text-center",
-						style?.align === "right" && "text-right",
-						style?.align === "left" && "text-left",
-					)}
-					style={{ color: style?.color }}
-					value={displayValue}
-					onChange={onChange}
-					onKeyDown={onKeyDown}
-					onBlur={onBlur}
-					autoFocus={isEditing}
-				/>
-
-				{formula && !isEditing && (
-					<div
-						className="absolute top-0 right-0 w-2 h-2 bg-green-500 rounded-full"
-						title="Contains formula"
-					/>
-				)}
-
-				{/* Resize handle for columns */}
 				<div
-					className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-blue-500 opacity-0 group-hover:opacity-100"
-					onMouseDown={(e) => onResize?.(e)}
-					data-resize="col"
-					data-cell={id}
-				/>
-			</div>
+					className={cn(
+						"flex items-center relative group transition-all duration-75",
+						isSelected ? "ring-2 ring-primary z-10 shadow-sm shadow-primary/20" : "",
+						isEditing && "ring-2 ring-blue-500 z-20",
+						showGrid ? "border-r border-b" : "border-0",
+					)}
+					style={{
+						backgroundColor: style?.backgroundColor || (isSelected ? "hsl(var(--primary) / 0.05)" : undefined),
+						width: `${width}px`,
+						height: `${height}px`,
+						minWidth: `${width}px`,
+						maxWidth: `${width}px`,
+					}}
+					onClick={onClick}
+				>
+					<input
+						ref={inputRef}
+						className={cn(
+							"w-full h-full px-2 outline-none bg-transparent text-[13px]",
+							style?.bold && "font-bold",
+							style?.italic && "italic",
+							style?.underline && "underline",
+							style?.align === "center" && "text-center",
+							style?.align === "right" && "text-right",
+							style?.align === "left" && "text-left",
+						)}
+						style={{ color: style?.color }}
+						value={displayValue}
+						onChange={onChange}
+						onKeyDown={onKeyDown}
+						onBlur={onBlur}
+						autoFocus={isEditing}
+					/>
+
+					{formula && !isEditing && (
+						<div
+							className="absolute top-0 right-0 w-0 h-0 border-t-[6px] border-l-[6px] border-t-green-500 border-l-transparent"
+							title="Contains formula"
+						/>
+					)}
+
+					{/* Resize handle for columns */}
+					<div
+						className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-primary transition-colors opacity-0 group-hover:opacity-100 z-30"
+						onMouseDown={(e) => onResize?.(e)}
+						data-resize="col"
+						data-cell={id}
+					/>
+				</div>
+			</CellContextMenu>
 		);
 	},
 );
@@ -143,22 +187,26 @@ Cell.displayName = "Cell";
 interface RowHeaderProps {
 	rowIndex: number;
 	height: number;
+	isActive: boolean;
 	showHeaders?: boolean;
 	onResize?: (e: React.MouseEvent) => void;
 }
 
-const RowHeader = memo(({ rowIndex, height, showHeaders = true, onResize }: RowHeaderProps) => {
+const RowHeader = memo(({ rowIndex, height, isActive, showHeaders = true, onResize }: RowHeaderProps) => {
 	if (!showHeaders) return null;
 
 	return (
 		<div
-			className="w-10 shrink-0 bg-muted border-r border-b flex items-center justify-center font-bold text-xs text-muted-foreground sticky left-0 z-10 group"
+			className={cn(
+				"w-10 shrink-0 border-r border-b flex items-center justify-center font-medium text-[11px] transition-colors sticky left-0 z-10 group",
+				isActive ? "bg-primary text-primary-foreground shadow-md" : "bg-muted text-muted-foreground"
+			)}
 			style={{ height: `${height}px`, minHeight: `${height}px` }}
 		>
 			{rowIndex}
 			{/* Resize handle for rows */}
 			<div
-				className="absolute bottom-0 left-0 w-full h-1 cursor-row-resize hover:bg-blue-500 opacity-0 group-hover:opacity-100"
+				className="absolute bottom-0 left-0 w-full h-1 cursor-row-resize hover:bg-primary transition-colors opacity-0 group-hover:opacity-100 z-20"
 				onMouseDown={onResize}
 				data-resize="row"
 				data-row={rowIndex}
