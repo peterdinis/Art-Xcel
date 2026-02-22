@@ -322,20 +322,20 @@ export const Grid = ({
   useEffect(() => {
     const virtualRows = rowVirtualizer.getVirtualItems();
     if (virtualRows.length === 0) return;
-    const lastVisible = virtualRows[virtualRows.length - 1].index;
-    if (lastVisible >= totalRows - ROW_LOAD_THRESHOLD) {
+    const lastIndex = virtualRows[virtualRows.length - 1].index;
+    if (lastIndex >= totalRows - ROW_LOAD_THRESHOLD) {
       setTotalRows((prev) => prev + ROW_BATCH_SIZE);
     }
-  }, [rowVirtualizer.getVirtualItems(), totalRows]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [rowVirtualizer.getVirtualItems()[rowVirtualizer.getVirtualItems().length - 1]?.index, totalRows]);
 
   useEffect(() => {
     const virtualCols = colVirtualizer.getVirtualItems();
     if (virtualCols.length === 0) return;
-    const lastVisible = virtualCols[virtualCols.length - 1].index;
-    if (lastVisible >= totalCols - COL_LOAD_THRESHOLD) {
+    const lastIndex = virtualCols[virtualCols.length - 1].index;
+    if (lastIndex >= totalCols - COL_LOAD_THRESHOLD) {
       setTotalCols((prev) => prev + COL_BATCH_SIZE);
     }
-  }, [colVirtualizer.getVirtualItems(), totalCols]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [colVirtualizer.getVirtualItems()[colVirtualizer.getVirtualItems().length - 1]?.index, totalCols]);
 
   // ── Sync scroll header ↔ grid ─────────────────────────────────────────────
   useEffect(() => {
@@ -636,89 +636,89 @@ export const Grid = ({
             return (
               <div
                 key={virtualRow.key}
-                className="absolute left-0 flex"
+                className="absolute left-0"
                 style={{
-                  top: virtualRow.start,
                   width: colVirtualizer.getTotalSize() + (showHeaders ? ROW_HEADER_WIDTH : 0),
                   height: rowHeight,
                   // GPU-accelerated positioning
-                  transform: `translateY(0)`,
-                  willChange: "contents",
+                  transform: `translateY(${virtualRow.start}px)`,
+                  willChange: "transform",
                 }}
               >
-                {/* Row header — sticky left */}
-                {showHeaders && (
+                <div className="flex w-full h-full">
+                  {/* Row header — sticky left */}
+                  {showHeaders && (
+                    <div
+                      className="sticky left-0 z-10 shrink-0"
+                      style={{ width: ROW_HEADER_WIDTH }}
+                    >
+                      <RowHeader
+                        rowIndex={row}
+                        height={rowHeight}
+                        isActive={isRowActive}
+                        showHeaders={showHeaders}
+                        onResize={handleResizeStart}
+                      />
+                    </div>
+                  )}
+
+                  {/* Virtuálne bunky v riadku */}
                   <div
-                    className="sticky left-0 z-10 shrink-0"
-                    style={{ width: ROW_HEADER_WIDTH }}
+                    className="relative"
+                    style={{
+                      width: colVirtualizer.getTotalSize(),
+                      height: rowHeight,
+                    }}
                   >
-                    <RowHeader
-                      rowIndex={row}
-                      height={rowHeight}
-                      isActive={isRowActive}
-                      showHeaders={showHeaders}
-                      onResize={handleResizeStart}
-                    />
+                    {colVirtualizer.getVirtualItems().map((virtualCol) => {
+                      const col = numberToColLabel(virtualCol.index);
+                      const cellId = `${col}${row}`;
+                      const cellData = data[cellId] || { value: "", style: {} };
+                      const isSelected = selectedCell === cellId;
+                      const isEditing = editingCell === cellId;
+
+                      return (
+                        <div
+                          key={virtualCol.key}
+                          className="absolute top-0 h-full"
+                          style={{
+                            transform: `translateX(${virtualCol.start}px)`,
+                            width: virtualCol.size,
+                          }}
+                          onDoubleClick={() => handleDoubleClick(cellId)}
+                        >
+                          <Cell
+                            id={cellId}
+                            value={cellData.value || ""}
+                            formula={cellData.formula}
+                            style={cellData.style}
+                            isSelected={isSelected}
+                            isEditing={isEditing}
+                            width={virtualCol.size}
+                            height={rowHeight}
+                            showGrid={showGrid}
+                            onClick={() => handleCellClick(cellId)}
+                            onChange={(e) => handleCellChange(cellId, e)}
+                            onKeyDown={(e) => handleKeyDown(cellId, e)}
+                            onBlur={() => handleBlur(cellId)}
+                            inputRef={setInputRef(cellId)}
+                            onResize={handleResizeStart}
+                            onCopy={onCopy}
+                            onCut={onCut}
+                            onPaste={onPaste}
+                            onInsertRowAbove={() => onInsertRow(row)}
+                            onInsertRowBelow={() => onInsertRow(row + 1)}
+                            onDeleteRow={() => onDeleteRow(row)}
+                            onInsertColumnLeft={() => onInsertColumn(virtualCol.index)}
+                            onInsertColumnRight={() => onInsertColumn(virtualCol.index + 1)}
+                            onDeleteColumn={() => onDeleteColumn(virtualCol.index)}
+                            onClearCell={() => onClearCell(cellId)}
+                            onShowShortcuts={onShowShortcuts}
+                          />
+                        </div>
+                      );
+                    })}
                   </div>
-                )}
-
-                {/* Virtuálne bunky v riadku */}
-                <div
-                  className="relative"
-                  style={{
-                    width: colVirtualizer.getTotalSize(),
-                    height: rowHeight,
-                  }}
-                >
-                  {colVirtualizer.getVirtualItems().map((virtualCol) => {
-                    const col = numberToColLabel(virtualCol.index);
-                    const cellId = `${col}${row}`;
-                    const cellData = data[cellId] || { value: "", style: {} };
-                    const isSelected = selectedCell === cellId;
-                    const isEditing = editingCell === cellId;
-
-                    return (
-                      <div
-                        key={virtualCol.key}
-                        className="absolute top-0"
-                        style={{
-                          left: virtualCol.start,
-                          width: virtualCol.size,
-                          height: rowHeight,
-                        }}
-                        onDoubleClick={() => handleDoubleClick(cellId)}
-                      >
-                        <Cell
-                          id={cellId}
-                          value={cellData.value || ""}
-                          formula={cellData.formula}
-                          style={cellData.style}
-                          isSelected={isSelected}
-                          isEditing={isEditing}
-                          width={virtualCol.size}
-                          height={rowHeight}
-                          showGrid={showGrid}
-                          onClick={() => handleCellClick(cellId)}
-                          onChange={(e) => handleCellChange(cellId, e)}
-                          onKeyDown={(e) => handleKeyDown(cellId, e)}
-                          onBlur={() => handleBlur(cellId)}
-                          inputRef={setInputRef(cellId)}
-                          onResize={handleResizeStart}
-                          onCopy={onCopy}
-                          onCut={onCut}
-                          onPaste={onPaste}
-                          onInsertRowAbove={() => onInsertRow(row)}
-                          onInsertRowBelow={() => onInsertRow(row + 1)}
-                          onDeleteRow={() => onDeleteRow(row)}
-                          onInsertColumnLeft={() => onInsertColumn(virtualCol.index)}
-                          onInsertColumnRight={() => onInsertColumn(virtualCol.index + 1)}
-                          onDeleteColumn={() => onDeleteColumn(virtualCol.index)}
-                          onClearCell={() => onClearCell(cellId)}
-                          onShowShortcuts={onShowShortcuts}
-                        />
-                      </div>
-                    );
-                  })}
                 </div>
               </div>
             );
