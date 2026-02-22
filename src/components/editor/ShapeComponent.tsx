@@ -78,7 +78,7 @@ export const ShapeComponent = ({
                 zIndex: 80,
             }}
         >
-            <div className="absolute top-[-24px] left-0 w-full h-6 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity bg-black/5 rounded-t-md px-1">
+            <div className="absolute -top-6 left-0 w-full h-6 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity bg-black/5 rounded-t-md px-1">
                 <GripVertical
                     className="h-3 w-3 text-muted-foreground cursor-grab active:cursor-grabbing"
                     onMouseDown={handleDragStart}

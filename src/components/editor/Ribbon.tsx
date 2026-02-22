@@ -103,7 +103,7 @@ const RibbonButton = ({
                 <Button
                     variant={variant}
                     size={label ? "sm" : "icon"}
-                    className={label ? "h-8 flex flex-col gap-0 px-2 min-w-[40px]" : "h-8 w-8"}
+                    className={label ? "h-8 flex flex-col gap-0 px-2 min-w-10" : "h-8 w-8"}
                     onClick={onClick}
                 >
                     <Icon className="h-4 w-4" />

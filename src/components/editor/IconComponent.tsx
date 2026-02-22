@@ -79,7 +79,7 @@ export const IconComponent = ({
       }}
     >
       {/* Toolbar nad ikonou */}
-      <div className="absolute top-[-28px] left-0 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity bg-white border border-gray-200 rounded shadow-sm px-1 h-6 pointer-events-auto">
+      <div className="absolute -top-7 left-0 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity bg-white border border-gray-200 rounded shadow-sm px-1 h-6 pointer-events-auto">
         <GripVertical
           className="h-3 w-3 text-muted-foreground cursor-grab active:cursor-grabbing"
           onMouseDown={handleDragStart}

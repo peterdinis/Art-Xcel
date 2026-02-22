@@ -132,7 +132,7 @@ export const ChartComponent = ({ chart, data, onRemove, onUpdatePosition }: Char
         {chartData.map((d, i) => (
           <div key={i} className="flex items-center gap-1 shrink-0">
             <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-            <span className="text-[10px] text-muted-foreground truncate max-w-[40px]">{d.name}</span>
+            <span className="text-[10px] text-muted-foreground truncate max-w-10">{d.name}</span>
           </div>
         ))}
       </div>
