@@ -13,7 +13,9 @@ import { ShapeData, IconData } from "@/hooks/use-spreadsheet";
 interface GridProps {
   data: SheetData;
   selectedCell: string | null;
+  selectionRange: string[] | null;
   onSelectCell: (cellId: string) => void;
+  onSelectRange: (range: string) => void;
   onCellChange: (cellId: string, value: string) => void;
   showGrid?: boolean;
   showHeaders?: boolean;
@@ -80,6 +82,7 @@ interface CellProps {
   formula?: string;
   style?: CellData["style"];
   isSelected: boolean;
+  isInRange: boolean;
   isEditing: boolean;
   width: number;
   height: number;
@@ -110,6 +113,7 @@ const Cell = memo(
     formula,
     style,
     isSelected,
+    isInRange,
     isEditing,
     width,
     height,
@@ -150,12 +154,18 @@ const Cell = memo(
       >
         <div
           className={cn(
-            "relative flex items-center overflow-hidden select-none",
-            showGrid && "border-r border-b border-gray-200",
-            isSelected && "ring-2 ring-blue-500 ring-inset z-10",
-            style?.bold && "font-bold",
-            style?.italic && "italic",
-            style?.underline && "underline",
+            "h-full w-full border-r border-b relative group cursor-cell",
+            showGrid ? "border-gray-200" : "border-transparent",
+            isSelected ? "ring-2 ring-blue-500 z-10" : "",
+            isInRange && !isSelected ? "bg-blue-100/30" : "",
+            !showGrid && !isSelected && "hover:border-gray-300"
+          )}
+          style={{ width, height, ...style }}
+          onClick={onClick}
+        >
+          style?.bold && "font-bold",
+          style?.italic && "italic",
+          style?.underline && "underline",
           )}
           style={{
             width,
@@ -234,7 +244,9 @@ RowHeader.displayName = "RowHeader";
 export const Grid = ({
   data,
   selectedCell,
+  selectionRange,
   onSelectCell,
+  onSelectRange,
   onCellChange,
   showGrid = true,
   showHeaders = true,
@@ -267,6 +279,10 @@ export const Grid = ({
   const [rowHeights, setRowHeights] = useState<Record<number, number>>({});
   const [colWidths, setColWidths] = useState<Record<string, number>>({});
 
+  // Range selection state
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState<string | null>(null);
+
   // ── Infinite grid dimensions ──────────────────────────────────────────────
   // Začíname s rozumnou veľkosťou a expandujeme keď sa scrolluje k okraju.
   const [totalRows, setTotalRows] = useState(200);
@@ -275,6 +291,7 @@ export const Grid = ({
   const inputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
   const gridRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
+  const headerScrollRef = useRef<HTMLDivElement>(null);
   const resizeRef = useRef<{
     type: "row" | "col";
     id: string | number;
@@ -343,8 +360,8 @@ export const Grid = ({
     if (!grid) return;
 
     const handleScroll = () => {
-      if (headerRef.current) {
-        headerRef.current.scrollLeft = grid.scrollLeft;
+      if (headerScrollRef.current) {
+        headerScrollRef.current.scrollLeft = grid.scrollLeft;
       }
     };
 
@@ -353,7 +370,7 @@ export const Grid = ({
   }, []);
 
   useEffect(() => {
-    const header = headerRef.current;
+    const header = headerScrollRef.current;
     if (!header) return;
 
     const handleHeaderScroll = () => {
@@ -427,11 +444,51 @@ export const Grid = ({
     [colWidths, rowHeights],
   );
 
+  // ── Handlers ─────────────────────────────────────────────────────────────
+  const handleCellMouseDown = useCallback(
+    (cellId: string, event: React.MouseEvent) => {
+      if (event.shiftKey && selectedCell) {
+        const range = `${selectedCell}:${cellId}`;
+        onSelectRange(range);
+      } else {
+        setIsDragging(true);
+        setDragStart(cellId);
+        onSelectCell(cellId);
+        onSelectRange(`${cellId}:${cellId}`); // Reset range to single cell
+      }
+    },
+    [selectedCell, onSelectCell, onSelectRange]
+  );
+
+  const handleCellMouseEnter = useCallback(
+    (cellId: string) => {
+      if (isDragging && dragStart) {
+        const range = `${dragStart}:${cellId}`;
+        onSelectRange(range);
+      }
+    },
+    [isDragging, dragStart, onSelectRange]
+  );
+
+  const handleCellMouseUp = useCallback(() => {
+    setIsDragging(false);
+    setDragStart(null);
+  }, []);
+
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      setIsDragging(false);
+      setDragStart(null);
+    };
+    window.addEventListener("mouseup", handleGlobalMouseUp);
+    return () => window.removeEventListener("mouseup", handleGlobalMouseUp);
+  }, []);
+
   const handleCellClick = useCallback(
     (cellId: string) => {
-      onSelectCell(cellId);
+      // Logic moved to handleCellMouseDown
     },
-    [onSelectCell],
+    [],
   );
 
   const handleDoubleClick = useCallback(
@@ -556,43 +613,51 @@ export const Grid = ({
     if (!showHeaders) return null;
 
     return (
-      <div className="flex sticky top-0 z-20 bg-gray-50 border-b border-gray-200 overflow-hidden shrink-0" ref={headerRef}>
-        {/* Corner cell */}
+      <div className="flex sticky top-0 z-20 bg-gray-50 border-b border-gray-200 shrink-0" ref={headerRef}>
+        {/* Corner cell — strictly fixed on the left */}
         <div
-          className="shrink-0 border-r border-b border-gray-200 bg-gray-100"
+          className="shrink-0 border-r border-gray-200 bg-gray-100 sticky left-0 z-30"
           style={{ width: ROW_HEADER_WIDTH, minWidth: ROW_HEADER_WIDTH, height: DEFAULT_ROW_HEIGHT }}
         >
           <div className="flex items-center justify-center h-full text-xs text-gray-400">#</div>
         </div>
 
-        {/* Virtuálny kontajner pre hlavičky stĺpcov */}
+        {/* Virtuálny kontajner pre hlavičky stĺpcov — synchronized horizontal scroll */}
         <div
-          className="relative overflow-hidden"
+          ref={headerScrollRef}
+          className="relative overflow-hidden flex-1"
           style={{
-            width: colVirtualizer.getTotalSize(),
             height: DEFAULT_ROW_HEIGHT,
           }}
         >
-          {colVirtualizer.getVirtualItems().map((virtualCol) => {
-            const col = numberToColLabel(virtualCol.index);
-            const isActive = activeCol === col;
-            return (
-              <div
-                key={virtualCol.key}
-                className={cn(
-                  "absolute top-0 flex items-center justify-center text-xs font-medium border-r border-gray-200 select-none",
-                  isActive ? "bg-blue-100 text-blue-700" : "text-gray-600",
-                )}
-                style={{
-                  left: virtualCol.start,
-                  width: virtualCol.size,
-                  height: DEFAULT_ROW_HEIGHT,
-                }}
-              >
-                {col}
-              </div>
-            );
-          })}
+          <div
+            style={{
+              width: colVirtualizer.getTotalSize(),
+              height: "100%",
+              position: "relative",
+            }}
+          >
+            {colVirtualizer.getVirtualItems().map((virtualCol) => {
+              const col = numberToColLabel(virtualCol.index);
+              const isActive = activeCol === col;
+              return (
+                <div
+                  key={virtualCol.key}
+                  className={cn(
+                    "absolute top-0 flex items-center justify-center text-xs font-medium border-r border-gray-200 select-none",
+                    isActive ? "bg-blue-100 text-blue-700" : "text-gray-600",
+                  )}
+                  style={{
+                    left: virtualCol.start,
+                    width: virtualCol.size,
+                    height: DEFAULT_ROW_HEIGHT,
+                  }}
+                >
+                  {col}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     );
@@ -640,16 +705,14 @@ export const Grid = ({
                 style={{
                   width: colVirtualizer.getTotalSize() + (showHeaders ? ROW_HEADER_WIDTH : 0),
                   height: rowHeight,
-                  // GPU-accelerated positioning
-                  transform: `translateY(${virtualRow.start}px)`,
-                  willChange: "transform",
+                  top: virtualRow.start,
                 }}
               >
-                <div className="flex w-full h-full">
+                <div className="flex w-full h-full relative">
                   {/* Row header — sticky left */}
                   {showHeaders && (
                     <div
-                      className="sticky left-0 z-10 shrink-0"
+                      className="sticky left-0 z-10 shrink-0 bg-white"
                       style={{ width: ROW_HEADER_WIDTH }}
                     >
                       <RowHeader
@@ -685,6 +748,9 @@ export const Grid = ({
                             transform: `translateX(${virtualCol.start}px)`,
                             width: virtualCol.size,
                           }}
+                          onMouseDown={(e) => handleCellMouseDown(cellId, e)}
+                          onMouseEnter={() => handleCellMouseEnter(cellId)}
+                          onMouseUp={handleCellMouseUp}
                           onDoubleClick={() => handleDoubleClick(cellId)}
                         >
                           <Cell
@@ -693,11 +759,12 @@ export const Grid = ({
                             formula={cellData.formula}
                             style={cellData.style}
                             isSelected={isSelected}
+                            isInRange={selectionRange?.includes(cellId) || false}
                             isEditing={isEditing}
                             width={virtualCol.size}
                             height={rowHeight}
                             showGrid={showGrid}
-                            onClick={() => handleCellClick(cellId)}
+                            onClick={() => { }} // Controlled by onMouseDown
                             onChange={(e) => handleCellChange(cellId, e)}
                             onKeyDown={(e) => handleKeyDown(cellId, e)}
                             onBlur={() => handleBlur(cellId)}
