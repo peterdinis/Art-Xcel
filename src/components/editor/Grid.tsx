@@ -1,5 +1,5 @@
 "use client";
-import React, { memo, useState, useEffect, useRef, useCallback } from "react";
+import React, { memo, useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from "react";
 import { cn } from "@/lib/utils";
 import { SheetData, CellData, ChartData, ImageData } from "@/hooks/use-spreadsheet";
 import { useVirtualizer } from "@tanstack/react-virtual";
@@ -42,6 +42,10 @@ interface GridProps {
   onUpdateShape?: (id: string, updates: Partial<ShapeData>) => void;
   onUpdateIcon?: (id: string, updates: Partial<IconData>) => void;
   onShowShortcuts?: () => void;
+}
+
+export interface GridHandle {
+  scrollToTop: () => void;
 }
 
 const DEFAULT_ROW_HEIGHT = 32;
@@ -154,25 +158,18 @@ const Cell = memo(
       >
         <div
           className={cn(
-            "h-full w-full border-r border-b relative group cursor-cell",
-            showGrid ? "border-gray-200" : "border-transparent",
-            isSelected ? "ring-2 ring-blue-500 z-10" : "",
-            isInRange && !isSelected ? "bg-blue-100/30" : "",
-            !showGrid && !isSelected && "hover:border-gray-300"
-          )}
-          style={{ width, height, ...style }}
-          onClick={onClick}
-        >
-          style?.bold && "font-bold",
-          style?.italic && "italic",
-          style?.underline && "underline",
+            "relative flex items-center overflow-hidden select-none cursor-cell h-full w-full",
+            showGrid && "border-r border-b border-gray-200",
+            isSelected && "ring-2 ring-blue-500 ring-inset z-10",
+            isInRange && !isSelected && "bg-blue-100/30",
+            style?.bold && "font-bold",
+            style?.italic && "italic",
+            style?.underline && "underline"
           )}
           style={{
             width,
-            minWidth: width,
-            maxWidth: width,
             height,
-            backgroundColor: style?.backgroundColor || undefined,
+            backgroundColor: isSelected ? undefined : (style?.backgroundColor || undefined),
             color: style?.color || undefined,
             fontSize: style?.fontSize ? `${style.fontSize}px` : undefined,
             textAlign: style?.align || "left",
@@ -241,7 +238,7 @@ const RowHeader = memo(({ rowIndex, height, isActive, showHeaders = true, onResi
 });
 RowHeader.displayName = "RowHeader";
 
-export const Grid = ({
+export const Grid = forwardRef<GridHandle, GridProps>(({
   data,
   selectedCell,
   selectionRange,
@@ -273,7 +270,7 @@ export const Grid = ({
   onUpdateShape,
   onUpdateIcon,
   onShowShortcuts,
-}: GridProps) => {
+}, ref) => {
   const [editingCell, setEditingCell] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [rowHeights, setRowHeights] = useState<Record<number, number>>({});
@@ -284,7 +281,6 @@ export const Grid = ({
   const [dragStart, setDragStart] = useState<string | null>(null);
 
   // ── Infinite grid dimensions ──────────────────────────────────────────────
-  // Začíname s rozumnou veľkosťou a expandujeme keď sa scrolluje k okraju.
   const [totalRows, setTotalRows] = useState(200);
   const [totalCols, setTotalCols] = useState(52);
 
@@ -324,7 +320,6 @@ export const Grid = ({
     getScrollElement: () => gridRef.current,
     estimateSize: getRowHeight,
     overscan: OVERSCAN,
-    // Bez rangeExtractor — expanzia sa deje v useEffect nižšie
   });
 
   const colVirtualizer = useVirtualizer({
@@ -335,7 +330,7 @@ export const Grid = ({
     overscan: OVERSCAN,
   });
 
-  // ── Infinite scroll: expanduj grid keď sme blízko konca ──────────────────
+  // ── Infinite scroll ───────────────────────────────────────────────────────
   useEffect(() => {
     const virtualRows = rowVirtualizer.getVirtualItems();
     if (virtualRows.length === 0) return;
@@ -354,7 +349,15 @@ export const Grid = ({
     }
   }, [colVirtualizer.getVirtualItems()[colVirtualizer.getVirtualItems().length - 1]?.index, totalCols]);
 
-  // ── Sync scroll header ↔ grid ─────────────────────────────────────────────
+  useImperativeHandle(ref, () => ({
+    scrollToTop: () => {
+      if (gridRef.current) {
+        gridRef.current.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+      }
+    },
+  }));
+
+  // ── Sync scroll ───────────────────────────────────────────────────────────
   useEffect(() => {
     const grid = gridRef.current;
     if (!grid) return;
@@ -383,7 +386,7 @@ export const Grid = ({
     return () => header.removeEventListener("scroll", handleHeaderScroll);
   }, []);
 
-  // ── Resize handling ───────────────────────────────────────────────────────
+  // ── Resize ────────────────────────────────────────────────────────────────
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!resizeRef.current) return;
@@ -444,7 +447,6 @@ export const Grid = ({
     [colWidths, rowHeights],
   );
 
-  // ── Handlers ─────────────────────────────────────────────────────────────
   const handleCellMouseDown = useCallback(
     (cellId: string, event: React.MouseEvent) => {
       if (event.shiftKey && selectedCell) {
@@ -454,7 +456,7 @@ export const Grid = ({
         setIsDragging(true);
         setDragStart(cellId);
         onSelectCell(cellId);
-        onSelectRange(`${cellId}:${cellId}`); // Reset range to single cell
+        onSelectRange(`${cellId}:${cellId}`);
       }
     },
     [selectedCell, onSelectCell, onSelectRange]
@@ -483,13 +485,6 @@ export const Grid = ({
     window.addEventListener("mouseup", handleGlobalMouseUp);
     return () => window.removeEventListener("mouseup", handleGlobalMouseUp);
   }, []);
-
-  const handleCellClick = useCallback(
-    (cellId: string) => {
-      // Logic moved to handleCellMouseDown
-    },
-    [],
-  );
 
   const handleDoubleClick = useCallback(
     (cellId: string) => {
@@ -530,7 +525,6 @@ export const Grid = ({
         switch (direction) {
           case "down":
             nextCellId = colMatch + (row + 1);
-            // Ensure grid expanduje ak ideme za aktuálny limit
             if (row + 1 > totalRows - ROW_LOAD_THRESHOLD) {
               setTotalRows((prev) => prev + ROW_BATCH_SIZE);
             }
@@ -608,13 +602,11 @@ export const Grid = ({
     [],
   );
 
-  // ── Column header ─────────────────────────────────────────────────────────
   const renderHeader = () => {
     if (!showHeaders) return null;
 
     return (
       <div className="flex sticky top-0 z-20 bg-gray-50 border-b border-gray-200 shrink-0" ref={headerRef}>
-        {/* Corner cell — strictly fixed on the left */}
         <div
           className="shrink-0 border-r border-gray-200 bg-gray-100 sticky left-0 z-30"
           style={{ width: ROW_HEADER_WIDTH, minWidth: ROW_HEADER_WIDTH, height: DEFAULT_ROW_HEIGHT }}
@@ -622,13 +614,10 @@ export const Grid = ({
           <div className="flex items-center justify-center h-full text-xs text-gray-400">#</div>
         </div>
 
-        {/* Virtuálny kontajner pre hlavičky stĺpcov — synchronized horizontal scroll */}
         <div
           ref={headerScrollRef}
           className="relative overflow-hidden flex-1"
-          style={{
-            height: DEFAULT_ROW_HEIGHT,
-          }}
+          style={{ height: DEFAULT_ROW_HEIGHT }}
         >
           <div
             style={{
@@ -663,28 +652,18 @@ export const Grid = ({
     );
   };
 
-  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="relative flex flex-col w-full h-full overflow-hidden">
-      {/* Sticky column header */}
       {renderHeader()}
-
-      {/*
-        Hlavný scroll kontajner — použijeme will-change + overscroll-behavior
-        pre maximálnu plynulosť. overflow: scroll je dôležité (nie auto)
-        aby TanStack Virtual správne detekovalo scroll udalosti.
-      */}
       <div
         ref={gridRef}
-        className="flex-1 overflow-scroll relative"
+        className="flex-1 overflow-auto relative show-scrollbar"
         style={{
           willChange: "transform",
           overscrollBehavior: "none",
-          // WebKit smooth momentum scrolling
           WebkitOverflowScrolling: "touch",
         }}
       >
-        {/* Celkový virtuálny priestor — TanStack Virtual ho potrebuje */}
         <div
           style={{
             height: rowVirtualizer.getTotalSize(),
@@ -709,7 +688,6 @@ export const Grid = ({
                 }}
               >
                 <div className="flex w-full h-full relative">
-                  {/* Row header — sticky left */}
                   {showHeaders && (
                     <div
                       className="sticky left-0 z-10 shrink-0 bg-white"
@@ -725,13 +703,9 @@ export const Grid = ({
                     </div>
                   )}
 
-                  {/* Virtuálne bunky v riadku */}
                   <div
                     className="relative"
-                    style={{
-                      width: colVirtualizer.getTotalSize(),
-                      height: rowHeight,
-                    }}
+                    style={{ width: colVirtualizer.getTotalSize(), height: rowHeight }}
                   >
                     {colVirtualizer.getVirtualItems().map((virtualCol) => {
                       const col = numberToColLabel(virtualCol.index);
@@ -764,7 +738,7 @@ export const Grid = ({
                             width={virtualCol.size}
                             height={rowHeight}
                             showGrid={showGrid}
-                            onClick={() => { }} // Controlled by onMouseDown
+                            onClick={() => { }}
                             onChange={(e) => handleCellChange(cellId, e)}
                             onKeyDown={(e) => handleKeyDown(cellId, e)}
                             onBlur={() => handleBlur(cellId)}
@@ -791,60 +765,62 @@ export const Grid = ({
             );
           })}
 
-          {/* Charts Layer */}
-          {charts.map((chart) => (
-            <ChartComponent
-              key={chart.id}
-              chart={chart}
-              data={data}
-              onRemove={() => onRemoveChart?.(chart.id)}
-              onUpdatePosition={(x, y) => onUpdateChart?.(chart.id, { position: { x, y } })}
-            />
-          ))}
-
-          {/* Images Layer */}
-          {images.map((image) => (
-            <ImageComponent
-              key={image.id}
-              id={image.id}
-              src={image.src}
-              position={image.position}
-              size={image.size}
-              onRemove={() => onRemoveImage?.(image.id)}
-              onUpdatePosition={(x, y) => onUpdateImage?.(image.id, { position: { x, y } })}
-              onUpdateSize={(width, height) => onUpdateImage?.(image.id, { size: { width, height } })}
-            />
-          ))}
-
-          {/* Floating Shapes */}
-          {shapes.map((shape) => (
-            <ShapeComponent
-              key={shape.id}
-              id={shape.id}
-              type={shape.type}
-              position={shape.position}
-              size={shape.size}
-              style={shape.style}
-              onRemove={() => onRemoveShape?.(shape.id)}
-              onUpdatePosition={(x, y) => onUpdateShape?.(shape.id, { position: { x, y } })}
-            />
-          ))}
-
-          {/* Floating Icons */}
-          {icons.map((icon) => (
-            <IconComponent
-              key={icon.id}
-              id={icon.id}
-              iconName={icon.iconName}
-              position={icon.position}
-              size={icon.size}
-              color={icon.color}
-              onRemove={() => onRemoveIcon?.(icon.id)}
-              onUpdatePosition={(x, y) => onUpdateIcon?.(icon.id, { position: { x, y } })}
-            />
-          ))}
+          {/* Floats layer */}
+          <div className="absolute inset-0 pointer-events-none" style={{ left: showHeaders ? ROW_HEADER_WIDTH : 0 }}>
+            {charts.map((chart) => (
+              <div key={chart.id} className="pointer-events-auto">
+                <ChartComponent
+                  chart={chart}
+                  data={data}
+                  onRemove={() => onRemoveChart?.(chart.id)}
+                  onUpdatePosition={(x, y) => onUpdateChart?.(chart.id, { position: { x, y } })}
+                />
+              </div>
+            ))}
+            {images.map((image) => (
+              <div key={image.id} className="pointer-events-auto">
+                <ImageComponent
+                  id={image.id}
+                  src={image.src}
+                  position={image.position}
+                  size={image.size}
+                  onRemove={() => onRemoveImage?.(image.id)}
+                  onUpdatePosition={(x, y) => onUpdateImage?.(image.id, { position: { x, y } })}
+                  onUpdateSize={(width, height) => onUpdateImage?.(image.id, { size: { width, height } })}
+                />
+              </div>
+            ))}
+            {shapes.map((shape) => (
+              <div key={shape.id} className="pointer-events-auto">
+                <ShapeComponent
+                  id={shape.id}
+                  type={shape.type}
+                  position={shape.position}
+                  size={shape.size}
+                  style={shape.style}
+                  onRemove={() => onRemoveShape?.(shape.id)}
+                  onUpdatePosition={(x, y) => onUpdateShape?.(shape.id, { position: { x, y } })}
+                />
+              </div>
+            ))}
+            {icons.map((icon) => (
+              <div key={icon.id} className="pointer-events-auto">
+                <IconComponent
+                  id={icon.id}
+                  iconName={icon.iconName}
+                  position={icon.position}
+                  size={icon.size}
+                  color={icon.color}
+                  onRemove={() => onRemoveIcon?.(icon.id)}
+                  onUpdatePosition={(x, y) => onUpdateIcon?.(icon.id, { position: { x, y } })}
+                />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
   );
-};
+});
+
+Grid.displayName = "Grid";

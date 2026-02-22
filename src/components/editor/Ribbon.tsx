@@ -33,8 +33,10 @@ import {
     BookOpen,
     Filter,
     ArrowUpDown,
-    CheckSquare
+    CheckSquare,
+    ArrowUp
 } from "lucide-react";
+import { ModeToggle } from "@/components/mode-toggle";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -71,6 +73,7 @@ interface RibbonProps {
     onInsertShape?: (type: "rectangle" | "circle" | "line") => void;
     onInsertIcon?: () => void;
     onInsertFunction?: (formula: string) => void;
+    onScrollToTop?: () => void;
 }
 
 const RibbonGroup = ({ children, label }: { children: React.ReactNode; label: string }) => (
@@ -142,7 +145,8 @@ export const Ribbon = ({
     onInsertImage,
     onInsertShape,
     onInsertIcon,
-    onInsertFunction
+    onInsertFunction,
+    onScrollToTop
 }: RibbonProps) => {
     const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -172,6 +176,9 @@ export const Ribbon = ({
                         <RibbonButton icon={Save} tooltip="Save" shortcut="Ctrl+S" onClick={onSave} />
                         <RibbonButton icon={RotateCcw} tooltip="Undo" shortcut="Ctrl+Z" onClick={onUndo} />
                         <RibbonButton icon={RotateCw} tooltip="Redo" shortcut="Ctrl+Y" onClick={onRedo} />
+                        <Separator orientation="vertical" className="h-4" />
+                        <RibbonButton icon={ArrowUp} tooltip="Scroll to Top" onClick={onScrollToTop} />
+                        <ModeToggle />
                     </div>
                 </div>
 

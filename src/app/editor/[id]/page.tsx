@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState, useCallback, Suspense } from "react";
+import { useRef, useEffect, useState, useCallback, Suspense } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSpreadsheet } from "@/hooks/use-spreadsheet";
 import { useExcelService } from "@/hooks/use-excel-service";
-import { Grid } from "@/components/editor/Grid";
+import { Grid, GridHandle } from "@/components/editor/Grid";
 import { Ribbon } from "@/components/editor/Ribbon";
 import { StatusBar } from "@/components/editor/StatusBar";
 import { FormulaBar } from "@/components/editor/FormulaBar";
@@ -1125,6 +1125,13 @@ function EditorContent() {
 		});
 	};
 
+	// Refs
+	const gridRef = useRef<GridHandle>(null);
+
+	const handleScrollToTop = useCallback(() => {
+		gridRef.current?.scrollToTop();
+	}, []);
+
 	if (isLoading) {
 		return <EditorPreload />;
 	}
@@ -1158,6 +1165,7 @@ function EditorContent() {
 				onInsertShape={handleInsertShape}
 				onInsertIcon={() => setShowIconDialog(true)}
 				onInsertFunction={handleFormulaClick}
+				onScrollToTop={handleScrollToTop}
 			/>
 
 			{/* Formula Bar */}
@@ -1170,9 +1178,12 @@ function EditorContent() {
 			{/* Main Grid Area */}
 			<div className="flex-1 overflow-hidden relative" style={{ zoom: `${zoom}%` }}>
 				<Grid
+					ref={gridRef}
 					data={data}
 					selectedCell={selectedCell}
+					selectionRange={selectionRange}
 					onSelectCell={selectCell}
+					onSelectRange={selectRange}
 					onCellChange={handleCellChange}
 					showGrid={showGrid}
 					showHeaders={showHeaders}
