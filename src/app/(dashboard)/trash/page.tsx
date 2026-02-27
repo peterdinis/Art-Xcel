@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/card";
 import { FileSpreadsheet, RotateCcw, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 interface Spreadsheet {
 	id: string;
@@ -30,34 +31,88 @@ export default function TrashPage() {
 				setSpreadsheets(deleted);
 			} catch (e) {
 				console.error("Failed to parse local storage", e);
+				toast.error("Failed to load deleted files");
 			}
 		}
 	}, []);
 
-	const restoreSpreadsheet = (id: string) => {
-		const stored = localStorage.getItem("excel-editor-files");
-		if (stored) {
-			const allFiles = JSON.parse(stored);
-			const updated = allFiles.map((s: Spreadsheet) => {
-				if (s.id === id) {
-					const { deletedAt, ...rest } = s;
-					return rest;
-				}
-				return s;
-			});
-			localStorage.setItem("excel-editor-files", JSON.stringify(updated));
-			setSpreadsheets((prev) => prev.filter((s) => s.id !== id));
+	const restoreSpreadsheet = (id: string, name: string) => {
+		try {
+			const stored = localStorage.getItem("excel-editor-files");
+			if (stored) {
+				const allFiles = JSON.parse(stored);
+				const updated = allFiles.map((s: Spreadsheet) => {
+					if (s.id === id) {
+						const { deletedAt, ...rest } = s;
+						return rest;
+					}
+					return s;
+				});
+				localStorage.setItem("excel-editor-files", JSON.stringify(updated));
+				setSpreadsheets((prev) => prev.filter((s) => s.id !== id));
+				toast.success(`"${name}" has been restored`, {
+					description: "You can find it in your spreadsheets",
+					duration: 3000,
+				});
+			}
+		} catch (error) {
+			toast.error("Failed to restore spreadsheet");
+			console.error("Restore error:", error);
 		}
 	};
 
-	const permanentlyDelete = (id: string) => {
-		const stored = localStorage.getItem("excel-editor-files");
-		if (stored) {
-			const allFiles = JSON.parse(stored);
-			const updated = allFiles.filter((s: Spreadsheet) => s.id !== id);
-			localStorage.setItem("excel-editor-files", JSON.stringify(updated));
-			setSpreadsheets((prev) => prev.filter((s) => s.id !== id));
+	const permanentlyDelete = (id: string, name: string) => {
+		try {
+			const stored = localStorage.getItem("excel-editor-files");
+			if (stored) {
+				const allFiles = JSON.parse(stored);
+				const updated = allFiles.filter((s: Spreadsheet) => s.id !== id);
+				localStorage.setItem("excel-editor-files", JSON.stringify(updated));
+				setSpreadsheets((prev) => prev.filter((s) => s.id !== id));
+				
+				toast.success(`"${name}" permanently deleted`, {
+					description: "The file has been removed from trash",
+					duration: 3000,
+				});
+			}
+		} catch (error) {
+			toast.error("Failed to delete spreadsheet");
+			console.error("Delete error:", error);
 		}
+	};
+
+	const handlePermanentDelete = (id: string, name: string) => {
+		toast.custom((t) => (
+			<div className="bg-background border rounded-lg shadow-lg p-4 max-w-md">
+				<h3 className="font-semibold text-lg">Permanently delete?</h3>
+				<p className="text-sm text-muted-foreground mt-1">
+					Are you sure you want to permanently delete "{name}"? This action cannot be undone.
+				</p>
+				<div className="flex gap-2 justify-end mt-4">
+					<Button
+						variant="outline"
+						size="sm"
+						onClick={() => toast.dismiss(t)}
+					>
+						Cancel
+					</Button>
+					<Button
+						variant="destructive"
+						size="sm"
+						className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+						onClick={() => {
+							permanentlyDelete(id, name);
+							toast.dismiss(t);
+						}}
+					>
+						Delete Forever
+					</Button>
+				</div>
+			</div>
+		), {
+			duration: Infinity,
+			position: 'top-center',
+		});
 	};
 
 	return (
@@ -94,7 +149,7 @@ export default function TrashPage() {
 								<Button
 									variant="outline"
 									size="sm"
-									onClick={() => restoreSpreadsheet(sheet.id)}
+									onClick={() => restoreSpreadsheet(sheet.id, sheet.name)}
 									title="Restore"
 								>
 									<RotateCcw className="h-4 w-4 mr-1" />
@@ -103,10 +158,10 @@ export default function TrashPage() {
 								<Button
 									variant="outline"
 									size="sm"
-									onClick={() => permanentlyDelete(sheet.id)}
+									onClick={() => handlePermanentDelete(sheet.id, sheet.name)}
 									title="Delete Permanently"
 								>
-									<Trash2 className="h-4 w-4 text-red-900" />
+									<Trash2 className="h-4 w-4 text-destructive" />
 								</Button>
 							</CardContent>
 						</Card>

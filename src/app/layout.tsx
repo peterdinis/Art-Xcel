@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Suspense } from "react";
 import Loading from "./loading";
+import { Toaster } from "sonner";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
@@ -134,7 +135,11 @@ export default function RootLayout({
 					enableSystem
 					disableTransitionOnChange
 				>
-					<Suspense fallback={<Loading />}>{children}</Suspense>
+					<Suspense fallback={<Loading />}>{children}
+						<Toaster
+							position="top-center"
+							closeButton
+						/></Suspense>
 				</ThemeProvider>
 			</body>
 		</html>

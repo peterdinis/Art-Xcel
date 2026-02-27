@@ -85,23 +85,187 @@ export interface IconData {
 	color?: string;
 }
 
+export interface Sheet {
+	name: string;
+	data: SheetData;
+	charts: ChartData[];
+	images: ImageData[];
+	shapes: ShapeData[];
+	icons: IconData[];
+	selectedCell: string | null;
+	selectionRange: string[] | null;
+	namedRanges: Record<string, string>;
+	hiddenRows: Set<number>;
+}
+
 export const useSpreadsheet = (initialData: SheetData = {}) => {
-	const [data, setData] = useState<SheetData>(initialData);
-	const [selectedCell, setSelectedCell] = useState<string | null>("A1");
-	const [selectionRange, setSelectionRange] = useState<string[] | null>(null);
+	const [sheets, setSheets] = useState<Sheet[]>([
+		{
+			name: "Sheet1",
+			data: initialData,
+			charts: [],
+			images: [],
+			shapes: [],
+			icons: [],
+			selectedCell: "A1",
+			selectionRange: null,
+			namedRanges: {},
+			hiddenRows: new Set(),
+		},
+	]);
+	const [currentSheetIndex, setCurrentSheetIndex] = useState(0);
+
 	const [clipboard, setClipboard] = useState<{ data: SheetData; type: "copy" | "cut" } | null>(null);
 	const [undoStack, setUndoStack] = useState<SheetData[]>([]);
 	const [redoStack, setRedoStack] = useState<SheetData[]>([]);
-	const [sheetNames, setSheetNames] = useState<string[]>(["Sheet1"]);
-	const [currentSheetIndex, setCurrentSheetIndex] = useState(0);
-	const [namedRanges, setNamedRanges] = useState<Record<string, string>>({});
 	const [formulaCells, setFormulaCells] = useState<Set<string>>(new Set());
-	const [hiddenRows, setHiddenRows] = useState<Set<number>>(new Set());
 	const [formulaCache, setFormulaCache] = useState<Record<string, string>>({});
-	const [charts, setCharts] = useState<ChartData[]>([]);
-	const [images, setImages] = useState<ImageData[]>([]);
-	const [shapes, setShapes] = useState<ShapeData[]>([]);
-	const [icons, setIcons] = useState<IconData[]>([]);
+
+	// Derived state for the current sheet
+	const currentSheet = sheets[currentSheetIndex];
+	const data = currentSheet.data;
+	const selectedCell = currentSheet.selectedCell;
+	const selectionRange = currentSheet.selectionRange;
+	const charts = currentSheet.charts;
+	const images = currentSheet.images;
+	const shapes = currentSheet.shapes;
+	const icons = currentSheet.icons;
+	const namedRanges = currentSheet.namedRanges;
+	const hiddenRows = currentSheet.hiddenRows;
+	const sheetNames = sheets.map((s) => s.name);
+
+	// Helper to update current sheet properties
+	const updateCurrentSheet = useCallback(
+		(updates: Partial<Sheet>) => {
+			setSheets((prev) =>
+				prev.map((sheet, i) => (i === currentSheetIndex ? { ...sheet, ...updates } : sheet)),
+			);
+		},
+		[currentSheetIndex],
+	);
+
+	// Setters that now update the sheets array
+	const setData = useCallback(
+		(newData: SheetData | ((prev: SheetData) => SheetData)) => {
+			setSheets((prev) =>
+				prev.map((sheet, i) =>
+					i === currentSheetIndex
+						? {
+							...sheet,
+							data: typeof newData === "function" ? newData(sheet.data) : newData,
+						}
+						: sheet,
+				),
+			);
+		},
+		[currentSheetIndex],
+	);
+
+	const setSelectedCell = useCallback(
+		(cell: string | null) => updateCurrentSheet({ selectedCell: cell }),
+		[updateCurrentSheet],
+	);
+
+	const setSelectionRange = useCallback(
+		(range: string[] | null) => updateCurrentSheet({ selectionRange: range }),
+		[updateCurrentSheet],
+	);
+
+	const setCharts = useCallback(
+		(newCharts: ChartData[] | ((prev: ChartData[]) => ChartData[])) => {
+			setSheets((prev) =>
+				prev.map((sheet, i) =>
+					i === currentSheetIndex
+						? {
+							...sheet,
+							charts: typeof newCharts === "function" ? newCharts(sheet.charts) : newCharts,
+						}
+						: sheet,
+				),
+			);
+		},
+		[currentSheetIndex],
+	);
+
+	const setImages = useCallback(
+		(newImages: ImageData[] | ((prev: ImageData[]) => ImageData[])) => {
+			setSheets((prev) =>
+				prev.map((sheet, i) =>
+					i === currentSheetIndex
+						? {
+							...sheet,
+							images: typeof newImages === "function" ? newImages(sheet.images) : newImages,
+						}
+						: sheet,
+				),
+			);
+		},
+		[currentSheetIndex],
+	);
+
+	const setShapes = useCallback(
+		(newShapes: ShapeData[] | ((prev: ShapeData[]) => ShapeData[])) => {
+			setSheets((prev) =>
+				prev.map((sheet, i) =>
+					i === currentSheetIndex
+						? {
+							...sheet,
+							shapes: typeof newShapes === "function" ? newShapes(sheet.shapes) : newShapes,
+						}
+						: sheet,
+				),
+			);
+		},
+		[currentSheetIndex],
+	);
+
+	const setIcons = useCallback(
+		(newIcons: IconData[] | ((prev: IconData[]) => IconData[])) => {
+			setSheets((prev) =>
+				prev.map((sheet, i) =>
+					i === currentSheetIndex
+						? {
+							...sheet,
+							icons: typeof newIcons === "function" ? newIcons(sheet.icons) : newIcons,
+						}
+						: sheet,
+				),
+			);
+		},
+		[currentSheetIndex],
+	);
+
+	const setNamedRanges = useCallback(
+		(newNamedRanges: Record<string, string> | ((prev: Record<string, string>) => Record<string, string>)) => {
+			setSheets((prev) =>
+				prev.map((sheet, i) =>
+					i === currentSheetIndex
+						? {
+							...sheet,
+							namedRanges: typeof newNamedRanges === "function" ? newNamedRanges(sheet.namedRanges) : newNamedRanges,
+						}
+						: sheet,
+				),
+			);
+		},
+		[currentSheetIndex],
+	);
+
+	const setHiddenRows = useCallback(
+		(newHiddenRows: Set<number> | ((prev: Set<number>) => Set<number>)) => {
+			setSheets((prev) =>
+				prev.map((sheet, i) =>
+					i === currentSheetIndex
+						? {
+							...sheet,
+							hiddenRows: typeof newHiddenRows === "function" ? newHiddenRows(sheet.hiddenRows) : newHiddenRows,
+						}
+						: sheet,
+				),
+			);
+		},
+		[currentSheetIndex],
+	);
 
 	// Helper to get cell value as number (or 0)
 	const getVal = useCallback((cellId: string, currentData: SheetData) => {
@@ -400,7 +564,8 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 
 	// Save state to undo stack
 	const saveToUndo = useCallback(() => {
-		setUndoStack(prev => [...prev, JSON.parse(JSON.stringify(data))]);
+		// Since we treat data as immutable, we can just store the reference
+		setUndoStack(prev => [...prev, data]);
 		setRedoStack([]);
 	}, [data]);
 
@@ -504,7 +669,8 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 		const copiedData: SheetData = {};
 		cells.forEach(cellId => {
 			if (data[cellId]) {
-				copiedData[cellId] = JSON.parse(JSON.stringify(data[cellId]));
+				// Clone individual cell data to avoid references
+				copiedData[cellId] = { ...data[cellId], style: data[cellId].style ? { ...data[cellId].style } : undefined };
 			}
 		});
 		setClipboard({ data: copiedData, type: "copy" });
@@ -571,7 +737,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 		if (undoStack.length === 0) return;
 
 		const previous = undoStack[undoStack.length - 1];
-		setRedoStack(prev => [...prev, JSON.parse(JSON.stringify(data))]);
+		setRedoStack(prev => [...prev, data]);
 		setData(previous);
 		setUndoStack(prev => prev.slice(0, -1));
 	}, [undoStack, data]);
@@ -581,7 +747,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 		if (redoStack.length === 0) return;
 
 		const next = redoStack[redoStack.length - 1];
-		setUndoStack(prev => [...prev, JSON.parse(JSON.stringify(data))]);
+		setUndoStack(prev => [...prev, data]);
 		setData(next);
 		setRedoStack(prev => prev.slice(0, -1));
 	}, [redoStack, data]);
@@ -947,23 +1113,36 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 
 	// Add new sheet
 	const addSheet = useCallback((name: string) => {
-		setSheetNames(prev => [...prev, name]);
+		setSheets((prev) => [
+			...prev,
+			{
+				name,
+				data: {},
+				charts: [],
+				images: [],
+				shapes: [],
+				icons: [],
+				selectedCell: "A1",
+				selectionRange: null,
+				namedRanges: {},
+				hiddenRows: new Set(),
+			},
+		]);
 	}, []);
 
 	// Delete sheet
 	const deleteSheet = useCallback((index: number) => {
-		setSheetNames(prev => prev.filter((_, i) => i !== index));
+		setSheets((prev) => prev.filter((_, i) => i !== index));
 	}, []);
 
 	// Rename sheet
 	const renameSheet = useCallback((index: number, newName: string) => {
-		setSheetNames(prev => prev.map((name, i) => i === index ? newName : name));
+		setSheets((prev) => prev.map((sheet, i) => (i === index ? { ...sheet, name: newName } : sheet)));
 	}, []);
 
 	// Switch sheet
 	const switchSheet = useCallback((index: number) => {
 		setCurrentSheetIndex(index);
-		// You might want to load different data for each sheet
 	}, []);
 
 	// Chart operations
