@@ -67,25 +67,12 @@ export default function NotFound() {
 						</Link>
 					</Button>
 					<Button asChild variant="outline" className="gap-2">
-						<Link href="/spreadsheets">
+						<Link href="/">
 							<ArrowLeft className="h-4 w-4" />
 							View All Spreadsheets
 						</Link>
 					</Button>
 				</motion.div>
-
-				{/* Search suggestion */}
-				<motion.p
-					initial={{ opacity: 0 }}
-					animate={{ opacity: 1 }}
-					transition={{ delay: 0.5 }}
-					className="mt-8 text-sm text-muted-foreground"
-				>
-					Looking for something else?{" "}
-					<Link href="/search" className="text-primary hover:underline">
-						Try searching
-					</Link>
-				</motion.p>
 			</motion.div>
 		</div>
 	);

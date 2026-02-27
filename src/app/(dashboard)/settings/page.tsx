@@ -113,7 +113,7 @@ export default function SettingsPage() {
 									value={theme ?? "system"}
 									onValueChange={(v) => setTheme(v as "light" | "dark" | "system")}
 								>
-									<SelectTrigger className="w-[130px] h-9">
+									<SelectTrigger className="w-32.5 h-9">
 									<SelectValue />
 									</SelectTrigger>
 									<SelectContent>
@@ -154,7 +154,7 @@ export default function SettingsPage() {
 									updateStorage(STORAGE_KEYS.defaultZoom, n);
 								}}
 							>
-								<SelectTrigger className="w-[100px] h-9">
+								<SelectTrigger className="w-25 h-9">
 									<SelectValue />
 								</SelectTrigger>
 								<SelectContent>

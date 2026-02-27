@@ -138,7 +138,7 @@ export default function SpreadsheetError({
 				>
 					{isNotFoundError && (
 						<Button asChild variant="link" className="gap-2">
-							<Link href="/spreadsheets">
+							<Link href="/">
 								<Download className="h-4 w-4" />
 								Browse Other Spreadsheets
 							</Link>
