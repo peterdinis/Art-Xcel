@@ -29,17 +29,11 @@ import {
 	Trash2,
 	Search,
 	BarChart,
-	PlusSquare,
-	MinusSquare,
-	ArrowLeft,
 	Download,
 	Upload,
 	Printer,
-	HelpCircle,
 	Filter,
 	Bold,
-	Italic,
-	Underline,
 	AlignLeft,
 	AlignCenter,
 	AlignRight,
@@ -48,49 +42,10 @@ import {
 	Grid3x3,
 	Table,
 	Eye,
-	Keyboard,
 	Cloud,
 	Sparkles,
 } from "lucide-react";
-import Link from "next/link";
 import { toast } from "sonner";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuLabel,
-	DropdownMenuSeparator,
-	DropdownMenuTrigger,
-	DropdownMenuShortcut,
-	DropdownMenuSub,
-	DropdownMenuSubContent,
-	DropdownMenuSubTrigger,
-	DropdownMenuPortal,
-} from "@/components/ui/dropdown-menu";
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipProvider,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Permission, ShareSettings } from "@/components/shared/share-dialog";
 
