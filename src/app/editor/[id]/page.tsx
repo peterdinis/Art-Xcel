@@ -5,9 +5,12 @@ import { useParams, useRouter } from "next/navigation";
 import { useSpreadsheet } from "@/hooks/use-spreadsheet";
 import { useExcelService } from "@/hooks/use-excel-service";
 import { Grid, GridHandle } from "@/components/editor/Grid";
-import { Ribbon } from "@/components/editor/Ribbon";
+import { ClassicToolbar } from "@/components/editor/ClassicToolbar";
 import { StatusBar } from "@/components/editor/StatusBar";
 import { FormulaBar } from "@/components/editor/FormulaBar";
+import { EditorDialogs } from "@/components/editor/EditorDialogs";
+import { SheetTabs } from "@/components/editor/SheetTabs";
+import { FloatingQuickMenu } from "@/components/editor/FloatingQuickMenu";
 import { Button } from "@/components/ui/button";
 import { saveSpreadsheetAction } from "./actions";
 import { useHotkey } from "@tanstack/react-hotkeys";
@@ -244,7 +247,7 @@ function EditorContent() {
 		updateSheetName,
 	} = useSpreadsheet();
 
-	const { exportToExcel, importFromExcel } = useExcelService();
+	const { exportToFile, importFromFile } = useExcelService();
 	const [sheetName, setSheetName] = useState("Untitled Spreadsheet");
 	const [showFindDialog, setShowFindDialog] = useState(false);
 	const [showPrintDialog, setShowPrintDialog] = useState(false);
@@ -316,7 +319,7 @@ function EditorContent() {
 						if (currentSheet.shareSettings) {
 							setShareSettings(currentSheet.shareSettings);
 						}
-						
+
 						// Show welcome toast when opening an existing spreadsheet
 						toast.success(`Welcome back to "${currentSheet.name}"`, {
 							description: "Your spreadsheet is ready for editing",
@@ -392,7 +395,7 @@ function EditorContent() {
 	useHotkey("Delete", (e: KeyboardEvent) => { e.preventDefault(); if (selectedCell) updateCell(selectedCell, ""); });
 	useHotkey("Backspace", (e: KeyboardEvent) => { if (selectedCell) updateCell(selectedCell, ""); });
 
-	const handleCellChange = (cellId: string, value: string) => {
+	const handleCellChange = useCallback((cellId: string, value: string) => {
 		// Validate before update
 		if (!validateCell(cellId, value)) {
 			toast.error("Validation failed", {
@@ -405,15 +408,15 @@ function EditorContent() {
 		toast.success(`Cell ${cellId} updated`, {
 			duration: 1000,
 		});
-	};
+	}, [validateCell, updateCell]);
 
-	const handleFormulaBarChange = (value: string) => {
+	const handleFormulaBarChange = useCallback((value: string) => {
 		if (selectedCell) {
 			updateCell(selectedCell, value);
 		}
-	};
+	}, [selectedCell, updateCell]);
 
-	const handleStyleChange = (style: any) => {
+	const handleStyleChange = useCallback((style: any) => {
 		if (selectedCell) {
 			const currentStyle = data[selectedCell]?.style || {};
 			const newStyle = { ...currentStyle, ...style };
@@ -423,7 +426,7 @@ function EditorContent() {
 				duration: 1000,
 			});
 		}
-	};
+	}, [selectedCell, data, updateCellStyle]);
 
 	const handleSave = useCallback(async () => {
 		const result = await saveSpreadsheetAction(id as string, data);
@@ -596,14 +599,14 @@ function EditorContent() {
 	}, [findText, replaceText, matchCase, wholeCell, findAndReplace]);
 
 	const handleExport = useCallback(
-		async (format: string = "excel") => {
+		async (format: string = "xlsx") => {
 			try {
 				toast.loading("Exporting...", {
 					id: "export-toast",
 					description: `Exporting as ${format.toUpperCase()}`,
 				});
 
-				await exportToExcel(data, sheetName);
+				await exportToFile(data, sheetName, format as "xlsx" | "ods");
 
 				toast.success("Export Successful", {
 					id: "export-toast",
@@ -618,7 +621,14 @@ function EditorContent() {
 				});
 			}
 		},
-		[data, sheetName, exportToExcel],
+		[data, sheetName, exportToFile],
+	);
+
+	const handleExportFormat = useCallback(
+		async (format: "xlsx" | "ods") => {
+			await handleExport(format);
+		},
+		[handleExport],
 	);
 
 	const handleImport = useCallback(
@@ -630,24 +640,24 @@ function EditorContent() {
 				});
 
 				const { data: importedData, name: importedName } =
-					await importFromExcel(file);
+					await importFromFile(file);
 				setData(importedData);
 				setSheetName(importedName);
 
 				toast.success("Import Successful", {
 					id: "import-toast",
-					description: "Your Excel file has been imported.",
+					description: "Your file has been imported.",
 					icon: <Upload className="h-4 w-4" />,
 				});
 				setShowImportDialog(false);
 			} catch (error) {
 				toast.error("Import Failed", {
 					id: "import-toast",
-					description: "There was an error importing your Excel file.",
+					description: "There was an error importing your file.",
 				});
 			}
 		},
-		[importFromExcel, setData],
+		[importFromFile, setData],
 	);
 
 	const handlePrint = useCallback(() => {
@@ -995,14 +1005,14 @@ function EditorContent() {
 	const handleCreateSheet = useCallback(() => {
 		const name = newSheetName || `Sheet${sheetNames.length + 1}`;
 		addSheet(name);
-		
+
 		// Show success toast for new sheet creation
 		toast.success("New sheet created", {
 			description: `Sheet "${name}" has been added`,
 			icon: <Plus className="h-4 w-4" />,
 			duration: 3000,
 		});
-		
+
 		setShowNewSheetDialog(false);
 		setNewSheetName("");
 	}, [newSheetName, sheetNames.length, addSheet]);
@@ -1159,22 +1169,23 @@ function EditorContent() {
 	return (
 		<div className="h-screen flex flex-col font-sans overflow-hidden bg-background">
 			{/* Ribbon UI */}
-			<Ribbon
-				sheetName={sheetName}
-				onSheetNameChange={setSheetName}
+			<ClassicToolbar
 				onSave={handleSave}
 				onUndo={handleUndo}
 				onRedo={handleRedo}
-				onExport={() => setShowExportDialog(true)}
-				onImport={() => setShowImportDialog(true)}
+				onExport={() => handleExport("xlsx")}
+				onExportFormat={handleExportFormat}
+				onImport={handleImport}
 				onClear={() => setShowDeleteDialog(true)}
 				onStyleChange={handleStyleChange}
-				onAlignChange={(align: "left" | "center" | "right") => handleAlignment(align)}
 				onInsertRow={handleInsertRow}
 				onDeleteRow={handleDeleteRow}
 				onInsertColumn={handleInsertColumn}
 				onDeleteColumn={handleDeleteColumn}
-				onSort={handleSort}
+				onSort={(dir) => {
+					// Handle sort direction if needed
+					handleSort();
+				}}
 				onFilter={handleFilter}
 				onFind={() => setShowFindDialog(true)}
 				onDataValidation={handleDataValidation}
@@ -1186,6 +1197,47 @@ function EditorContent() {
 				onInsertIcon={() => setShowIconDialog(true)}
 				onInsertFunction={handleFormulaClick}
 				onScrollToTop={handleScrollToTop}
+				onNew={() => {
+					toast.info("Creating new spreadsheet...", {
+						description: "Your current work is auto-saved.",
+					});
+					setTimeout(() => window.location.reload(), 1000);
+				}}
+				onOpen={() => {
+					const input = document.createElement('input');
+					input.type = 'file';
+					input.accept = '.xlsx,.xls,.csv,.ods';
+					input.onchange = (e) => {
+						const file = (e.target as HTMLInputElement).files?.[0];
+						if (file) handleImport(file);
+					};
+					input.click();
+				}}
+				onPrint={handlePrint}
+				onCut={handleCut}
+				onCopy={handleCopy}
+				onPaste={handlePaste}
+				onSelectAll={handleSelectAll}
+				onToggleToolbars={() => toast.info("Toggle Toolbars", { description: "Toolbar visibility settings coming soon" })}
+				onToggleFormulaBar={() => toast.info("Toggle Formula Bar", { description: "Formula bar visibility toggle coming soon" })}
+				onToggleStatusBar={() => toast.info("Toggle Status Bar", { description: "Status bar visibility toggle coming soon" })}
+				onToggleFreezePanes={() => toast.info("Freeze Panes", { description: "Freeze panes functionality coming soon" })}
+				onToggleFullScreen={() => {
+					if (!document.fullscreenElement) {
+						document.documentElement.requestFullscreen();
+						toast.success("Entered Full Screen");
+					} else {
+						document.exitFullscreen();
+						toast.success("Exited Full Screen");
+					}
+				}}
+				onFormatSpacing={() => toast.info("Spacing", { description: "Cell spacing and padding coming soon" })}
+				onFormatAlignment={() => toast.info("Alignment", { description: "Use the alignment icons in the toolbar for quick access" })}
+				onConditionalFormatting={handleConditionalFormatting}
+				onUserGuides={() => toast.info("User Guides", { description: "Documentation and user guides are under development" })}
+				onShortcuts={() => setShowShortcutsDialog(true)}
+				onAbout={() => toast.info("About Art-Xcel", { description: "Art-Xcel Spreadsheet v0.1.0 - Premium Edition" })}
+				onToggleGrid={() => setShowGrid(!showGrid)}
 			/>
 
 			{/* Formula Bar */}
@@ -1234,6 +1286,24 @@ function EditorContent() {
 				/>
 			</div>
 
+			{/* Sheet Tabs */}
+			<SheetTabs
+				sheetNames={sheetNames}
+				currentSheetIndex={currentSheetIndex}
+				onSwitchSheet={handleSwitchSheet}
+				onAddSheet={handleAddSheet}
+				onRenameSheet={handleRenameSheet}
+				onDeleteSheet={(index) => {
+					// Switch before delete if necessary
+					if (index === currentSheetIndex) {
+						if (index > 0) handleSwitchSheet(index - 1);
+						else if (sheetNames.length > 1) handleSwitchSheet(1);
+					}
+					deleteSheet(index);
+					toast.success("Sheet deleted");
+				}}
+			/>
+
 			{/* Status Bar */}
 			<StatusBar
 				data={data}
@@ -1241,565 +1311,89 @@ function EditorContent() {
 				selectionRange={selectionRange}
 			/>
 
-			{/* Find & Replace Dialog */}
-			<Dialog open={showFindDialog} onOpenChange={setShowFindDialog}>
-				<DialogContent>
-					<DialogHeader>
-						<DialogTitle>Find and Replace</DialogTitle>
-						<DialogDescription>
-							Search for text and replace it with new content.
-						</DialogDescription>
-					</DialogHeader>
-					<div className="space-y-4 py-4">
-						<div className="space-y-2">
-							<Label htmlFor="find">Find</Label>
-							<Input
-								id="find"
-								value={findText}
-								onChange={(e) => setFindText(e.target.value)}
-								placeholder="Text to find..."
-							/>
-						</div>
-						<div className="space-y-2">
-							<Label htmlFor="replace">Replace with</Label>
-							<Input
-								id="replace"
-								value={replaceText}
-								onChange={(e) => setReplaceText(e.target.value)}
-								placeholder="Replacement text..."
-							/>
-						</div>
-						<div className="flex items-center space-x-2">
-							<Switch
-								id="match-case"
-								checked={matchCase}
-								onCheckedChange={setMatchCase}
-							/>
-							<Label htmlFor="match-case">Match case</Label>
-						</div>
-						<div className="flex items-center space-x-2">
-							<Switch
-								id="whole-cell"
-								checked={wholeCell}
-								onCheckedChange={setWholeCell}
-							/>
-							<Label htmlFor="whole-cell">Match entire cell contents</Label>
-						</div>
-					</div>
-					<DialogFooter>
-						<Button variant="outline" onClick={() => setShowFindDialog(false)}>
-							Cancel
-						</Button>
-						<Button onClick={handleFind}>Find Next</Button>
-						<Button onClick={handleReplace}>Replace</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+			<FloatingQuickMenu
+				onSave={handleSave}
+				onUndo={handleUndo}
+				onRedo={handleRedo}
+				onHelp={() => setShowShortcutsDialog(true)}
+				onSettings={() => toast.info("Settings", { description: "Editor settings coming soon" })}
+			/>
 
-			{/* New Sheet Dialog */}
-			<Dialog open={showNewSheetDialog} onOpenChange={setShowNewSheetDialog}>
-				<DialogContent>
-					<DialogHeader>
-						<DialogTitle>Add New Sheet</DialogTitle>
-						<DialogDescription>
-							Enter a name for the new sheet.
-						</DialogDescription>
-					</DialogHeader>
-					<div className="space-y-4 py-4">
-						<div className="space-y-2">
-							<Label htmlFor="sheet-name">Sheet Name</Label>
-							<Input
-								id="sheet-name"
-								value={newSheetName}
-								onChange={(e) => setNewSheetName(e.target.value)}
-								placeholder={`Sheet${sheetNames.length + 1}`}
-							/>
-						</div>
-					</div>
-					<DialogFooter>
-						<Button variant="outline" onClick={() => setShowNewSheetDialog(false)}>
-							Cancel
-						</Button>
-						<Button onClick={handleCreateSheet}>Create Sheet</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
-
-			{/* Named Range Dialog */}
-			<Dialog open={showNamedRangeDialog} onOpenChange={setShowNamedRangeDialog}>
-				<DialogContent>
-					<DialogHeader>
-						<DialogTitle>Define Named Range</DialogTitle>
-						<DialogDescription>
-							Give a name to the selected cell or range.
-						</DialogDescription>
-					</DialogHeader>
-					<div className="space-y-4 py-4">
-						<div className="space-y-2">
-							<Label htmlFor="range-name">Range Name</Label>
-							<Input
-								id="range-name"
-								value={newRangeName}
-								onChange={(e) => setNewRangeName(e.target.value)}
-								placeholder="e.g., SalesData"
-							/>
-						</div>
-						<div className="space-y-2">
-							<Label htmlFor="range-ref">Refers to</Label>
-							<Input
-								id="range-ref"
-								value={newRangeRef}
-								onChange={(e) => setNewRangeRef(e.target.value)}
-								placeholder="e.g., A1:B10"
-							/>
-						</div>
-					</div>
-					<DialogFooter>
-						<Button variant="outline" onClick={() => setShowNamedRangeDialog(false)}>
-							Cancel
-						</Button>
-						<Button onClick={handleCreateNamedRange}>Create</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
-
-			{/* Note Dialog */}
-			<Dialog open={showNoteDialog} onOpenChange={setShowNoteDialog}>
-				<DialogContent>
-					<DialogHeader>
-						<DialogTitle>Add Note</DialogTitle>
-						<DialogDescription>
-							Add a note to cell {selectedCell}.
-						</DialogDescription>
-					</DialogHeader>
-					<div className="space-y-4 py-4">
-						<div className="space-y-2">
-							<Label htmlFor="cell-note">Note</Label>
-							<Input
-								id="cell-note"
-								value={cellNote}
-								onChange={(e) => setCellNote(e.target.value)}
-								placeholder="Enter your note here..."
-							/>
-						</div>
-					</div>
-					<DialogFooter>
-						<Button variant="outline" onClick={() => setShowNoteDialog(false)}>
-							Cancel
-						</Button>
-						<Button onClick={handleSaveNote}>Save Note</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
-
-			{/* Validation Dialog */}
-			<Dialog open={showValidationDialog} onOpenChange={setShowValidationDialog}>
-				<DialogContent>
-					<DialogHeader>
-						<DialogTitle>Data Validation</DialogTitle>
-						<DialogDescription>
-							Set validation rules for cell {selectedCell}.
-						</DialogDescription>
-					</DialogHeader>
-					<div className="space-y-4 py-4">
-						<div className="space-y-2">
-							<Label htmlFor="validation-type">Validation Type</Label>
-							<Select value={validationType} onValueChange={(value: any) => setValidationType(value)}>
-								<SelectTrigger>
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="number">Number</SelectItem>
-									<SelectItem value="text">Text</SelectItem>
-									<SelectItem value="list">List</SelectItem>
-									<SelectItem value="date">Date</SelectItem>
-								</SelectContent>
-							</Select>
-						</div>
-
-						{validationType === "number" && (
-							<>
-								<div className="space-y-2">
-									<Label htmlFor="validation-min">Minimum</Label>
-									<Input
-										id="validation-min"
-										type="number"
-										value={validationMin}
-										onChange={(e) => setValidationMin(Number(e.target.value))}
-									/>
-								</div>
-								<div className="space-y-2">
-									<Label htmlFor="validation-max">Maximum</Label>
-									<Input
-										id="validation-max"
-										type="number"
-										value={validationMax}
-										onChange={(e) => setValidationMax(Number(e.target.value))}
-									/>
-								</div>
-							</>
-						)}
-
-						{validationType === "list" && (
-							<div className="space-y-2">
-								<Label htmlFor="validation-list">List Items (comma separated)</Label>
-								<Input
-									id="validation-list"
-									value={validationList}
-									onChange={(e) => setValidationList(e.target.value)}
-									placeholder="Option1, Option2, Option3"
-								/>
-							</div>
-						)}
-
-						<div className="flex items-center space-x-2">
-							<Switch
-								id="validation-required"
-								checked={validationRequired}
-								onCheckedChange={setValidationRequired}
-							/>
-							<Label htmlFor="validation-required">Required</Label>
-						</div>
-					</div>
-					<DialogFooter>
-						<Button variant="outline" onClick={() => setShowValidationDialog(false)}>
-							Cancel
-						</Button>
-						<Button onClick={handleSaveValidation}>Apply Validation</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
-
-			{/* Export Dialog */}
-			<Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
-				<DialogContent>
-					<DialogHeader>
-						<DialogTitle>Export Spreadsheet</DialogTitle>
-						<DialogDescription>
-							Choose export format and options.
-						</DialogDescription>
-					</DialogHeader>
-					<div className="space-y-4 py-4">
-						<div className="space-y-2">
-							<Label>Format</Label>
-							<Select defaultValue="excel" onValueChange={(value) => handleExport(value)}>
-								<SelectTrigger>
-									<SelectValue placeholder="Select format" />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="excel">Excel (.xlsx)</SelectItem>
-									<SelectItem value="csv">CSV (.csv)</SelectItem>
-									<SelectItem value="pdf">PDF (.pdf)</SelectItem>
-									<SelectItem value="html">HTML (.html)</SelectItem>
-								</SelectContent>
-							</Select>
-						</div>
-					</div>
-					<DialogFooter>
-						<Button variant="outline" onClick={() => setShowExportDialog(false)}>
-							Cancel
-						</Button>
-						<Button onClick={() => handleExport("excel")}>Export</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
-
-			{/* Import Dialog */}
-			<Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
-				<DialogContent>
-					<DialogHeader>
-						<DialogTitle>Import File</DialogTitle>
-						<DialogDescription>
-							Upload an Excel file to import.
-						</DialogDescription>
-					</DialogHeader>
-					<div className="space-y-4 py-4">
-						<input
-							type="file"
-							id="file-import"
-							className="hidden"
-							accept=".xlsx,.xls,.csv"
-							onChange={(e) => {
-								const file = e.target.files?.[0];
-								if (file) {
-									handleImport(file);
-								}
-							}}
-						/>
-						<Button
-							variant="outline"
-							className="w-full h-32 border-dashed"
-							onClick={() => document.getElementById("file-import")?.click()}
-						>
-							<div className="flex flex-col items-center gap-2">
-								<Upload className="h-8 w-8 text-muted-foreground" />
-								<span>Click to upload or drag and drop</span>
-								<span className="text-xs text-muted-foreground">
-									XLSX, XLS, CSV (max 10MB)
-								</span>
-							</div>
-						</Button>
-					</div>
-					<DialogFooter>
-						<Button variant="outline" onClick={() => setShowImportDialog(false)}>
-							Cancel
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
-
-			{/* Page Setup Dialog */}
-			<Dialog open={showPageSetupDialog} onOpenChange={setShowPageSetupDialog}>
-				<DialogContent>
-					<DialogHeader>
-						<DialogTitle>Page Setup</DialogTitle>
-						<DialogDescription>
-							Configure page layout and print settings.
-						</DialogDescription>
-					</DialogHeader>
-					<div className="space-y-4 py-4">
-						<div className="grid grid-cols-2 gap-4">
-							<div className="space-y-2">
-								<Label>Orientation</Label>
-								<Select defaultValue="portrait">
-									<SelectTrigger>
-										<SelectValue />
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value="portrait">Portrait</SelectItem>
-										<SelectItem value="landscape">Landscape</SelectItem>
-									</SelectContent>
-								</Select>
-							</div>
-							<div className="space-y-2">
-								<Label>Paper Size</Label>
-								<Select defaultValue="a4">
-									<SelectTrigger>
-										<SelectValue />
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value="a4">A4</SelectItem>
-										<SelectItem value="letter">Letter</SelectItem>
-										<SelectItem value="legal">Legal</SelectItem>
-									</SelectContent>
-								</Select>
-							</div>
-						</div>
-						<div className="space-y-2">
-							<Label>Margins (inches)</Label>
-							<div className="grid grid-cols-2 gap-4">
-								<Input type="number" placeholder="Top" defaultValue="1" />
-								<Input type="number" placeholder="Bottom" defaultValue="1" />
-								<Input type="number" placeholder="Left" defaultValue="1" />
-								<Input type="number" placeholder="Right" defaultValue="1" />
-							</div>
-						</div>
-					</div>
-					<DialogFooter>
-						<Button variant="outline" onClick={() => setShowPageSetupDialog(false)}>
-							Cancel
-						</Button>
-						<Button onClick={handlePageSetup}>Apply</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
-
-			{/* Print Dialog */}
-			<Dialog open={showPrintDialog} onOpenChange={setShowPrintDialog}>
-				<DialogContent>
-					<DialogHeader>
-						<DialogTitle>Print</DialogTitle>
-						<DialogDescription>
-							Configure print settings.
-						</DialogDescription>
-					</DialogHeader>
-					<div className="space-y-4 py-4">
-						<div className="space-y-2">
-							<Label>Print what</Label>
-							<Select defaultValue="sheet">
-								<SelectTrigger>
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="sheet">Active Sheet</SelectItem>
-									<SelectItem value="workbook">Entire Workbook</SelectItem>
-									<SelectItem value="selection">Current Selection</SelectItem>
-								</SelectContent>
-							</Select>
-						</div>
-						<div className="space-y-2">
-							<Label>Copies</Label>
-							<Input type="number" min="1" max="99" defaultValue="1" />
-						</div>
-					</div>
-					<DialogFooter>
-						<Button variant="outline" onClick={() => setShowPrintDialog(false)}>
-							Cancel
-						</Button>
-						<Button onClick={handlePrint}>Print</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
-
-			{/* Clear Sheet Dialog */}
-			<Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-				<DialogContent>
-					<DialogHeader>
-						<DialogTitle>Clear Sheet</DialogTitle>
-						<DialogDescription>
-							Are you sure you want to clear all data? This action cannot be undone.
-						</DialogDescription>
-					</DialogHeader>
-					<DialogFooter>
-						<Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
-							Cancel
-						</Button>
-						<Button variant="destructive" onClick={handleClearAll}>
-							Clear All
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
-			{/* Chart Dialog */}
-			<Dialog open={showChartDialog} onOpenChange={setShowChartDialog}>
-				<DialogContent>
-					<DialogHeader>
-						<DialogTitle>Insert Chart</DialogTitle>
-						<DialogDescription>
-							Select a chart type and title for your data.
-						</DialogDescription>
-					</DialogHeader>
-					<div className="space-y-4 py-4">
-						<div className="space-y-2">
-							<Label>Chart Title</Label>
-							<Input
-								value={chartTitle}
-								onChange={(e) => setChartTitle(e.target.value)}
-								placeholder="Enter chart title..."
-							/>
-						</div>
-						<div className="space-y-2">
-							<Label>Chart Type</Label>
-							<Select value={chartType} onValueChange={(v: any) => setChartType(v)}>
-								<SelectTrigger>
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="bar">Bar Chart</SelectItem>
-									<SelectItem value="line">Line Chart</SelectItem>
-									<SelectItem value="pie">Pie Chart</SelectItem>
-								</SelectContent>
-							</Select>
-						</div>
-					</div>
-					<DialogFooter>
-						<Button variant="outline" onClick={() => setShowChartDialog(false)}>
-							Cancel
-						</Button>
-						<Button onClick={handleInsertChart}>Insert Chart</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
-
-			{/* Icon Dialog */}
-			<Dialog open={showIconDialog} onOpenChange={setShowIconDialog}>
-				<DialogContent>
-					<DialogHeader>
-						<DialogTitle>Insert Icon</DialogTitle>
-						<DialogDescription>
-							Enter a Lucide icon name (e.g., Star, Heart, Activity) or pick from favorites.
-						</DialogDescription>
-					</DialogHeader>
-					<div className="space-y-4 py-4">
-						<div className="space-y-2">
-							<Label>Icon Name</Label>
-							<Select value={iconName} onValueChange={setIconName}>
-								<SelectTrigger>
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="Activity">Activity</SelectItem>
-									<SelectItem value="Star">Star</SelectItem>
-									<SelectItem value="Heart">Heart</SelectItem>
-									<SelectItem value="Info">Info</SelectItem>
-									<SelectItem value="Shield">Shield</SelectItem>
-									<SelectItem value="Database">Database</SelectItem>
-									<SelectItem value="Zap">Zap</SelectItem>
-									<SelectItem value="Trophy">Trophy</SelectItem>
-								</SelectContent>
-							</Select>
-						</div>
-					</div>
-					<DialogFooter>
-						<Button variant="outline" onClick={() => setShowIconDialog(false)}>
-							Cancel
-						</Button>
-						<Button onClick={() => handleInsertIcon(iconName)}>Insert Icon</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
-
-			{/* Shortcuts Dialog */}
-			<Dialog open={showShortcutsDialog} onOpenChange={setShowShortcutsDialog}>
-				<DialogContent className="max-w-2xl">
-					<DialogHeader>
-						<DialogTitle className="flex items-center gap-2">
-							<Keyboard className="h-5 w-5" />
-							Available Shortcuts
-						</DialogTitle>
-						<DialogDescription>
-							Master the spreadsheet with these keyboard shortcuts.
-						</DialogDescription>
-					</DialogHeader>
-					<div className="grid grid-cols-2 gap-6 py-4">
-						<div className="space-y-4">
-							<h4 className="font-semibold text-sm text-primary">General</h4>
-							<div className="space-y-2">
-								<div className="flex justify-between text-sm">
-									<span>Undo / Redo</span>
-									<kbd className="bg-muted px-1.5 rounded">Ctrl+Z / Y</kbd>
-								</div>
-								<div className="flex justify-between text-sm">
-									<span>Save</span>
-									<kbd className="bg-muted px-1.5 rounded">Ctrl+S</kbd>
-								</div>
-								<div className="flex justify-between text-sm">
-									<span>Find</span>
-									<kbd className="bg-muted px-1.5 rounded">Ctrl+F</kbd>
-								</div>
-								<div className="flex justify-between text-sm">
-									<span>Help / Shortcuts</span>
-									<kbd className="bg-muted px-1.5 rounded">Ctrl+/</kbd>
-								</div>
-							</div>
-						</div>
-						<div className="space-y-4">
-							<h4 className="font-semibold text-sm text-primary">Editing</h4>
-							<div className="space-y-2">
-								<div className="flex justify-between text-sm">
-									<span>Copy / Cut / Paste</span>
-									<kbd className="bg-muted px-1.5 rounded">Ctrl+C / X / V</kbd>
-								</div>
-								<div className="flex justify-between text-sm">
-									<span>Clear Cell</span>
-									<kbd className="bg-muted px-1.5 rounded">Delete</kbd>
-								</div>
-								<div className="flex justify-between text-sm">
-									<span>Edit Cell</span>
-									<kbd className="bg-muted px-1.5 rounded">Enter</kbd>
-								</div>
-								<div className="flex justify-between text-sm">
-									<span>Bold / Italic</span>
-									<kbd className="bg-muted px-1.5 rounded">Ctrl+B / I</kbd>
-								</div>
-							</div>
-						</div>
-					</div>
-					<DialogFooter>
-						<Button onClick={() => setShowShortcutsDialog(false)}>Got it</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+			<EditorDialogs
+				showFindDialog={showFindDialog}
+				setShowFindDialog={setShowFindDialog}
+				findText={findText}
+				setFindText={setFindText}
+				replaceText={replaceText}
+				setReplaceText={setReplaceText}
+				matchCase={matchCase}
+				setMatchCase={setMatchCase}
+				wholeCell={wholeCell}
+				setWholeCell={setWholeCell}
+				handleFind={handleFind}
+				handleReplace={handleReplace}
+				showNewSheetDialog={showNewSheetDialog}
+				setShowNewSheetDialog={setShowNewSheetDialog}
+				newSheetName={newSheetName}
+				setNewSheetName={setNewSheetName}
+				sheetNames={sheetNames}
+				handleCreateSheet={handleCreateSheet}
+				showNamedRangeDialog={showNamedRangeDialog}
+				setShowNamedRangeDialog={setShowNamedRangeDialog}
+				newRangeName={newRangeName}
+				setNewRangeName={setNewRangeName}
+				newRangeRef={newRangeRef}
+				setNewRangeRef={setNewRangeRef}
+				handleCreateNamedRange={handleCreateNamedRange}
+				showNoteDialog={showNoteDialog}
+				setShowNoteDialog={setShowNoteDialog}
+				cellNote={cellNote}
+				setCellNote={setCellNote}
+				selectedCell={selectedCell}
+				handleSaveNote={handleSaveNote}
+				showValidationDialog={showValidationDialog}
+				setShowValidationDialog={setShowValidationDialog}
+				validationType={validationType}
+				setValidationType={setValidationType}
+				validationMin={validationMin}
+				setValidationMin={setValidationMin}
+				validationMax={validationMax}
+				setValidationMax={setValidationMax}
+				validationList={validationList}
+				setValidationList={setValidationList}
+				validationRequired={validationRequired}
+				setValidationRequired={setValidationRequired}
+				handleSaveValidation={handleSaveValidation}
+				showExportDialog={showExportDialog}
+				setShowExportDialog={setShowExportDialog}
+				handleExport={handleExport}
+				showImportDialog={showImportDialog}
+				setShowImportDialog={setShowImportDialog}
+				handleImport={handleImport}
+				showPageSetupDialog={showPageSetupDialog}
+				setShowPageSetupDialog={setShowPageSetupDialog}
+				handlePageSetup={handlePageSetup}
+				showPrintDialog={showPrintDialog}
+				setShowPrintDialog={setShowPrintDialog}
+				handlePrint={handlePrint}
+				showDeleteDialog={showDeleteDialog}
+				setShowDeleteDialog={setShowDeleteDialog}
+				handleClearAll={handleClearAll}
+				showChartDialog={showChartDialog}
+				setShowChartDialog={setShowChartDialog}
+				chartTitle={chartTitle}
+				setChartTitle={setChartTitle}
+				chartType={chartType}
+				setChartType={setChartType}
+				handleInsertChart={handleInsertChart}
+				showIconDialog={showIconDialog}
+				setShowIconDialog={setShowIconDialog}
+				iconName={iconName}
+				setIconName={setIconName}
+				handleInsertIcon={handleInsertIcon}
+				showShortcutsDialog={showShortcutsDialog}
+				setShowShortcutsDialog={setShowShortcutsDialog}
+			/>
 		</div>
 	);
 }
