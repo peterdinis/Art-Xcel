@@ -606,9 +606,9 @@ export const Grid = forwardRef<GridHandle, GridProps>(({
     if (!showHeaders) return null;
 
     return (
-      <div className="flex sticky top-0 z-20 bg-gray-50 border-b border-gray-200 shrink-0" ref={headerRef}>
+      <div className="flex sticky top-0 z-20 bg-gray-50 dark:bg-neutral-800 border-b border-gray-200 dark:border-neutral-900 shrink-0" ref={headerRef}>
         <div
-          className="shrink-0 border-r border-gray-200 bg-gray-100 sticky left-0 z-30"
+          className="shrink-0 border-r border-gray-200 dark:border-neutral-900 dark:bg-neutral-800 bg-gray-100 sticky left-0 z-30"
           style={{ width: ROW_HEADER_WIDTH, minWidth: ROW_HEADER_WIDTH, height: DEFAULT_ROW_HEIGHT }}
         >
           <div className="flex items-center justify-center h-full text-xs text-gray-400">#</div>

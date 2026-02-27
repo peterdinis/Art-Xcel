@@ -192,7 +192,7 @@ function DashboardContent() {
 				className="flex items-center justify-between mb-8"
 			>
 				<div>
-					<h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">Dashboard</h1>
+					<h1 className="text-3xl font-bold tracking-tight bg-linear-to-r from-primary to-primary/60 bg-clip-text text-transparent">Dashboard</h1>
 					<p className="text-muted-foreground mt-1 text-sm md:text-base">
 						Manage your spreadsheets and create new ones with power and ease.
 					</p>
@@ -273,7 +273,7 @@ function DashboardContent() {
 											</div>
 										)}
 										<div className="h-32 bg-secondary/30 flex items-center justify-center border-b group-hover:bg-secondary/50 transition-colors relative overflow-hidden">
-											<div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+											<div className="absolute inset-0 bg-linear-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 											<FileSpreadsheet className="h-12 w-12 text-muted-foreground/40 group-hover:text-primary group-hover:scale-110 transition-all duration-300" />
 										</div>
 										<CardHeader className="p-4 flex-1">
