@@ -12,10 +12,6 @@ interface ErrorProps {
 }
 
 export default function Error({ error, reset }: ErrorProps) {
-	useEffect(() => {
-		// Log error to error reporting service
-		console.error("Application error:", error);
-	}, [error]);
 
 	return (
 		<div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -86,28 +82,6 @@ export default function Error({ error, reset }: ErrorProps) {
 							Go Home
 						</Link>
 					</Button>
-				</motion.div>
-
-				{/* Error actions */}
-				<motion.div
-					initial={{ opacity: 0 }}
-					animate={{ opacity: 1 }}
-					transition={{ delay: 0.5 }}
-					className="mt-6 space-y-3"
-				>
-					<Button asChild variant="link" className="gap-2">
-						<Link href="/report">
-							<Mail className="h-4 w-4" />
-							Report this issue
-						</Link>
-					</Button>
-
-					<p className="text-sm text-muted-foreground">
-						If the problem persists, please{" "}
-						<Link href="/support" className="text-primary hover:underline">
-							contact support
-						</Link>
-					</p>
 				</motion.div>
 			</motion.div>
 		</div>

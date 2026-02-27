@@ -159,9 +159,9 @@ const Cell = memo(
         <div
           className={cn(
             "relative flex items-center overflow-hidden select-none cursor-cell h-full w-full",
-            showGrid && "border-r border-b border-gray-200",
-            isSelected && "ring-2 ring-blue-500 ring-inset z-10",
-            isInRange && !isSelected && "bg-blue-100/30",
+            showGrid && "border-r border-b border-border dark:border-neutral-700",
+            isSelected && "ring-2 ring-primary ring-inset z-10 dark:ring-primary/80",
+            isInRange && !isSelected && "bg-primary/10 dark:bg-primary/20",
             style?.bold && "font-bold",
             style?.italic && "italic",
             style?.underline && "underline"
@@ -177,14 +177,14 @@ const Cell = memo(
           onClick={onClick}
         >
           {formula && !isEditing && (
-            <span className="absolute top-0 right-0 text-[8px] text-green-600 leading-none p-px">
+            <span className="absolute top-0 right-0 text-[8px] text-green-600 dark:text-green-400 leading-none p-px">
               ƒ
             </span>
           )}
           {isEditing ? (
             <input
               ref={inputRef}
-              className="absolute inset-0 w-full h-full px-1 outline-none border-none bg-white z-20 text-sm"
+              className="absolute inset-0 w-full h-full px-1 outline-none border-none bg-background dark:bg-zinc-900 z-20 text-sm text-foreground"
               value={displayValue}
               onChange={onChange}
               onKeyDown={onKeyDown}
@@ -195,7 +195,7 @@ const Cell = memo(
           )}
           {/* Resize handle for columns */}
           <div
-            className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400 z-30 opacity-0 hover:opacity-100"
+            className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/50 z-30 opacity-0 hover:opacity-100"
             onMouseDown={(e) => onResize?.(e)}
             data-resize="col"
             data-cell={id}
@@ -220,15 +220,15 @@ const RowHeader = memo(({ rowIndex, height, isActive, showHeaders = true, onResi
   return (
     <div
       className={cn(
-        "relative flex items-center justify-center text-xs text-gray-500 border-r border-b border-gray-200 bg-gray-50 select-none shrink-0",
-        isActive && "bg-blue-100 font-semibold text-blue-700",
+        "relative flex items-center justify-center text-xs text-muted-foreground border-r border-b border-border dark:border-neutral-700 bg-muted/50 dark:bg-neutral-800 select-none shrink-0",
+        isActive && "bg-primary/15 dark:bg-primary/25 font-semibold text-primary",
       )}
       style={{ width: ROW_HEADER_WIDTH, minWidth: ROW_HEADER_WIDTH, height }}
     >
       {rowIndex}
       {/* Resize handle for rows */}
       <div
-        className="absolute bottom-0 left-0 right-0 h-1 cursor-row-resize hover:bg-blue-400 z-30 opacity-0 hover:opacity-100"
+        className="absolute bottom-0 left-0 right-0 h-1 cursor-row-resize hover:bg-primary/50 z-30 opacity-0 hover:opacity-100"
         onMouseDown={onResize}
         data-resize="row"
         data-row={rowIndex}
@@ -606,12 +606,12 @@ export const Grid = forwardRef<GridHandle, GridProps>(({
     if (!showHeaders) return null;
 
     return (
-      <div className="flex sticky top-0 z-20 bg-gray-50 border-b border-gray-200 shrink-0" ref={headerRef}>
+      <div className="flex sticky top-0 z-20 bg-muted/50 dark:bg-neutral-800 border-b border-border dark:border-neutral-700 shrink-0" ref={headerRef}>
         <div
-          className="shrink-0 border-r border-gray-200 bg-gray-100 sticky left-0 z-30"
+          className="shrink-0 border-r border-border dark:border-neutral-700 bg-muted dark:bg-neutral-800 sticky left-0 z-30"
           style={{ width: ROW_HEADER_WIDTH, minWidth: ROW_HEADER_WIDTH, height: DEFAULT_ROW_HEIGHT }}
         >
-          <div className="flex items-center justify-center h-full text-xs text-gray-400">#</div>
+          <div className="flex items-center justify-center h-full text-xs text-muted-foreground">#</div>
         </div>
 
         <div
@@ -633,8 +633,8 @@ export const Grid = forwardRef<GridHandle, GridProps>(({
                 <div
                   key={virtualCol.key}
                   className={cn(
-                    "absolute top-0 flex items-center justify-center text-xs font-medium border-r border-gray-200 select-none",
-                    isActive ? "bg-blue-100 text-blue-700" : "text-gray-600",
+                    "absolute top-0 flex items-center justify-center text-xs font-medium border-r border-border dark:border-neutral-700 select-none",
+                    isActive ? "bg-primary/15 dark:bg-primary/25 text-primary" : "text-muted-foreground",
                   )}
                   style={{
                     left: virtualCol.start,
@@ -690,7 +690,7 @@ export const Grid = forwardRef<GridHandle, GridProps>(({
                 <div className="flex w-full h-full relative">
                   {showHeaders && (
                     <div
-                      className="sticky left-0 z-10 shrink-0 bg-white"
+                      className="sticky left-0 z-10 shrink-0 bg-background dark:bg-zinc-900"
                       style={{ width: ROW_HEADER_WIDTH }}
                     >
                       <RowHeader

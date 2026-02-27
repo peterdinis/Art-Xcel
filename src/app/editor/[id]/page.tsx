@@ -11,12 +11,10 @@ import { FormulaBar } from "@/components/editor/FormulaBar";
 import { EditorDialogs } from "@/components/editor/EditorDialogs";
 import { SheetTabs } from "@/components/editor/SheetTabs";
 import { FloatingQuickMenu } from "@/components/editor/FloatingQuickMenu";
-import { Button } from "@/components/ui/button";
 import { saveSpreadsheetAction } from "./actions";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import {
 	Plus,
-	ChevronDown,
 	FileSpreadsheet,
 	ShieldCheck,
 	Columns,
@@ -31,17 +29,11 @@ import {
 	Trash2,
 	Search,
 	BarChart,
-	PlusSquare,
-	MinusSquare,
-	ArrowLeft,
 	Download,
 	Upload,
 	Printer,
-	HelpCircle,
 	Filter,
 	Bold,
-	Italic,
-	Underline,
 	AlignLeft,
 	AlignCenter,
 	AlignRight,
@@ -50,55 +42,12 @@ import {
 	Grid3x3,
 	Table,
 	Eye,
-	Keyboard,
 	Cloud,
 	Sparkles,
 } from "lucide-react";
-import Link from "next/link";
 import { toast } from "sonner";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuLabel,
-	DropdownMenuSeparator,
-	DropdownMenuTrigger,
-	DropdownMenuShortcut,
-	DropdownMenuSub,
-	DropdownMenuSubContent,
-	DropdownMenuSubTrigger,
-	DropdownMenuPortal,
-} from "@/components/ui/dropdown-menu";
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipProvider,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Switch } from "@/components/ui/switch";
-import {
-	Permission,
-	ShareDialog,
-	ShareSettings,
-} from "@/components/share-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Permission, ShareSettings } from "@/components/shared/share-dialog";
 
 // Preload component for the editor
 const EditorPreload = () => {
@@ -267,6 +216,23 @@ function EditorContent() {
 	const [showGrid, setShowGrid] = useState(true);
 	const [showHeaders, setShowHeaders] = useState(true);
 	const [freezePanes, setFreezePanes] = useState(false);
+
+	// Apply saved editor preferences from Settings (localStorage)
+	useEffect(() => {
+		try {
+			const storedGrid = localStorage.getItem("excel-editor-showGrid");
+			if (storedGrid !== null) setShowGrid(storedGrid === "true");
+			const storedHeaders = localStorage.getItem("excel-editor-showHeaders");
+			if (storedHeaders !== null) setShowHeaders(storedHeaders === "true");
+			const storedZoom = localStorage.getItem("excel-editor-defaultZoom");
+			if (storedZoom !== null) {
+				const n = parseInt(storedZoom, 10);
+				if (!isNaN(n) && n >= 50 && n <= 200) setZoom(n);
+			}
+		} catch {
+			// ignore
+		}
+	}, []);
 	const [newSheetName, setNewSheetName] = useState("");
 	const [newRangeName, setNewRangeName] = useState("");
 	const [newRangeRef, setNewRangeRef] = useState("");
