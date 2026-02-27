@@ -216,6 +216,23 @@ function EditorContent() {
 	const [showGrid, setShowGrid] = useState(true);
 	const [showHeaders, setShowHeaders] = useState(true);
 	const [freezePanes, setFreezePanes] = useState(false);
+
+	// Apply saved editor preferences from Settings (localStorage)
+	useEffect(() => {
+		try {
+			const storedGrid = localStorage.getItem("excel-editor-showGrid");
+			if (storedGrid !== null) setShowGrid(storedGrid === "true");
+			const storedHeaders = localStorage.getItem("excel-editor-showHeaders");
+			if (storedHeaders !== null) setShowHeaders(storedHeaders === "true");
+			const storedZoom = localStorage.getItem("excel-editor-defaultZoom");
+			if (storedZoom !== null) {
+				const n = parseInt(storedZoom, 10);
+				if (!isNaN(n) && n >= 50 && n <= 200) setZoom(n);
+			}
+		} catch {
+			// ignore
+		}
+	}, []);
 	const [newSheetName, setNewSheetName] = useState("");
 	const [newRangeName, setNewRangeName] = useState("");
 	const [newRangeRef, setNewRangeRef] = useState("");

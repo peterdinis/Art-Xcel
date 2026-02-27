@@ -49,6 +49,15 @@
   background: #cbd5e1;
 }
 
+.dark .show-scrollbar::-webkit-scrollbar-thumb {
+  background: oklch(0.4 0 0);
+  border-radius: 4px;
+}
+
+.dark .show-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.5 0 0);
+}
+
 /* Zachovanie funkcionality scrollovania pre elementy s overflow */
 .overflow-auto,
 .overflow-y-auto,

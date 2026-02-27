@@ -105,7 +105,7 @@ export const FloatingQuickMenu = ({
                 size="icon"
                 className={cn(
                     "h-14 w-14 rounded-full shadow-2xl transition-all duration-300",
-                    isOpen ? "bg-zinc-800 rotate-45" : "bg-primary hover:scale-105"
+                    isOpen ? "bg-muted hover:bg-muted/80 dark:bg-zinc-700 rotate-45 text-foreground" : "bg-primary text-primary-foreground hover:scale-105"
                 )}
                 onClick={() => setIsOpen(!isOpen)}
             >
