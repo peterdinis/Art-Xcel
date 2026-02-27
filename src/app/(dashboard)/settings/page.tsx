@@ -8,7 +8,6 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch"; // Assuming switch component exists or need to create
 import { ModeToggle } from "@/components/mode-toggle";
 
 export default function SettingsPage() {
