@@ -49,6 +49,7 @@ import {
 	Eye,
 	Keyboard,
 	Cloud,
+	Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -315,7 +316,21 @@ function EditorContent() {
 						if (currentSheet.shareSettings) {
 							setShareSettings(currentSheet.shareSettings);
 						}
+						
+						// Show welcome toast when opening an existing spreadsheet
+						toast.success(`Welcome back to "${currentSheet.name}"`, {
+							description: "Your spreadsheet is ready for editing",
+							icon: <FileSpreadsheet className="h-4 w-4" />,
+							duration: 3000,
+						});
 					}
+				} else {
+					// Show welcome toast for new spreadsheet
+					toast.success("Welcome to your new spreadsheet!", {
+						description: "Start editing by clicking on any cell",
+						icon: <Sparkles className="h-4 w-4" />,
+						duration: 4000,
+					});
 				}
 			} catch (e) {
 				console.error(e);
@@ -363,7 +378,6 @@ function EditorContent() {
 		return () => clearTimeout(timer);
 	}, [data, id, sheetName, shareSettings, isLoading]);
 
-	// Keyboard shortcuts with @tanstack/react-hotkeys
 	// Keyboard shortcuts with @tanstack/react-hotkeys
 	useHotkey("Mod+S", (e: KeyboardEvent) => { e.preventDefault(); handleSave(); });
 	useHotkey("Mod+Z", (e: KeyboardEvent) => { e.preventDefault(); handleUndo(); });
@@ -423,7 +437,7 @@ function EditorContent() {
 				description: "Could not synchronize with the server",
 			});
 		}
-	}, [id, data, id]);
+	}, [id, data]);
 
 	const handleFormulaClick = useCallback((formula: string) => {
 		if (selectedCell) {
@@ -981,19 +995,24 @@ function EditorContent() {
 	const handleCreateSheet = useCallback(() => {
 		const name = newSheetName || `Sheet${sheetNames.length + 1}`;
 		addSheet(name);
-		toast.success("Sheet added", {
-			description: `New sheet "${name}" created`,
+		
+		// Show success toast for new sheet creation
+		toast.success("New sheet created", {
+			description: `Sheet "${name}" has been added`,
 			icon: <Plus className="h-4 w-4" />,
+			duration: 3000,
 		});
+		
 		setShowNewSheetDialog(false);
 		setNewSheetName("");
 	}, [newSheetName, sheetNames.length, addSheet]);
 
 	const handleDeleteCurrentSheet = useCallback(() => {
 		if (sheetNames.length > 1) {
+			const deletedSheetName = sheetNames[currentSheetIndex];
 			deleteSheet(currentSheetIndex);
 			toast.success("Sheet deleted", {
-				description: `Sheet deleted`,
+				description: `"${deletedSheetName}" has been deleted`,
 				icon: <Trash2 className="h-4 w-4" />,
 			});
 		} else {
@@ -1001,25 +1020,26 @@ function EditorContent() {
 				description: "You must have at least one sheet",
 			});
 		}
-	}, [sheetNames.length, currentSheetIndex, deleteSheet]);
+	}, [sheetNames, currentSheetIndex, deleteSheet]);
 
 	const handleRenameSheet = useCallback((index: number, newName: string) => {
+		const oldName = sheetNames[index];
 		renameSheet(index, newName);
 		if (index === currentSheetIndex) {
 			setSheetName(newName);
 		}
 		toast.success("Sheet renamed", {
-			description: `Sheet renamed to "${newName}"`,
+			description: `"${oldName}" renamed to "${newName}"`,
 			icon: <FileSpreadsheet className="h-4 w-4" />,
 		});
-	}, [currentSheetIndex, renameSheet]);
+	}, [currentSheetIndex, renameSheet, sheetNames]);
 
 	const handleSwitchSheet = useCallback((index: number) => {
 		switchSheet(index);
 		setSheetName(sheetNames[index]);
-		toast.success("Sheet switched", {
-			description: `Switched to "${sheetNames[index]}"`,
-			duration: 1000,
+		toast.success(`Switched to "${sheetNames[index]}"`, {
+			duration: 1500,
+			icon: <FileSpreadsheet className="h-4 w-4" />,
 		});
 	}, [sheetNames, switchSheet]);
 
