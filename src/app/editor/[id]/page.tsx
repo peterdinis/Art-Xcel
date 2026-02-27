@@ -11,12 +11,10 @@ import { FormulaBar } from "@/components/editor/FormulaBar";
 import { EditorDialogs } from "@/components/editor/EditorDialogs";
 import { SheetTabs } from "@/components/editor/SheetTabs";
 import { FloatingQuickMenu } from "@/components/editor/FloatingQuickMenu";
-import { Button } from "@/components/ui/button";
 import { saveSpreadsheetAction } from "./actions";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import {
 	Plus,
-	ChevronDown,
 	FileSpreadsheet,
 	ShieldCheck,
 	Columns,
@@ -93,12 +91,8 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Switch } from "@/components/ui/switch";
-import {
-	Permission,
-	ShareDialog,
-	ShareSettings,
-} from "@/components/share-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Permission, ShareSettings } from "@/components/shared/share-dialog";
 
 // Preload component for the editor
 const EditorPreload = () => {
