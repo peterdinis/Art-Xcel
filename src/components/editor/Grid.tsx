@@ -9,6 +9,8 @@ import { ImageComponent } from "./ImageComponent";
 import { ShapeComponent } from "./ShapeComponent";
 import { IconComponent } from "./IconComponent";
 import { ShapeData, IconData } from "@/hooks/use-spreadsheet";
+import { toast } from "sonner";
+import { Cloud, Save } from "lucide-react";
 
 interface GridProps {
   data: SheetData;
@@ -42,20 +44,23 @@ interface GridProps {
   onUpdateShape?: (id: string, updates: Partial<ShapeData>) => void;
   onUpdateIcon?: (id: string, updates: Partial<IconData>) => void;
   onShowShortcuts?: () => void;
+  spreadsheetId?: string;
+  spreadsheetName?: string;
+  onAutoSave?: (data: SheetData) => Promise<void>;
+  autoSaveInterval?: number;
+  showAutoSaveStatus?: boolean;
 }
 
 export interface GridHandle {
   scrollToTop: () => void;
+  forceSave: () => Promise<void>;
 }
 
 const DEFAULT_ROW_HEIGHT = 32;
 const DEFAULT_COL_WIDTH = 100;
 const ROW_HEADER_WIDTH = 40;
-// Veľkosť dávky pre lazy loading — pridaj ďalšie riadky/stĺpce keď
-// scrollujeme blízko konca
 const ROW_BATCH_SIZE = 100;
 const COL_BATCH_SIZE = 26;
-// Koľko riadkov/stĺpcov pred koncom začíname načítavať ďalšie
 const ROW_LOAD_THRESHOLD = 30;
 const COL_LOAD_THRESHOLD = 10;
 const OVERSCAN = 5;
@@ -193,7 +198,6 @@ const Cell = memo(
           ) : (
             <span className="px-1 text-sm truncate w-full">{displayValue}</span>
           )}
-          {/* Resize handle for columns */}
           <div
             className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/50 z-30 opacity-0 hover:opacity-100"
             onMouseDown={(e) => onResize?.(e)}
@@ -226,7 +230,6 @@ const RowHeader = memo(({ rowIndex, height, isActive, showHeaders = true, onResi
       style={{ width: ROW_HEADER_WIDTH, minWidth: ROW_HEADER_WIDTH, height }}
     >
       {rowIndex}
-      {/* Resize handle for rows */}
       <div
         className="absolute bottom-0 left-0 right-0 h-1 cursor-row-resize hover:bg-primary/50 z-30 opacity-0 hover:opacity-100"
         onMouseDown={onResize}
@@ -237,6 +240,53 @@ const RowHeader = memo(({ rowIndex, height, isActive, showHeaders = true, onResi
   );
 });
 RowHeader.displayName = "RowHeader";
+
+interface AutoSaveStatusProps {
+  isSaving: boolean;
+  lastSaved: Date | null;
+  error: string | null;
+  onManualSave: () => void;
+}
+
+const AutoSaveStatus = memo(({ isSaving, lastSaved, error, onManualSave }: AutoSaveStatusProps) => {
+  const getStatusText = () => {
+    if (isSaving) return "Ukladám...";
+    if (error) return "Chyba pri ukladaní";
+    if (lastSaved) {
+      const now = new Date();
+      const diff = Math.floor((now.getTime() - lastSaved.getTime()) / 1000);
+      if (diff < 60) return `Uložené pred ${diff} s`;
+      return `Uložené o ${lastSaved.toLocaleTimeString()}`;
+    }
+    return "Neuložené";
+  };
+
+  return (
+    <div className="absolute bottom-2 right-2 z-50 flex items-center gap-2 px-2 py-1 bg-background/80 backdrop-blur-sm border rounded-md shadow-sm text-xs">
+      <button
+        onClick={onManualSave}
+        className="flex items-center gap-1 hover:text-primary transition-colors"
+        disabled={isSaving}
+        title="Manuálne uložiť"
+      >
+        <Save className="h-3 w-3" />
+        <span>Uložiť</span>
+      </button>
+      <div className="w-px h-3 bg-border" />
+      <div className="flex items-center gap-1 text-muted-foreground">
+        {isSaving ? (
+          <Cloud className="h-3 w-3 animate-pulse text-blue-500" />
+        ) : error ? (
+          <Cloud className="h-3 w-3 text-red-500" />
+        ) : (
+          <Cloud className="h-3 w-3 text-green-500" />
+        )}
+        <span>{getStatusText()}</span>
+      </div>
+    </div>
+  );
+});
+AutoSaveStatus.displayName = "AutoSaveStatus";
 
 export const Grid = forwardRef<GridHandle, GridProps>(({
   data,
@@ -270,17 +320,25 @@ export const Grid = forwardRef<GridHandle, GridProps>(({
   onUpdateShape,
   onUpdateIcon,
   onShowShortcuts,
+  spreadsheetId,
+  spreadsheetName,
+  onAutoSave,
+  autoSaveInterval = 30000,
+  showAutoSaveStatus = true,
 }, ref) => {
   const [editingCell, setEditingCell] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [rowHeights, setRowHeights] = useState<Record<number, number>>({});
   const [colWidths, setColWidths] = useState<Record<string, number>>({});
 
-  // Range selection state
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState<string | null>(null);
 
-  // ── Infinite grid dimensions ──────────────────────────────────────────────
+  const [isSaving, setIsSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [hasChanges, setHasChanges] = useState(false);
+
   const [totalRows, setTotalRows] = useState(200);
   const [totalCols, setTotalCols] = useState(52);
 
@@ -295,10 +353,133 @@ export const Grid = forwardRef<GridHandle, GridProps>(({
     startSize: number;
   } | null>(null);
 
-  const activeRow = selectedCell ? parseInt(selectedCell.match(/\d+/)?.[0] || "0") : null;
-  const activeCol = selectedCell ? selectedCell.match(/[A-Z]+/)?.[0] : null;
+  const dataRef = useRef(data);
+  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isSavingRef = useRef(false);
 
-  const getRowHeight = useCallback(
+  useEffect(() => {
+    dataRef.current = data;
+    setHasChanges(true);
+  }, [data]);
+
+  const performSave = useCallback(async (force: boolean = false) => {
+    if (!onAutoSave || !spreadsheetId) return;
+    if (isSavingRef.current) return;
+    if (!hasChanges && !force) return;
+
+    try {
+      isSavingRef.current = true;
+      setIsSaving(true);
+      setSaveError(null);
+
+      await onAutoSave(dataRef.current);
+
+      setLastSaved(new Date());
+      setHasChanges(false);
+      setSaveError(null);
+
+      if (force) {
+        toast.success("Spreadsheet uložený", {
+          description: `"${spreadsheetName || 'Bez názvu'}" bol úspešne uložený.`,
+          icon: <Cloud className="h-4 w-4" />,
+          duration: 3000,
+        });
+      }
+    } catch (error) {
+      console.error("Autosave failed:", error);
+      setSaveError(error instanceof Error ? error.message : "Neznáma chyba");
+      
+      if (force) {
+        toast.error("Ukladanie zlyhalo", {
+          description: "Skúste to prosím neskôr.",
+          duration: 5000,
+        });
+      }
+    } finally {
+      isSavingRef.current = false;
+      setIsSaving(false);
+    }
+  }, [onAutoSave, spreadsheetId, spreadsheetName, hasChanges]);
+
+  const forceSave = useCallback(async () => {
+    await performSave(true);
+  }, [performSave]);
+
+  useImperativeHandle(ref, () => ({
+    scrollToTop: () => {
+      if (gridRef.current) {
+        gridRef.current.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+      }
+    },
+    forceSave,
+  }), [forceSave]);
+
+  useEffect(() => {
+    if (!onAutoSave || !spreadsheetId) return;
+
+    const startAutoSaveTimer = () => {
+      if (autoSaveTimerRef.current) {
+        clearInterval(autoSaveTimerRef.current);
+      }
+
+      autoSaveTimerRef.current = setInterval(() => {
+        performSave(false);
+      }, autoSaveInterval);
+    };
+
+    startAutoSaveTimer();
+
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearInterval(autoSaveTimerRef.current);
+        autoSaveTimerRef.current = null;
+      }
+    };
+  }, [onAutoSave, spreadsheetId, autoSaveInterval, performSave]);
+
+  useEffect(() => {
+    return () => {
+      if (hasChanges && onAutoSave && spreadsheetId && !isSavingRef.current) {
+        performSave(true).catch(console.error);
+      }
+    };
+  }, [hasChanges, onAutoSave, spreadsheetId, performSave]);
+
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasChanges) {
+        if (onAutoSave && spreadsheetId && !isSavingRef.current) {
+          try {
+            const event = new CustomEvent('grid-save-before-unload', { 
+              detail: { data: dataRef.current } 
+            });
+            window.dispatchEvent(event);
+          } catch (error) {
+            console.error("Save on unload failed:", error);
+          }
+        }
+        
+        e.preventDefault();
+        e.returnValue = "Máte neuložené zmeny. Naozaj chcete opustiť stránku?";
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasChanges, onAutoSave, spreadsheetId]);
+
+  useEffect(() => {
+    const handleSaveEvent = () => {
+      if (hasChanges) {
+        performSave(true);
+      }
+    };
+
+    window.addEventListener('grid-save-now', handleSaveEvent);
+    return () => window.removeEventListener('grid-save-now', handleSaveEvent);
+  }, [hasChanges, performSave]);
+
+    const getRowHeight = useCallback(
     (index: number) => {
       if (hiddenRows.has(index + 1)) return 0;
       return rowHeights[index + 1] || DEFAULT_ROW_HEIGHT;
@@ -314,7 +495,6 @@ export const Grid = forwardRef<GridHandle, GridProps>(({
     [colWidths],
   );
 
-  // ── Virtualizéry ──────────────────────────────────────────────────────────
   const rowVirtualizer = useVirtualizer({
     count: totalRows,
     getScrollElement: () => gridRef.current,
@@ -330,7 +510,9 @@ export const Grid = forwardRef<GridHandle, GridProps>(({
     overscan: OVERSCAN,
   });
 
-  // ── Infinite scroll ───────────────────────────────────────────────────────
+  const activeRow = selectedCell ? parseInt(selectedCell.match(/\d+/)?.[0] || "0") : null;
+  const activeCol = selectedCell ? selectedCell.match(/[A-Z]+/)?.[0] : null;
+
   useEffect(() => {
     const virtualRows = rowVirtualizer.getVirtualItems();
     if (virtualRows.length === 0) return;
@@ -349,15 +531,6 @@ export const Grid = forwardRef<GridHandle, GridProps>(({
     }
   }, [colVirtualizer.getVirtualItems()[colVirtualizer.getVirtualItems().length - 1]?.index, totalCols]);
 
-  useImperativeHandle(ref, () => ({
-    scrollToTop: () => {
-      if (gridRef.current) {
-        gridRef.current.scrollTo({ top: 0, left: 0, behavior: "smooth" });
-      }
-    },
-  }));
-
-  // ── Sync scroll ───────────────────────────────────────────────────────────
   useEffect(() => {
     const grid = gridRef.current;
     if (!grid) return;
@@ -386,7 +559,6 @@ export const Grid = forwardRef<GridHandle, GridProps>(({
     return () => header.removeEventListener("scroll", handleHeaderScroll);
   }, []);
 
-  // ── Resize ────────────────────────────────────────────────────────────────
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!resizeRef.current) return;
@@ -765,7 +937,6 @@ export const Grid = forwardRef<GridHandle, GridProps>(({
             );
           })}
 
-          {/* Floats layer */}
           <div className="absolute inset-0 pointer-events-none" style={{ left: showHeaders ? ROW_HEADER_WIDTH : 0 }}>
             {charts.map((chart) => (
               <div key={chart.id} className="pointer-events-auto">
@@ -819,6 +990,15 @@ export const Grid = forwardRef<GridHandle, GridProps>(({
           </div>
         </div>
       </div>
+
+      {showAutoSaveStatus && onAutoSave && spreadsheetId && (
+        <AutoSaveStatus
+          isSaving={isSaving}
+          lastSaved={lastSaved}
+          error={saveError}
+          onManualSave={forceSave}
+        />
+      )}
     </div>
   );
 });

@@ -74,6 +74,7 @@ import {
     SortDesc,
     Filter,
     Pipette,
+    LucideIcon,
 } from "lucide-react";
 
 interface ClassicToolbarProps {
@@ -135,7 +136,7 @@ const ToolbarButton = ({
     onClick,
     disabled = false,
 }: {
-    icon: any;
+    icon: LucideIcon;
     tooltip: string;
     onClick?: () => void;
     disabled?: boolean;
@@ -402,7 +403,7 @@ export const ClassicToolbar = ({
             {/* Row 3: Formatting Toolbar */}
             <div className="flex items-center px-1 h-10 gap-0.5 overflow-x-auto">
                 <Select defaultValue="inter">
-                    <SelectTrigger className="h-7 w-[150px] text-xs bg-white dark:bg-zinc-950">
+                    <SelectTrigger className="h-7 w-37.5 text-xs bg-white dark:bg-zinc-950">
                         <SelectValue placeholder="Font" />
                     </SelectTrigger>
                     <SelectContent>
@@ -412,7 +413,7 @@ export const ClassicToolbar = ({
                     </SelectContent>
                 </Select>
                 <Select defaultValue="10">
-                    <SelectTrigger className="h-7 w-[60px] text-xs bg-white dark:bg-zinc-950">
+                    <SelectTrigger className="h-7 w-15 text-xs bg-white dark:bg-zinc-950">
                         <SelectValue placeholder="Size" />
                     </SelectTrigger>
                     <SelectContent>

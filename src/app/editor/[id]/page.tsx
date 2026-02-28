@@ -323,7 +323,7 @@ function EditorContent() {
 			if (stored) {
 				try {
 					const spreadsheets = JSON.parse(stored);
-					const index = spreadsheets.findIndex((s: any) => s.id === id);
+					const index = spreadsheets.findIndex((s: { id: string; }) => s.id === id);
 					if (index !== -1) {
 						spreadsheets[index] = {
 							...spreadsheets[index],
@@ -726,7 +726,7 @@ function EditorContent() {
 
 	const handleNumberFormat = useCallback((format: string) => {
 		if (selectedCell) {
-			updateCellStyle(selectedCell, { numberFormat: format as any });
+			updateCellStyle(selectedCell, { numberFormat: format as unknown as "number" | "general" | "currency" | "percentage" | "date" | "time"  });
 			toast.success("Number Format", {
 				description: `Applied ${format} format to cell ${selectedCell}`,
 				icon: <Table className="h-4 w-4" />,

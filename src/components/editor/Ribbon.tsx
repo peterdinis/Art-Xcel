@@ -34,7 +34,8 @@ import {
     Filter,
     ArrowUpDown,
     CheckSquare,
-    ArrowUp
+    ArrowUp,
+    LucideIcon
 } from "lucide-react";
 import { ModeToggle } from "@/components/mode-toggle";
 import { Separator } from "@/components/ui/separator";
@@ -92,7 +93,7 @@ const RibbonButton = ({
     variant = "ghost",
     size = "sm"
 }: {
-    icon: any;
+    icon: LucideIcon;
     label?: string;
     onClick?: () => void;
     tooltip: string;
