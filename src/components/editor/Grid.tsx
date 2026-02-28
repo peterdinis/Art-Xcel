@@ -62,6 +62,8 @@ interface GridProps {
 	onAutoSave?: (data: SheetData) => Promise<void>;
 	autoSaveInterval?: number;
 	showAutoSaveStatus?: boolean;
+	// Pridaná prop pre detekciu platformy
+	isMac?: boolean;
 }
 
 export interface GridHandle {
@@ -126,6 +128,8 @@ interface CellProps {
 	onDeleteColumn: () => void;
 	onClearCell: () => void;
 	onShowShortcuts?: () => void;
+	// Pridaná prop pre detekciu platformy
+	isMac?: boolean;
 }
 
 const Cell = memo(
@@ -157,8 +161,17 @@ const Cell = memo(
 		onDeleteColumn,
 		onClearCell,
 		onShowShortcuts,
+		isMac = false, // Default hodnota
 	}: CellProps) => {
 		const displayValue = isEditing ? formula || value : value;
+
+		// Funkcia na získanie textu skratky podľa platformy
+		const getShortcutText = (shortcut: string): string => {
+			if (isMac) {
+				return shortcut.replace(/Ctrl\+/g, '⌘').replace(/Alt\+/g, '⌥').replace(/Shift\+/g, '⇧');
+			}
+			return shortcut;
+		};
 
 		return (
 			<CellContextMenu
@@ -173,6 +186,7 @@ const Cell = memo(
 				onDeleteColumn={onDeleteColumn}
 				onClearCell={onClearCell}
 				onShowShortcuts={onShowShortcuts}
+				isMac={isMac}
 			>
 				<div
 					className={cn(
@@ -356,6 +370,7 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 			onAutoSave,
 			autoSaveInterval = 30000,
 			showAutoSaveStatus = true,
+			isMac = false, // Pridaná prop s default hodnotou
 		},
 		ref,
 	) => {
@@ -1048,6 +1063,7 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 													}
 													onClearCell={() => onClearCell(cellId)}
 													onShowShortcuts={onShowShortcuts}
+													isMac={isMac}
 												/>
 											</div>
 										);
