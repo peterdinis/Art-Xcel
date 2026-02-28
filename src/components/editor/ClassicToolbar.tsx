@@ -128,6 +128,8 @@ interface ClassicToolbarProps {
 	onShortcuts?: () => void;
 	onAbout?: () => void;
 	onToggleGrid?: () => void;
+	// Pridaná prop pre detekciu platformy
+	isMac?: boolean;
 }
 
 const ToolbarButton = ({
@@ -205,12 +207,21 @@ export const ClassicToolbar = ({
 	onShortcuts,
 	onAbout,
 	onToggleGrid,
+	isMac = false, // Default hodnota pre prípad, že prop nie je poskytnutá
 }: ClassicToolbarProps) => {
 	const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
 		const file = event.target.files?.[0];
 		if (file) {
 			onImport(file);
 		}
+	};
+
+	// Funkcia na získanie textu skratky podľa platformy
+	const getShortcutText = (shortcut: string): string => {
+		if (isMac) {
+			return shortcut.replace(/Ctrl\+/g, '⌘').replace(/Alt\+/g, '⌥').replace(/Shift\+/g, '⇧');
+		}
+		return shortcut;
 	};
 
 	return (
@@ -227,10 +238,16 @@ export const ClassicToolbar = ({
 						</Button>
 					</DropdownMenuTrigger>
 					<DropdownMenuContent align="start" className="min-w-48">
-						<DropdownMenuItem onClick={onNew}>New</DropdownMenuItem>
-						<DropdownMenuItem onClick={onOpen}>Open...</DropdownMenuItem>
+						<DropdownMenuItem onClick={onNew}>
+							New {isMac ? '⌘N' : 'Ctrl+N'}
+						</DropdownMenuItem>
+						<DropdownMenuItem onClick={onOpen}>
+							Open... {isMac ? '⌘O' : 'Ctrl+O'}
+						</DropdownMenuItem>
 						<DropdownMenuSeparator />
-						<DropdownMenuItem onClick={onSave}>Save</DropdownMenuItem>
+						<DropdownMenuItem onClick={onSave}>
+							Save {isMac ? '⌘S' : 'Ctrl+S'}
+						</DropdownMenuItem>
 						<DropdownMenuSub>
 							<DropdownMenuSubTrigger>Save As</DropdownMenuSubTrigger>
 							<DropdownMenuSubContent>
@@ -244,7 +261,9 @@ export const ClassicToolbar = ({
 						</DropdownMenuSub>
 						<DropdownMenuSeparator />
 						<DropdownMenuItem onClick={onExport}>Export As...</DropdownMenuItem>
-						<DropdownMenuItem onClick={onPrint}>Print...</DropdownMenuItem>
+						<DropdownMenuItem onClick={onPrint}>
+							Print... {isMac ? '⌘P' : 'Ctrl+P'}
+						</DropdownMenuItem>
 					</DropdownMenuContent>
 				</DropdownMenu>
 
@@ -258,19 +277,29 @@ export const ClassicToolbar = ({
 						</Button>
 					</DropdownMenuTrigger>
 					<DropdownMenuContent align="start" className="min-w-48">
-						<DropdownMenuItem onClick={onUndo}>Undo</DropdownMenuItem>
-						<DropdownMenuItem onClick={onRedo}>Redo</DropdownMenuItem>
+						<DropdownMenuItem onClick={onUndo}>
+							Undo {isMac ? '⌘Z' : 'Ctrl+Z'}
+						</DropdownMenuItem>
+						<DropdownMenuItem onClick={onRedo}>
+							Redo {isMac ? '⌘⇧Z' : 'Ctrl+Y'}
+						</DropdownMenuItem>
 						<DropdownMenuSeparator />
-						<DropdownMenuItem onClick={onCut}>Cut</DropdownMenuItem>
-						<DropdownMenuItem onClick={onCopy}>Copy</DropdownMenuItem>
-						<DropdownMenuItem onClick={onPaste}>Paste</DropdownMenuItem>
+						<DropdownMenuItem onClick={onCut}>
+							Cut {isMac ? '⌘X' : 'Ctrl+X'}
+						</DropdownMenuItem>
+						<DropdownMenuItem onClick={onCopy}>
+							Copy {isMac ? '⌘C' : 'Ctrl+C'}
+						</DropdownMenuItem>
+						<DropdownMenuItem onClick={onPaste}>
+							Paste {isMac ? '⌘V' : 'Ctrl+V'}
+						</DropdownMenuItem>
 						<DropdownMenuSeparator />
 						<DropdownMenuItem onClick={onSelectAll}>
-							Select All
+							Select All {isMac ? '⌘A' : 'Ctrl+A'}
 						</DropdownMenuItem>
 						<DropdownMenuSeparator />
 						<DropdownMenuItem onClick={onFind}>
-							Find & Replace...
+							Find & Replace... {isMac ? '⌘F' : 'Ctrl+F'}
 						</DropdownMenuItem>
 					</DropdownMenuContent>
 				</DropdownMenu>
@@ -303,7 +332,7 @@ export const ClassicToolbar = ({
 						</DropdownMenuItem>
 						<DropdownMenuSeparator />
 						<DropdownMenuItem onClick={onToggleFullScreen}>
-							Full Screen
+							Full Screen {isMac ? '⌘⌃F' : 'F11'}
 						</DropdownMenuItem>
 					</DropdownMenuContent>
 				</DropdownMenu>
@@ -362,7 +391,7 @@ export const ClassicToolbar = ({
 					</DropdownMenuTrigger>
 					<DropdownMenuContent align="start" className="min-w-48">
 						<DropdownMenuItem onClick={() => onStyleChange({ bold: true })}>
-							Text
+							Text {isMac ? '⌘B' : 'Ctrl+B'}
 						</DropdownMenuItem>
 						<DropdownMenuItem onClick={onFormatSpacing}>
 							Spacing
@@ -446,7 +475,7 @@ export const ClassicToolbar = ({
 							User Guides
 						</DropdownMenuItem>
 						<DropdownMenuItem onClick={onShortcuts}>
-							Shortcut Keys
+							Shortcut Keys {isMac ? '⌘/' : 'Ctrl+?'}
 						</DropdownMenuItem>
 						<DropdownMenuSeparator />
 						<DropdownMenuItem onClick={onAbout}>
@@ -458,9 +487,9 @@ export const ClassicToolbar = ({
 
 			{/* Row 2: Standard Toolbar */}
 			<div className="flex items-center px-1 h-8 border-b gap-0.5 overflow-x-auto">
-				<ToolbarButton icon={File} tooltip="New" onClick={onNew} />
+				<ToolbarButton icon={File} tooltip={`New (${isMac ? '⌘N' : 'Ctrl+N'})`} onClick={onNew} />
 				<div className="relative">
-					<ToolbarButton icon={FolderOpen} tooltip="Open" onClick={onOpen} />
+					<ToolbarButton icon={FolderOpen} tooltip={`Open (${isMac ? '⌘O' : 'Ctrl+O'})`} onClick={onOpen} />
 					<input
 						type="file"
 						className="absolute inset-0 opacity-0 cursor-pointer"
@@ -468,21 +497,21 @@ export const ClassicToolbar = ({
 						accept=".xlsx,.xls,.csv,.ods"
 					/>
 				</div>
-				<ToolbarButton icon={Save} tooltip="Save" onClick={onSave} />
+				<ToolbarButton icon={Save} tooltip={`Save (${isMac ? '⌘S' : 'Ctrl+S'})`} onClick={onSave} />
 				<ToolbarButton icon={Download} tooltip="Export" onClick={onExport} />
 				<Separator orientation="vertical" className="h-5 mx-0.5" />
-				<ToolbarButton icon={Printer} tooltip="Print" onClick={onPrint} />
+				<ToolbarButton icon={Printer} tooltip={`Print (${isMac ? '⌘P' : 'Ctrl+P'})`} onClick={onPrint} />
 				<ToolbarButton
 					icon={FileSearch}
 					tooltip="Print Preview"
 					onClick={onPrint}
 				/>
 				<Separator orientation="vertical" className="h-5 mx-0.5" />
-				<ToolbarButton icon={Scissors} tooltip="Cut" onClick={onCut} />
-				<ToolbarButton icon={Copy} tooltip="Copy" onClick={onCopy} />
+				<ToolbarButton icon={Scissors} tooltip={`Cut (${isMac ? '⌘X' : 'Ctrl+X'})`} onClick={onCut} />
+				<ToolbarButton icon={Copy} tooltip={`Copy (${isMac ? '⌘C' : 'Ctrl+C'})`} onClick={onCopy} />
 				<ToolbarButton
 					icon={ClipboardPaste}
-					tooltip="Paste"
+					tooltip={`Paste (${isMac ? '⌘V' : 'Ctrl+V'})`}
 					onClick={onPaste}
 				/>
 				<ToolbarButton
@@ -495,12 +524,12 @@ export const ClassicToolbar = ({
 					}
 				/>
 				<Separator orientation="vertical" className="h-5 mx-0.5" />
-				<ToolbarButton icon={Undo2} tooltip="Undo" onClick={onUndo} />
-				<ToolbarButton icon={Redo2} tooltip="Redo" onClick={onRedo} />
+				<ToolbarButton icon={Undo2} tooltip={`Undo (${isMac ? '⌘Z' : 'Ctrl+Z'})`} onClick={onUndo} />
+				<ToolbarButton icon={Redo2} tooltip={`Redo (${isMac ? '⌘⇧Z' : 'Ctrl+Y'})`} onClick={onRedo} />
 				<Separator orientation="vertical" className="h-5 mx-0.5" />
 				<ToolbarButton
 					icon={Search}
-					tooltip="Find & Replace"
+					tooltip={`Find & Replace (${isMac ? '⌘F' : 'Ctrl+F'})`}
 					onClick={onFind}
 				/>
 				<ToolbarButton
@@ -603,17 +632,17 @@ export const ClassicToolbar = ({
 				<Separator orientation="vertical" className="h-5 mx-0.5" />
 				<ToolbarButton
 					icon={Bold}
-					tooltip="Bold"
+					tooltip={`Bold (${isMac ? '⌘B' : 'Ctrl+B'})`}
 					onClick={() => onStyleChange({ bold: true })}
 				/>
 				<ToolbarButton
 					icon={Italic}
-					tooltip="Italic"
+					tooltip={`Italic (${isMac ? '⌘I' : 'Ctrl+I'})`}
 					onClick={() => onStyleChange({ italic: true })}
 				/>
 				<ToolbarButton
 					icon={Underline}
-					tooltip="Underline"
+					tooltip={`Underline (${isMac ? '⌘U' : 'Ctrl+U'})`}
 					onClick={() => onStyleChange({ underline: true })}
 				/>
 				<ToolbarButton
