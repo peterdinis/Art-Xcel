@@ -22,6 +22,7 @@ import {
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import { UrlObject } from "url";
 
 interface FloatingQuickMenuProps {
     onSave: () => void;
@@ -64,7 +65,7 @@ export const FloatingQuickMenu = ({
                                 <Tooltip>
                                     <TooltipTrigger asChild>
                                         {item.href ? (
-                                            <Link href={item.href}>
+                                            <Link href={item.href as unknown as UrlObject}>
                                                 <Button
                                                     size="icon"
                                                     className={cn(
