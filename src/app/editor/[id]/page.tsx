@@ -726,7 +726,7 @@ function EditorContent() {
 
 	const handleNumberFormat = useCallback((format: string) => {
 		if (selectedCell) {
-			updateCellStyle(selectedCell, { numberFormat: format as any });
+			updateCellStyle(selectedCell, { numberFormat: format as unknown as "number" | "general" | "currency" | "percentage" | "date" | "time"  });
 			toast.success("Number Format", {
 				description: `Applied ${format} format to cell ${selectedCell}`,
 				icon: <Table className="h-4 w-4" />,
