@@ -211,6 +211,7 @@ const Cell = memo(
 							onChange={onChange}
 							onKeyDown={onKeyDown}
 							onBlur={onBlur}
+							autoFocus
 						/>
 					) : (
 						<span className="px-1 text-sm truncate w-full">{displayValue}</span>
@@ -376,8 +377,9 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 
 		const inputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
 		const gridRef = useRef<HTMLDivElement>(null);
-		const headerRef = useRef<HTMLDivElement>(null);
-		const headerScrollRef = useRef<HTMLDivElement>(null);
+		const topLeftRef = useRef<HTMLDivElement>(null);
+		const colHeaderRef = useRef<HTMLDivElement>(null);
+		const rowHeaderRef = useRef<HTMLDivElement>(null);
 		const resizeRef = useRef<{
 			type: "row" | "col";
 			id: string | number;
@@ -388,6 +390,8 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 		const dataRef = useRef(data);
 		const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
 		const isSavingRef = useRef(false);
+		const scrollLeftRef = useRef(0);
+		const scrollTopRef = useRef(0);
 
 		useEffect(() => {
 			dataRef.current = data;
@@ -553,6 +557,38 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 			overscan: OVERSCAN,
 		});
 
+		// Sync scroll positions
+		const handleGridScroll = useCallback(() => {
+			if (!gridRef.current) return;
+			
+			const { scrollLeft, scrollTop } = gridRef.current;
+			scrollLeftRef.current = scrollLeft;
+			scrollTopRef.current = scrollTop;
+
+			// Update column headers scroll
+			if (colHeaderRef.current) {
+				colHeaderRef.current.scrollLeft = scrollLeft;
+			}
+
+			// Update row headers scroll
+			if (rowHeaderRef.current) {
+				rowHeaderRef.current.scrollTop = scrollTop;
+			}
+
+			// Update top-left corner
+			if (topLeftRef.current) {
+				topLeftRef.current.style.transform = `translate(${scrollLeft}px, ${scrollTop}px)`;
+			}
+		}, []);
+
+		useEffect(() => {
+			const grid = gridRef.current;
+			if (grid) {
+				grid.addEventListener('scroll', handleGridScroll, { passive: true });
+				return () => grid.removeEventListener('scroll', handleGridScroll);
+			}
+		}, [handleGridScroll]);
+
 		const activeRow = selectedCell
 			? parseInt(selectedCell.match(/\d+/)?.[0] || "0")
 			: null;
@@ -585,34 +621,6 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 			]?.index,
 			totalCols,
 		]);
-
-		useEffect(() => {
-			const grid = gridRef.current;
-			if (!grid) return;
-
-			const handleScroll = () => {
-				if (headerScrollRef.current) {
-					headerScrollRef.current.scrollLeft = grid.scrollLeft;
-				}
-			};
-
-			grid.addEventListener("scroll", handleScroll, { passive: true });
-			return () => grid.removeEventListener("scroll", handleScroll);
-		}, []);
-
-		useEffect(() => {
-			const header = headerScrollRef.current;
-			if (!header) return;
-
-			const handleHeaderScroll = () => {
-				if (gridRef.current) {
-					gridRef.current.scrollLeft = header.scrollLeft;
-				}
-			};
-
-			header.addEventListener("scroll", handleHeaderScroll, { passive: true });
-			return () => header.removeEventListener("scroll", handleHeaderScroll);
-		}, []);
 
 		useEffect(() => {
 			const handleMouseMove = (e: MouseEvent) => {
@@ -850,50 +858,57 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 			[],
 		);
 
-		const renderHeader = () => {
-			if (!showHeaders) return null;
+		const virtualRows = rowVirtualizer.getVirtualItems();
+		const virtualCols = colVirtualizer.getVirtualItems();
 
-			return (
-				<div
-					className="flex sticky top-0 z-20 bg-muted/50 dark:bg-neutral-800 border-b border-border dark:border-neutral-700 shrink-0"
-					ref={headerRef}
-				>
+		return (
+			<div className="relative flex flex-col w-full h-full overflow-hidden bg-background">
+				{/* Top-left corner (fixed) */}
+				{showHeaders && (
 					<div
-						className="shrink-0 border-r border-border dark:border-neutral-700 bg-muted dark:bg-neutral-800 sticky left-0 z-30"
+						ref={topLeftRef}
+						className="absolute top-0 left-0 z-30 bg-muted/50 dark:bg-neutral-800 border-r border-b border-border dark:border-neutral-700"
 						style={{
 							width: ROW_HEADER_WIDTH,
-							minWidth: ROW_HEADER_WIDTH,
 							height: DEFAULT_ROW_HEIGHT,
+							transform: `translate(${scrollLeftRef.current}px, ${scrollTopRef.current}px)`,
 						}}
 					>
 						<div className="flex items-center justify-center h-full text-xs text-muted-foreground">
 							#
 						</div>
 					</div>
+				)}
 
+				{/* Column headers */}
+				{showHeaders && (
 					<div
-						ref={headerScrollRef}
-						className="relative overflow-hidden flex-1"
-						style={{ height: DEFAULT_ROW_HEIGHT }}
+						ref={colHeaderRef}
+						className="absolute top-0 left-0 z-20 overflow-hidden"
+						style={{
+							left: showHeaders ? ROW_HEADER_WIDTH : 0,
+							right: 0,
+							height: DEFAULT_ROW_HEIGHT,
+						}}
 					>
 						<div
 							style={{
 								width: colVirtualizer.getTotalSize(),
-								height: "100%",
+								height: DEFAULT_ROW_HEIGHT,
 								position: "relative",
 							}}
 						>
-							{colVirtualizer.getVirtualItems().map((virtualCol) => {
+							{virtualCols.map((virtualCol) => {
 								const col = numberToColLabel(virtualCol.index);
 								const isActive = activeCol === col;
 								return (
 									<div
 										key={virtualCol.key}
 										className={cn(
-											"absolute top-0 flex items-center justify-center text-xs font-medium border-r border-border dark:border-neutral-700 select-none",
+											"absolute top-0 flex items-center justify-center text-xs font-medium border-r border-b border-border dark:border-neutral-700 select-none",
 											isActive
 												? "bg-primary/15 dark:bg-primary/25 text-primary"
-												: "text-muted-foreground",
+												: "bg-muted/50 dark:bg-neutral-800 text-muted-foreground",
 										)}
 										style={{
 											left: virtualCol.start,
@@ -907,13 +922,55 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 							})}
 						</div>
 					</div>
-				</div>
-			);
-		};
+				)}
 
-		return (
-			<div className="relative flex flex-col w-full h-full overflow-hidden">
-				{renderHeader()}
+				{/* Row headers */}
+				{showHeaders && (
+					<div
+						ref={rowHeaderRef}
+						className="absolute top-0 left-0 z-10 overflow-hidden"
+						style={{
+							top: DEFAULT_ROW_HEIGHT,
+							bottom: 0,
+							width: ROW_HEADER_WIDTH,
+						}}
+					>
+						<div
+							style={{
+								height: rowVirtualizer.getTotalSize(),
+								width: ROW_HEADER_WIDTH,
+								position: "relative",
+							}}
+						>
+							{virtualRows.map((virtualRow) => {
+								const row = virtualRow.index + 1;
+								if (hiddenRows.has(row)) return null;
+								const isRowActive = activeRow === row;
+								
+								return (
+									<div
+										key={virtualRow.key}
+										className={cn(
+											"absolute left-0 flex items-center justify-center text-xs text-muted-foreground border-r border-b border-border dark:border-neutral-700 select-none",
+											isRowActive &&
+												"bg-primary/15 dark:bg-primary/25 font-semibold text-primary",
+										)}
+										style={{
+											width: ROW_HEADER_WIDTH,
+											height: virtualRow.size,
+											top: virtualRow.start,
+											backgroundColor: isRowActive ? undefined : "transparent",
+										}}
+									>
+										{row}
+									</div>
+								);
+							})}
+						</div>
+					</div>
+				)}
+
+				{/* Main grid area */}
 				<div
 					ref={gridRef}
 					className="flex-1 overflow-auto relative show-scrollbar"
@@ -921,192 +978,161 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 						willChange: "transform",
 						overscrollBehavior: "none",
 						WebkitOverflowScrolling: "touch",
+						marginLeft: showHeaders ? ROW_HEADER_WIDTH : 0,
+						marginTop: showHeaders ? DEFAULT_ROW_HEIGHT : 0,
 					}}
 				>
 					<div
 						style={{
 							height: rowVirtualizer.getTotalSize(),
-							width:
-								colVirtualizer.getTotalSize() +
-								(showHeaders ? ROW_HEADER_WIDTH : 0),
+							width: colVirtualizer.getTotalSize(),
 							position: "relative",
 						}}
 					>
-						{rowVirtualizer.getVirtualItems().map((virtualRow) => {
+						{virtualRows.map((virtualRow) => {
 							const row = virtualRow.index + 1;
 							if (hiddenRows.has(row)) return null;
 							const rowHeight = virtualRow.size;
-							const isRowActive = activeRow === row;
 
 							return (
-								<div
-									key={virtualRow.key}
-									className="absolute left-0"
-									style={{
-										width:
-											colVirtualizer.getTotalSize() +
-											(showHeaders ? ROW_HEADER_WIDTH : 0),
-										height: rowHeight,
-										top: virtualRow.start,
-									}}
-								>
-									<div className="flex w-full h-full relative">
-										{showHeaders && (
+								<React.Fragment key={virtualRow.key}>
+									{virtualCols.map((virtualCol) => {
+										const col = numberToColLabel(virtualCol.index);
+										const cellId = `${col}${row}`;
+										const cellData = data[cellId] || {
+											value: "",
+											style: {},
+										};
+										const isSelected = selectedCell === cellId;
+										const isInRange = selectionRange?.includes(cellId) || false;
+										const isEditing = editingCell === cellId;
+
+										return (
 											<div
-												className="sticky left-0 z-10 shrink-0 bg-background dark:bg-zinc-900"
-												style={{ width: ROW_HEADER_WIDTH }}
+												key={`${virtualRow.key}-${virtualCol.key}`}
+												className="absolute"
+												style={{
+													left: virtualCol.start,
+													top: virtualRow.start,
+													width: virtualCol.size,
+													height: rowHeight,
+												}}
+												onMouseDown={(e) => handleCellMouseDown(cellId, e)}
+												onMouseEnter={() => handleCellMouseEnter(cellId)}
+												onMouseUp={handleCellMouseUp}
+												onDoubleClick={() => handleDoubleClick(cellId)}
 											>
-												<RowHeader
-													rowIndex={row}
+												<Cell
+													id={cellId}
+													value={cellData.value || ""}
+													formula={cellData.formula}
+													style={cellData.style}
+													isSelected={isSelected}
+													isInRange={isInRange}
+													isEditing={isEditing}
+													width={virtualCol.size}
 													height={rowHeight}
-													isActive={isRowActive}
-													showHeaders={showHeaders}
+													showGrid={showGrid}
+													onClick={() => {}}
+													onChange={(e) => handleCellChange(cellId, e)}
+													onKeyDown={(e) => handleKeyDown(cellId, e)}
+													onBlur={() => handleBlur(cellId)}
+													inputRef={setInputRef(cellId)}
 													onResize={handleResizeStart}
+													onCopy={onCopy}
+													onCut={onCut}
+													onPaste={onPaste}
+													onInsertRowAbove={() => onInsertRow(row)}
+													onInsertRowBelow={() => onInsertRow(row + 1)}
+													onDeleteRow={() => onDeleteRow(row)}
+													onInsertColumnLeft={() =>
+														onInsertColumn(virtualCol.index)
+													}
+													onInsertColumnRight={() =>
+														onInsertColumn(virtualCol.index + 1)
+													}
+													onDeleteColumn={() =>
+														onDeleteColumn(virtualCol.index)
+													}
+													onClearCell={() => onClearCell(cellId)}
+													onShowShortcuts={onShowShortcuts}
 												/>
 											</div>
-										)}
-
-										<div
-											className="relative"
-											style={{
-												width: colVirtualizer.getTotalSize(),
-												height: rowHeight,
-											}}
-										>
-											{colVirtualizer.getVirtualItems().map((virtualCol) => {
-												const col = numberToColLabel(virtualCol.index);
-												const cellId = `${col}${row}`;
-												const cellData = data[cellId] || {
-													value: "",
-													style: {},
-												};
-												const isSelected = selectedCell === cellId;
-												const isEditing = editingCell === cellId;
-
-												return (
-													<div
-														key={virtualCol.key}
-														className="absolute top-0 h-full"
-														style={{
-															transform: `translateX(${virtualCol.start}px)`,
-															width: virtualCol.size,
-														}}
-														onMouseDown={(e) => handleCellMouseDown(cellId, e)}
-														onMouseEnter={() => handleCellMouseEnter(cellId)}
-														onMouseUp={handleCellMouseUp}
-														onDoubleClick={() => handleDoubleClick(cellId)}
-													>
-														<Cell
-															id={cellId}
-															value={cellData.value || ""}
-															formula={cellData.formula}
-															style={cellData.style}
-															isSelected={isSelected}
-															isInRange={
-																selectionRange?.includes(cellId) || false
-															}
-															isEditing={isEditing}
-															width={virtualCol.size}
-															height={rowHeight}
-															showGrid={showGrid}
-															onClick={() => {}}
-															onChange={(e) => handleCellChange(cellId, e)}
-															onKeyDown={(e) => handleKeyDown(cellId, e)}
-															onBlur={() => handleBlur(cellId)}
-															inputRef={setInputRef(cellId)}
-															onResize={handleResizeStart}
-															onCopy={onCopy}
-															onCut={onCut}
-															onPaste={onPaste}
-															onInsertRowAbove={() => onInsertRow(row)}
-															onInsertRowBelow={() => onInsertRow(row + 1)}
-															onDeleteRow={() => onDeleteRow(row)}
-															onInsertColumnLeft={() =>
-																onInsertColumn(virtualCol.index)
-															}
-															onInsertColumnRight={() =>
-																onInsertColumn(virtualCol.index + 1)
-															}
-															onDeleteColumn={() =>
-																onDeleteColumn(virtualCol.index)
-															}
-															onClearCell={() => onClearCell(cellId)}
-															onShowShortcuts={onShowShortcuts}
-														/>
-													</div>
-												);
-											})}
-										</div>
-									</div>
-								</div>
+										);
+									})}
+								</React.Fragment>
 							);
 						})}
-
-						<div
-							className="absolute inset-0 pointer-events-none"
-							style={{ left: showHeaders ? ROW_HEADER_WIDTH : 0 }}
-						>
-							{charts.map((chart) => (
-								<div key={chart.id} className="pointer-events-auto">
-									<ChartComponent
-										chart={chart}
-										data={data}
-										onRemove={() => onRemoveChart?.(chart.id)}
-										onUpdatePosition={(x, y) =>
-											onUpdateChart?.(chart.id, { position: { x, y } })
-										}
-									/>
-								</div>
-							))}
-							{images.map((image) => (
-								<div key={image.id} className="pointer-events-auto">
-									<ImageComponent
-										id={image.id}
-										src={image.src}
-										position={image.position}
-										size={image.size}
-										onRemove={() => onRemoveImage?.(image.id)}
-										onUpdatePosition={(x, y) =>
-											onUpdateImage?.(image.id, { position: { x, y } })
-										}
-										onUpdateSize={(width, height) =>
-											onUpdateImage?.(image.id, { size: { width, height } })
-										}
-									/>
-								</div>
-							))}
-							{shapes.map((shape) => (
-								<div key={shape.id} className="pointer-events-auto">
-									<ShapeComponent
-										id={shape.id}
-										type={shape.type}
-										position={shape.position}
-										size={shape.size}
-										style={shape.style}
-										onRemove={() => onRemoveShape?.(shape.id)}
-										onUpdatePosition={(x, y) =>
-											onUpdateShape?.(shape.id, { position: { x, y } })
-										}
-									/>
-								</div>
-							))}
-							{icons.map((icon) => (
-								<div key={icon.id} className="pointer-events-auto">
-									<IconComponent
-										id={icon.id}
-										iconName={icon.iconName}
-										position={icon.position}
-										size={icon.size}
-										color={icon.color}
-										onRemove={() => onRemoveIcon?.(icon.id)}
-										onUpdatePosition={(x, y) =>
-											onUpdateIcon?.(icon.id, { position: { x, y } })
-										}
-									/>
-								</div>
-							))}
-						</div>
 					</div>
+				</div>
+
+				{/* Charts, images, shapes, icons */}
+				<div
+					className="absolute inset-0 pointer-events-none"
+					style={{
+						left: showHeaders ? ROW_HEADER_WIDTH : 0,
+						top: showHeaders ? DEFAULT_ROW_HEIGHT : 0,
+					}}
+				>
+					{charts.map((chart) => (
+						<div key={chart.id} className="pointer-events-auto">
+							<ChartComponent
+								chart={chart}
+								data={data}
+								onRemove={() => onRemoveChart?.(chart.id)}
+								onUpdatePosition={(x, y) =>
+									onUpdateChart?.(chart.id, { position: { x, y } })
+								}
+							/>
+						</div>
+					))}
+					{images.map((image) => (
+						<div key={image.id} className="pointer-events-auto">
+							<ImageComponent
+								id={image.id}
+								src={image.src}
+								position={image.position}
+								size={image.size}
+								onRemove={() => onRemoveImage?.(image.id)}
+								onUpdatePosition={(x, y) =>
+									onUpdateImage?.(image.id, { position: { x, y } })
+								}
+								onUpdateSize={(width, height) =>
+									onUpdateImage?.(image.id, { size: { width, height } })
+								}
+							/>
+						</div>
+					))}
+					{shapes.map((shape) => (
+						<div key={shape.id} className="pointer-events-auto">
+							<ShapeComponent
+								id={shape.id}
+								type={shape.type}
+								position={shape.position}
+								size={shape.size}
+								style={shape.style}
+								onRemove={() => onRemoveShape?.(shape.id)}
+								onUpdatePosition={(x, y) =>
+									onUpdateShape?.(shape.id, { position: { x, y } })
+								}
+							/>
+						</div>
+					))}
+					{icons.map((icon) => (
+						<div key={icon.id} className="pointer-events-auto">
+							<IconComponent
+								id={icon.id}
+								iconName={icon.iconName}
+								position={icon.position}
+								size={icon.size}
+								color={icon.color}
+								onRemove={() => onRemoveIcon?.(icon.id)}
+								onUpdatePosition={(x, y) =>
+									onUpdateIcon?.(icon.id, { position: { x, y } })
+								}
+							/>
+						</div>
+					))}
 				</div>
 
 				{showAutoSaveStatus && onAutoSave && spreadsheetId && (
