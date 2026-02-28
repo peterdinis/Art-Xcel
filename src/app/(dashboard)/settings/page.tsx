@@ -71,7 +71,9 @@ export default function SettingsPage() {
 		setShowHeaders(getStoredBoolean(STORAGE_KEYS.showHeaders, true));
 		setDefaultZoom(getStoredZoom(100));
 		setShowSaveToasts(getStoredBoolean(STORAGE_KEYS.showSaveToasts, true));
-		setShowShortcutHints(getStoredBoolean(STORAGE_KEYS.showShortcutHints, true));
+		setShowShortcutHints(
+			getStoredBoolean(STORAGE_KEYS.showShortcutHints, true),
+		);
 	}, []);
 
 	const updateStorage = (key: string, value: boolean | number) => {
@@ -97,7 +99,8 @@ export default function SettingsPage() {
 							Appearance
 						</CardTitle>
 						<CardDescription>
-							Customize how the application looks. Theme applies across the app and editor.
+							Customize how the application looks. Theme applies across the app
+							and editor.
 						</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-6">
@@ -111,10 +114,12 @@ export default function SettingsPage() {
 							{mounted && (
 								<Select
 									value={theme ?? "system"}
-									onValueChange={(v) => setTheme(v as "light" | "dark" | "system")}
+									onValueChange={(v) =>
+										setTheme(v as "light" | "dark" | "system")
+									}
 								>
 									<SelectTrigger className="w-32.5 h-9">
-									<SelectValue />
+										<SelectValue />
 									</SelectTrigger>
 									<SelectContent>
 										<SelectItem value="light">Light</SelectItem>
@@ -135,7 +140,8 @@ export default function SettingsPage() {
 							Editor
 						</CardTitle>
 						<CardDescription>
-							Default behavior when you open a spreadsheet. Changes apply to new sessions.
+							Default behavior when you open a spreadsheet. Changes apply to new
+							sessions.
 						</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-6">
@@ -252,12 +258,13 @@ export default function SettingsPage() {
 							<Info className="h-5 w-5" />
 							About
 						</CardTitle>
-						<CardDescription>
-							Application information.
-						</CardDescription>
+						<CardDescription>Application information.</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-2 text-sm text-muted-foreground">
-						<p><strong className="text-foreground">Art-Xcel</strong> — Spreadsheet editor</p>
+						<p>
+							<strong className="text-foreground">Art-Xcel</strong> —
+							Spreadsheet editor
+						</p>
 						<p>Version 0.1.0 (Premium Edition)</p>
 					</CardContent>
 				</Card>

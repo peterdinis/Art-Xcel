@@ -69,7 +69,7 @@ export default function TrashPage() {
 				const updated = allFiles.filter((s: Spreadsheet) => s.id !== id);
 				localStorage.setItem("excel-editor-files", JSON.stringify(updated));
 				setSpreadsheets((prev) => prev.filter((s) => s.id !== id));
-				
+
 				toast.success(`"${name}" permanently deleted`, {
 					description: "The file has been removed from trash",
 					duration: 3000,
@@ -82,37 +82,41 @@ export default function TrashPage() {
 	};
 
 	const handlePermanentDelete = (id: string, name: string) => {
-		toast.custom((t) => (
-			<div className="bg-background border rounded-lg shadow-lg p-4 max-w-md">
-				<h3 className="font-semibold text-lg">Permanently delete?</h3>
-				<p className="text-sm text-muted-foreground mt-1">
-					Are you sure you want to permanently delete "{name}"? This action cannot be undone.
-				</p>
-				<div className="flex gap-2 justify-end mt-4">
-					<Button
-						variant="outline"
-						size="sm"
-						onClick={() => toast.dismiss(t)}
-					>
-						Cancel
-					</Button>
-					<Button
-						variant="destructive"
-						size="sm"
-						className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-						onClick={() => {
-							permanentlyDelete(id, name);
-							toast.dismiss(t);
-						}}
-					>
-						Delete Forever
-					</Button>
+		toast.custom(
+			(t) => (
+				<div className="bg-background border rounded-lg shadow-lg p-4 max-w-md">
+					<h3 className="font-semibold text-lg">Permanently delete?</h3>
+					<p className="text-sm text-muted-foreground mt-1">
+						Are you sure you want to permanently delete "{name}"? This action
+						cannot be undone.
+					</p>
+					<div className="flex gap-2 justify-end mt-4">
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => toast.dismiss(t)}
+						>
+							Cancel
+						</Button>
+						<Button
+							variant="destructive"
+							size="sm"
+							className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+							onClick={() => {
+								permanentlyDelete(id, name);
+								toast.dismiss(t);
+							}}
+						>
+							Delete Forever
+						</Button>
+					</div>
 				</div>
-			</div>
-		), {
-			duration: Infinity,
-			position: 'top-center',
-		});
+			),
+			{
+				duration: Infinity,
+				position: "top-center",
+			},
+		);
 	};
 
 	return (

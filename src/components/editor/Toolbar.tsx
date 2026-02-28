@@ -54,7 +54,7 @@ export const Toolbar = ({
 				id: "import-toast",
 				description: `${file.name} is being processed`,
 			});
-			
+
 			try {
 				onImport(file);
 				toast.success("File imported successfully!", {
@@ -83,7 +83,7 @@ export const Toolbar = ({
 				success: "File exported successfully!",
 				error: "Export failed",
 				duration: 2000,
-			}
+			},
 		);
 	};
 
@@ -98,34 +98,48 @@ export const Toolbar = ({
 				success: "Changes saved successfully!",
 				error: "Save failed",
 				duration: 2000,
-			}
+			},
 		);
 	};
 
-	const handleStyleChange = (style: { bold?: boolean; italic?: boolean; underline?: boolean }) => {
+	const handleStyleChange = (style: {
+		bold?: boolean;
+		italic?: boolean;
+		underline?: boolean;
+	}) => {
 		onStyleChange(style);
-		
-		const styleName = style.bold ? "Bold" : style.italic ? "Italic" : style.underline ? "Underline" : "";
+
+		const styleName = style.bold
+			? "Bold"
+			: style.italic
+				? "Italic"
+				: style.underline
+					? "Underline"
+					: "";
 		if (styleName) {
 			toast.info(`${styleName} style applied`, {
 				description: `Text formatting updated`,
 				duration: 1500,
-				icon: style.bold ? <Bold className="h-4 w-4" /> : 
-					  style.italic ? <Italic className="h-4 w-4" /> : 
-					  <Underline className="h-4 w-4" />,
+				icon: style.bold ? (
+					<Bold className="h-4 w-4" />
+				) : style.italic ? (
+					<Italic className="h-4 w-4" />
+				) : (
+					<Underline className="h-4 w-4" />
+				),
 			});
 		}
 	};
 
 	const handleAlignChange = (align: "left" | "center" | "right") => {
 		onStyleChange({ align });
-		
+
 		const alignNames = {
 			left: "Left",
 			center: "Center",
-			right: "Right"
+			right: "Right",
 		};
-		
+
 		toast.info(`Aligned to ${alignNames[align]}`, {
 			description: `Text alignment updated`,
 			duration: 1500,
@@ -148,7 +162,12 @@ export const Toolbar = ({
 							</Button>
 						</TooltipTrigger>
 						<TooltipContent side="bottom">
-							<p>Save changes <span className="text-xs text-muted-foreground ml-1">(Ctrl+S)</span></p>
+							<p>
+								Save changes{" "}
+								<span className="text-xs text-muted-foreground ml-1">
+									(Ctrl+S)
+								</span>
+							</p>
 						</TooltipContent>
 					</Tooltip>
 
@@ -199,7 +218,12 @@ export const Toolbar = ({
 							</Button>
 						</TooltipTrigger>
 						<TooltipContent side="bottom">
-							<p>Bold <span className="text-xs text-muted-foreground ml-1">(Ctrl+B)</span></p>
+							<p>
+								Bold{" "}
+								<span className="text-xs text-muted-foreground ml-1">
+									(Ctrl+B)
+								</span>
+							</p>
 						</TooltipContent>
 					</Tooltip>
 
@@ -215,7 +239,12 @@ export const Toolbar = ({
 							</Button>
 						</TooltipTrigger>
 						<TooltipContent side="bottom">
-							<p>Italic <span className="text-xs text-muted-foreground ml-1">(Ctrl+I)</span></p>
+							<p>
+								Italic{" "}
+								<span className="text-xs text-muted-foreground ml-1">
+									(Ctrl+I)
+								</span>
+							</p>
 						</TooltipContent>
 					</Tooltip>
 
@@ -231,7 +260,12 @@ export const Toolbar = ({
 							</Button>
 						</TooltipTrigger>
 						<TooltipContent side="bottom">
-							<p>Underline <span className="text-xs text-muted-foreground ml-1">(Ctrl+U)</span></p>
+							<p>
+								Underline{" "}
+								<span className="text-xs text-muted-foreground ml-1">
+									(Ctrl+U)
+								</span>
+							</p>
 						</TooltipContent>
 					</Tooltip>
 				</div>
@@ -306,7 +340,8 @@ export const Toolbar = ({
 								className="h-8 w-8 ml-1"
 								onClick={() => {
 									toast.info("Toolbar Help", {
-										description: "Hover over buttons to see their functions. Use keyboard shortcuts for faster access.",
+										description:
+											"Hover over buttons to see their functions. Use keyboard shortcuts for faster access.",
 										duration: 5000,
 										icon: <Info className="h-4 w-4" />,
 									});
