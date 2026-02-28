@@ -14,8 +14,6 @@ import "filepond/dist/filepond.min.css";
 // Register the plugin
 registerPlugin(FilePondPluginFileValidateType);
 
-// ============ TYPES ============
-
 interface SpreadsheetData {
   [cellId: string]: {
     value: string;
@@ -32,10 +30,6 @@ interface ParseExcelResult {
 type LocalStorageSpreadsheet = Spreadsheet & {
   data?: SpreadsheetData;
 };
-
-// FilePond types (based on actual FilePond API)
-
-// ============ COMPONENT ============
 
 interface ExcelUploadProps {
   onUploadComplete: (newFile: Spreadsheet) => void;
