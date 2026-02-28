@@ -18,9 +18,9 @@ interface CellData {
 
 type SheetData = Record<string, CellData>;
 
-export async function saveSpreadsheetAction(id: string, data: any) {
+export async function saveSpreadsheetAction(id: string, data: unknown) {
     // In a real app, you would save to a database here
-    console.log(`Saving spreadsheet ${id} with ${Object.keys(data).length} cells`);
+    console.log(`Saving spreadsheet ${id} with ${Object.keys(data as unknown as Record<string, unknown>).length} cells`);
 
     // Simulate a database delay
     await new Promise((resolve) => setTimeout(resolve, 500));

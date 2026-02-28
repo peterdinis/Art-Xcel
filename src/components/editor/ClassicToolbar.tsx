@@ -74,6 +74,7 @@ import {
     SortDesc,
     Filter,
     Pipette,
+    LucideIcon,
 } from "lucide-react";
 
 interface ClassicToolbarProps {
@@ -135,7 +136,7 @@ const ToolbarButton = ({
     onClick,
     disabled = false,
 }: {
-    icon: any;
+    icon: LucideIcon;
     tooltip: string;
     onClick?: () => void;
     disabled?: boolean;
