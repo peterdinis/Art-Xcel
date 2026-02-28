@@ -390,8 +390,6 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 		const dataRef = useRef(data);
 		const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
 		const isSavingRef = useRef(false);
-		const scrollLeftRef = useRef(0);
-		const scrollTopRef = useRef(0);
 
 		useEffect(() => {
 			dataRef.current = data;
@@ -562,8 +560,6 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 			if (!gridRef.current) return;
 			
 			const { scrollLeft, scrollTop } = gridRef.current;
-			scrollLeftRef.current = scrollLeft;
-			scrollTopRef.current = scrollTop;
 
 			// Update column headers scroll
 			if (colHeaderRef.current) {
@@ -573,11 +569,6 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 			// Update row headers scroll
 			if (rowHeaderRef.current) {
 				rowHeaderRef.current.scrollTop = scrollTop;
-			}
-
-			// Update top-left corner
-			if (topLeftRef.current) {
-				topLeftRef.current.style.transform = `translate(${scrollLeft}px, ${scrollTop}px)`;
 			}
 		}, []);
 
@@ -862,8 +853,8 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 		const virtualCols = colVirtualizer.getVirtualItems();
 
 		return (
-			<div className="relative flex flex-col w-full h-full overflow-hidden bg-background">
-				{/* Top-left corner (fixed) */}
+			<div className="relative w-full h-full overflow-hidden bg-background">
+				{/* Fixed corner */}
 				{showHeaders && (
 					<div
 						ref={topLeftRef}
@@ -871,7 +862,6 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 						style={{
 							width: ROW_HEADER_WIDTH,
 							height: DEFAULT_ROW_HEIGHT,
-							transform: `translate(${scrollLeftRef.current}px, ${scrollTopRef.current}px)`,
 						}}
 					>
 						<div className="flex items-center justify-center h-full text-xs text-muted-foreground">
@@ -880,11 +870,11 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 					</div>
 				)}
 
-				{/* Column headers */}
+				{/* Column headers container */}
 				{showHeaders && (
 					<div
 						ref={colHeaderRef}
-						className="absolute top-0 left-0 z-20 overflow-hidden"
+						className="absolute top-0 z-20 overflow-x-auto overflow-y-hidden"
 						style={{
 							left: showHeaders ? ROW_HEADER_WIDTH : 0,
 							right: 0,
@@ -924,11 +914,11 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 					</div>
 				)}
 
-				{/* Row headers */}
+				{/* Row headers container */}
 				{showHeaders && (
 					<div
 						ref={rowHeaderRef}
-						className="absolute top-0 left-0 z-10 overflow-hidden"
+						className="absolute left-0 z-10 overflow-y-auto overflow-x-hidden"
 						style={{
 							top: DEFAULT_ROW_HEIGHT,
 							bottom: 0,
@@ -951,15 +941,15 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 									<div
 										key={virtualRow.key}
 										className={cn(
-											"absolute left-0 flex items-center justify-center text-xs text-muted-foreground border-r border-b border-border dark:border-neutral-700 select-none",
-											isRowActive &&
-												"bg-primary/15 dark:bg-primary/25 font-semibold text-primary",
+											"absolute left-0 flex items-center justify-center text-xs border-r border-b border-border dark:border-neutral-700 select-none",
+											isRowActive
+												? "bg-primary/15 dark:bg-primary/25 font-semibold text-primary"
+												: "bg-muted/50 dark:bg-neutral-800 text-muted-foreground",
 										)}
 										style={{
 											width: ROW_HEADER_WIDTH,
 											height: virtualRow.size,
 											top: virtualRow.start,
-											backgroundColor: isRowActive ? undefined : "transparent",
 										}}
 									>
 										{row}
@@ -970,16 +960,18 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 					</div>
 				)}
 
-				{/* Main grid area */}
+				{/* Main grid container */}
 				<div
 					ref={gridRef}
-					className="flex-1 overflow-auto relative show-scrollbar"
+					className="absolute overflow-auto show-scrollbar"
 					style={{
+						top: showHeaders ? DEFAULT_ROW_HEIGHT : 0,
+						left: showHeaders ? ROW_HEADER_WIDTH : 0,
+						right: 0,
+						bottom: 0,
 						willChange: "transform",
 						overscrollBehavior: "none",
 						WebkitOverflowScrolling: "touch",
-						marginLeft: showHeaders ? ROW_HEADER_WIDTH : 0,
-						marginTop: showHeaders ? DEFAULT_ROW_HEIGHT : 0,
 					}}
 				>
 					<div
@@ -1068,10 +1060,12 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 
 				{/* Charts, images, shapes, icons */}
 				<div
-					className="absolute inset-0 pointer-events-none"
+					className="absolute pointer-events-none"
 					style={{
 						left: showHeaders ? ROW_HEADER_WIDTH : 0,
 						top: showHeaders ? DEFAULT_ROW_HEIGHT : 0,
+						right: 0,
+						bottom: 0,
 					}}
 				>
 					{charts.map((chart) => (
