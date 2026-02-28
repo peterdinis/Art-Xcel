@@ -32,7 +32,7 @@ type LocalStorageSpreadsheet = Spreadsheet & {
 };
 
 interface ExcelUploadProps {
-  onUploadComplete: (newFile: Spreadsheet) => void;
+  onUploadComplete: (newFile: Spreadsheet & { data?: SpreadsheetData }) => void;
 }
 
 export const ExcelUpload = ({ onUploadComplete }: ExcelUploadProps) => {
@@ -48,7 +48,6 @@ export const ExcelUpload = ({ onUploadComplete }: ExcelUploadProps) => {
     _progress: (isLengthComputable: boolean, progress: number, total: number) => void,
     _abort: () => void
   ) => {
-    // File is already File or Blob from FilePond
     if (!(file instanceof Blob)) {
       console.error("Invalid file object received from FilePond:", file);
       error("Invalid file object");
@@ -69,34 +68,35 @@ export const ExcelUpload = ({ onUploadComplete }: ExcelUploadProps) => {
       }
 
       const newId = crypto.randomUUID();
-      const newFile: Spreadsheet = {
+      const newFile: Spreadsheet & { data?: SpreadsheetData } = {
         id: newId,
         name: result.name || fileName,
         lastModified: Date.now(),
+        data: result.data // Include data in the new file
       };
 
       // Add the data directly to the new file record so the editor can load it
       const stored = localStorage.getItem("excel-editor-files");
       const allFiles: LocalStorageSpreadsheet[] = stored ? JSON.parse(stored) : [];
-      const newFileWithData: LocalStorageSpreadsheet = { ...newFile, data: result.data };
-      const updated = [newFileWithData, ...allFiles];
+      const updated = [newFile, ...allFiles];
       localStorage.setItem("excel-editor-files", JSON.stringify(updated));
 
-      // Notify parent immediately to show in grid
+      // Notify parent immediately with complete file including data
       onUploadComplete(newFile);
 
       // Clear FilePond UI
       setFiles([]);
 
-      // Show toast
-      toast.success("Workbook uploaded!", {
-        description: `"${newFile.name}" is now available.`,
+      // Show success toast
+      toast.success("✅ Workbook uploaded successfully!", {
+        description: `"${newFile.name}" has been added to your spreadsheets.`,
+        duration: 4000,
       });
 
       // Success callback for FilePond
       load(newId);
 
-      // Redirect after shorter delay
+      // Redirect after short delay
       setTimeout(() => {
         router.push(`/editor/${newId}`);
       }, 800);
@@ -112,7 +112,9 @@ export const ExcelUpload = ({ onUploadComplete }: ExcelUploadProps) => {
         friendlyMessage = "Unsupported file format. Please use a modern .xlsx file (Legacy .xls are not supported).";
       }
 
-      toast.error(friendlyMessage);
+      toast.error(friendlyMessage, {
+        duration: 5000,
+      });
     }
   };
 
@@ -125,7 +127,6 @@ export const ExcelUpload = ({ onUploadComplete }: ExcelUploadProps) => {
       <FilePond
         files={files}
         onupdatefiles={(fileItems) => {
-          // FilePond passes an array of file items
           setFiles(fileItems as unknown as (string | Blob)[]);
         }}
         allowMultiple={false}

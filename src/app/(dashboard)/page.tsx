@@ -32,6 +32,7 @@ import { useEffect, useState, Suspense, useMemo } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion, AnimatePresence } from "framer-motion";
 import { ExcelUpload } from "@/components/dashboard/ExcelUpload";
+import { toast } from "sonner";
 
 import { SheetData } from "@/hooks/use-spreadsheet";
 
@@ -186,10 +187,19 @@ function DashboardContent() {
 			localStorage.setItem("excel-editor-files", JSON.stringify(updated));
 			setSpreadsheets((prev) => [newFile, ...prev]);
 
+			// Show success toast
+			toast.success("✨ New spreadsheet created!", {
+				description: "Untitled Spreadsheet has been created.",
+				duration: 3000,
+			});
+
 			// Navigate
 			router.push(`/editor/${newId}`);
 		} catch (error) {
 			console.error("Failed to create spreadsheet:", error);
+			toast.error("Failed to create spreadsheet", {
+				description: "Please try again.",
+			});
 		} finally {
 			setIsCreating(false);
 		}
@@ -199,6 +209,9 @@ function DashboardContent() {
 		e.preventDefault();
 		e.stopPropagation();
 
+		// Find the spreadsheet name for the toast
+		const spreadsheetToDelete = spreadsheets.find(s => s.id === id);
+		
 		setIsDeleting(id);
 
 		// Simulujeme oneskorenie pre lepšiu UX
@@ -218,9 +231,18 @@ function DashboardContent() {
 
 				// Update local state
 				setSpreadsheets((prev) => prev.filter((s) => s.id !== id));
+
+				// Show success toast
+				toast.success("🗑️ Spreadsheet deleted", {
+					description: `"${spreadsheetToDelete?.name || 'Untitled'}" has been moved to trash.`,
+					duration: 3000,
+				});
 			}
 		} catch (error) {
 			console.error("Failed to delete spreadsheet:", error);
+			toast.error("Failed to delete spreadsheet", {
+				description: "Please try again.",
+			});
 		} finally {
 			setIsDeleting(null);
 		}
