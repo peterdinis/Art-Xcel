@@ -323,7 +323,7 @@ function EditorContent() {
 			if (stored) {
 				try {
 					const spreadsheets = JSON.parse(stored);
-					const index = spreadsheets.findIndex((s: any) => s.id === id);
+					const index = spreadsheets.findIndex((s: { id: string; }) => s.id === id);
 					if (index !== -1) {
 						spreadsheets[index] = {
 							...spreadsheets[index],

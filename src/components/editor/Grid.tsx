@@ -44,11 +44,10 @@ interface GridProps {
   onUpdateShape?: (id: string, updates: Partial<ShapeData>) => void;
   onUpdateIcon?: (id: string, updates: Partial<IconData>) => void;
   onShowShortcuts?: () => void;
-  // Autosave props
   spreadsheetId?: string;
   spreadsheetName?: string;
   onAutoSave?: (data: SheetData) => Promise<void>;
-  autoSaveInterval?: number; // v milisekundách, štandardne 30000 (30 sekúnd)
+  autoSaveInterval?: number;
   showAutoSaveStatus?: boolean;
 }
 
@@ -65,8 +64,6 @@ const COL_BATCH_SIZE = 26;
 const ROW_LOAD_THRESHOLD = 30;
 const COL_LOAD_THRESHOLD = 10;
 const OVERSCAN = 5;
-
-// ============ UTILS ============
 
 const numberToColLabel = (index: number): string => {
   let result = "";
@@ -87,8 +84,6 @@ const colLabelToNumber = (colLabel: string): number => {
   }
   return result - 1;
 };
-
-// ============ CELL COMPONENT ============
 
 interface CellProps {
   id: string;
@@ -203,7 +198,6 @@ const Cell = memo(
           ) : (
             <span className="px-1 text-sm truncate w-full">{displayValue}</span>
           )}
-          {/* Resize handle for columns */}
           <div
             className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/50 z-30 opacity-0 hover:opacity-100"
             onMouseDown={(e) => onResize?.(e)}
@@ -216,8 +210,6 @@ const Cell = memo(
   },
 );
 Cell.displayName = "Cell";
-
-// ============ ROW HEADER COMPONENT ============
 
 interface RowHeaderProps {
   rowIndex: number;
@@ -238,7 +230,6 @@ const RowHeader = memo(({ rowIndex, height, isActive, showHeaders = true, onResi
       style={{ width: ROW_HEADER_WIDTH, minWidth: ROW_HEADER_WIDTH, height }}
     >
       {rowIndex}
-      {/* Resize handle for rows */}
       <div
         className="absolute bottom-0 left-0 right-0 h-1 cursor-row-resize hover:bg-primary/50 z-30 opacity-0 hover:opacity-100"
         onMouseDown={onResize}
@@ -249,8 +240,6 @@ const RowHeader = memo(({ rowIndex, height, isActive, showHeaders = true, onResi
   );
 });
 RowHeader.displayName = "RowHeader";
-
-// ============ AUTOSAVE STATUS COMPONENT ============
 
 interface AutoSaveStatusProps {
   isSaving: boolean;
@@ -299,8 +288,6 @@ const AutoSaveStatus = memo(({ isSaving, lastSaved, error, onManualSave }: AutoS
 });
 AutoSaveStatus.displayName = "AutoSaveStatus";
 
-// ============ GRID COMPONENT ============
-
 export const Grid = forwardRef<GridHandle, GridProps>(({
   data,
   selectedCell,
@@ -333,11 +320,10 @@ export const Grid = forwardRef<GridHandle, GridProps>(({
   onUpdateShape,
   onUpdateIcon,
   onShowShortcuts,
-  // Autosave props
   spreadsheetId,
   spreadsheetName,
   onAutoSave,
-  autoSaveInterval = 30000, // 30 sekúnd
+  autoSaveInterval = 30000,
   showAutoSaveStatus = true,
 }, ref) => {
   const [editingCell, setEditingCell] = useState<string | null>(null);
@@ -345,17 +331,14 @@ export const Grid = forwardRef<GridHandle, GridProps>(({
   const [rowHeights, setRowHeights] = useState<Record<number, number>>({});
   const [colWidths, setColWidths] = useState<Record<string, number>>({});
 
-  // Range selection state
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState<string | null>(null);
 
-  // Autosave state
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
 
-  // ── Infinite grid dimensions ──────────────────────────────────────────────
   const [totalRows, setTotalRows] = useState(200);
   const [totalCols, setTotalCols] = useState(52);
 
@@ -370,18 +353,14 @@ export const Grid = forwardRef<GridHandle, GridProps>(({
     startSize: number;
   } | null>(null);
 
-  // Refs pre autosave
   const dataRef = useRef(data);
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isSavingRef = useRef(false);
 
-  // Aktualizácia ref pri zmene dát
   useEffect(() => {
     dataRef.current = data;
     setHasChanges(true);
   }, [data]);
-
-  // ============ AUTOSAVE FUNCTIONS ============
 
   const performSave = useCallback(async (force: boolean = false) => {
     if (!onAutoSave || !spreadsheetId) return;
@@ -399,7 +378,6 @@ export const Grid = forwardRef<GridHandle, GridProps>(({
       setHasChanges(false);
       setSaveError(null);
 
-      // Zobraziť toast len pri manuálnom ukladaní
       if (force) {
         toast.success("Spreadsheet uložený", {
           description: `"${spreadsheetName || 'Bez názvu'}" bol úspešne uložený.`,
@@ -427,7 +405,6 @@ export const Grid = forwardRef<GridHandle, GridProps>(({
     await performSave(true);
   }, [performSave]);
 
-  // Expose forceSave metódu
   useImperativeHandle(ref, () => ({
     scrollToTop: () => {
       if (gridRef.current) {
@@ -437,7 +414,6 @@ export const Grid = forwardRef<GridHandle, GridProps>(({
     forceSave,
   }), [forceSave]);
 
-  // Setup autosave timer
   useEffect(() => {
     if (!onAutoSave || !spreadsheetId) return;
 
@@ -461,7 +437,6 @@ export const Grid = forwardRef<GridHandle, GridProps>(({
     };
   }, [onAutoSave, spreadsheetId, autoSaveInterval, performSave]);
 
-  // Save on unmount
   useEffect(() => {
     return () => {
       if (hasChanges && onAutoSave && spreadsheetId && !isSavingRef.current) {
@@ -470,11 +445,9 @@ export const Grid = forwardRef<GridHandle, GridProps>(({
     };
   }, [hasChanges, onAutoSave, spreadsheetId, performSave]);
 
-  // Save on beforeunload
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (hasChanges) {
-        // Force save synchronously before unload
         if (onAutoSave && spreadsheetId && !isSavingRef.current) {
           try {
             const event = new CustomEvent('grid-save-before-unload', { 
@@ -495,7 +468,6 @@ export const Grid = forwardRef<GridHandle, GridProps>(({
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [hasChanges, onAutoSave, spreadsheetId]);
 
-  // Listen for save events
   useEffect(() => {
     const handleSaveEvent = () => {
       if (hasChanges) {
@@ -523,7 +495,6 @@ export const Grid = forwardRef<GridHandle, GridProps>(({
     [colWidths],
   );
 
-  // ── Virtualizéry ──────────────────────────────────────────────────────────
   const rowVirtualizer = useVirtualizer({
     count: totalRows,
     getScrollElement: () => gridRef.current,
@@ -539,11 +510,9 @@ export const Grid = forwardRef<GridHandle, GridProps>(({
     overscan: OVERSCAN,
   });
 
-  // ── Row/Col dimensions helpers ────────────────────────────────────────────
   const activeRow = selectedCell ? parseInt(selectedCell.match(/\d+/)?.[0] || "0") : null;
   const activeCol = selectedCell ? selectedCell.match(/[A-Z]+/)?.[0] : null;
 
-  // ── Infinite scroll ───────────────────────────────────────────────────────
   useEffect(() => {
     const virtualRows = rowVirtualizer.getVirtualItems();
     if (virtualRows.length === 0) return;
@@ -562,7 +531,6 @@ export const Grid = forwardRef<GridHandle, GridProps>(({
     }
   }, [colVirtualizer.getVirtualItems()[colVirtualizer.getVirtualItems().length - 1]?.index, totalCols]);
 
-  // ── Sync scroll ───────────────────────────────────────────────────────────
   useEffect(() => {
     const grid = gridRef.current;
     if (!grid) return;
@@ -591,7 +559,6 @@ export const Grid = forwardRef<GridHandle, GridProps>(({
     return () => header.removeEventListener("scroll", handleHeaderScroll);
   }, []);
 
-  // ── Resize ────────────────────────────────────────────────────────────────
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!resizeRef.current) return;
@@ -652,7 +619,6 @@ export const Grid = forwardRef<GridHandle, GridProps>(({
     [colWidths, rowHeights],
   );
 
-  // ── Cell selection handlers ───────────────────────────────────────────────
   const handleCellMouseDown = useCallback(
     (cellId: string, event: React.MouseEvent) => {
       if (event.shiftKey && selectedCell) {
@@ -692,7 +658,6 @@ export const Grid = forwardRef<GridHandle, GridProps>(({
     return () => window.removeEventListener("mouseup", handleGlobalMouseUp);
   }, []);
 
-  // ── Cell editing handlers ─────────────────────────────────────────────────
   const handleDoubleClick = useCallback(
     (cellId: string) => {
       const cellData = data[cellId];
@@ -809,7 +774,6 @@ export const Grid = forwardRef<GridHandle, GridProps>(({
     [],
   );
 
-  // ── Render header ─────────────────────────────────────────────────────────
   const renderHeader = () => {
     if (!showHeaders) return null;
 
@@ -973,7 +937,6 @@ export const Grid = forwardRef<GridHandle, GridProps>(({
             );
           })}
 
-          {/* Floats layer */}
           <div className="absolute inset-0 pointer-events-none" style={{ left: showHeaders ? ROW_HEADER_WIDTH : 0 }}>
             {charts.map((chart) => (
               <div key={chart.id} className="pointer-events-auto">
@@ -1028,7 +991,6 @@ export const Grid = forwardRef<GridHandle, GridProps>(({
         </div>
       </div>
 
-      {/* Autosave status indicator */}
       {showAutoSaveStatus && onAutoSave && spreadsheetId && (
         <AutoSaveStatus
           isSaving={isSaving}

@@ -249,7 +249,7 @@ export const EditorDialogs: React.FC<EditorDialogsProps> = (props) => {
                     <div className="space-y-4 py-4">
                         <div className="space-y-2">
                             <Label htmlFor="validation-type">Validation Type</Label>
-                            <Select value={validationType} onValueChange={(value: any) => setValidationType(value)}>
+                            <Select value={validationType} onValueChange={(value) => setValidationType(value as unknown as "number" | "text" | "list" | "date")}>
                                 <SelectTrigger><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="number">Number</SelectItem>
@@ -456,7 +456,7 @@ export const EditorDialogs: React.FC<EditorDialogsProps> = (props) => {
                         </div>
                         <div className="space-y-2">
                             <Label>Chart Type</Label>
-                            <Select value={chartType} onValueChange={(v: any) => setChartType(v)}>
+                            <Select value={chartType} onValueChange={(v) => setChartType(v as unknown as  "bar" | "line" | "pie")}>
                                 <SelectTrigger><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="bar">Bar Chart</SelectItem>
