@@ -20,6 +20,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Sun, Layout, Bell, Info } from "lucide-react";
 import { useTheme } from "next-themes";
+import { toast } from "sonner";
 
 const STORAGE_KEYS = {
 	showGrid: "excel-editor-showGrid",
@@ -74,9 +75,23 @@ export default function SettingsPage() {
 		setShowShortcutHints(getStoredBoolean(STORAGE_KEYS.showShortcutHints, true));
 	}, []);
 
-	const updateStorage = (key: string, value: boolean | number) => {
+	const updateStorage = (key: string, value: boolean | number, settingName: string) => {
 		if (typeof window === "undefined") return;
 		localStorage.setItem(key, String(value));
+		
+		// Show toast notification
+		toast.success(`⚙️ ${settingName} updated`, {
+			description: `Your preference has been saved.`,
+			duration: 2000,
+		});
+	};
+
+	const handleThemeChange = (value: string) => {
+		setTheme(value as "light" | "dark" | "system");
+		toast.success(`🎨 Theme updated`, {
+			description: `Switched to ${value} mode.`,
+			duration: 2000,
+		});
 	};
 
 	return (
@@ -111,10 +126,10 @@ export default function SettingsPage() {
 							{mounted && (
 								<Select
 									value={theme ?? "system"}
-									onValueChange={(v) => setTheme(v as "light" | "dark" | "system")}
+									onValueChange={handleThemeChange}
 								>
 									<SelectTrigger className="w-32.5 h-9">
-									<SelectValue />
+										<SelectValue />
 									</SelectTrigger>
 									<SelectContent>
 										<SelectItem value="light">Light</SelectItem>
@@ -151,7 +166,7 @@ export default function SettingsPage() {
 								onValueChange={(v) => {
 									const n = parseInt(v, 10);
 									setDefaultZoom(n);
-									updateStorage(STORAGE_KEYS.defaultZoom, n);
+									updateStorage(STORAGE_KEYS.defaultZoom, n, "Default zoom");
 								}}
 							>
 								<SelectTrigger className="w-25 h-9">
@@ -178,7 +193,7 @@ export default function SettingsPage() {
 								checked={showGrid}
 								onCheckedChange={(checked) => {
 									setShowGrid(checked);
-									updateStorage(STORAGE_KEYS.showGrid, checked);
+									updateStorage(STORAGE_KEYS.showGrid, checked, "Grid lines");
 								}}
 							/>
 						</div>
@@ -193,7 +208,7 @@ export default function SettingsPage() {
 								checked={showHeaders}
 								onCheckedChange={(checked) => {
 									setShowHeaders(checked);
-									updateStorage(STORAGE_KEYS.showHeaders, checked);
+									updateStorage(STORAGE_KEYS.showHeaders, checked, "Headers");
 								}}
 							/>
 						</div>
@@ -223,7 +238,14 @@ export default function SettingsPage() {
 								checked={showSaveToasts}
 								onCheckedChange={(checked) => {
 									setShowSaveToasts(checked);
-									updateStorage(STORAGE_KEYS.showSaveToasts, checked);
+									updateStorage(STORAGE_KEYS.showSaveToasts, checked, "Save notifications");
+									
+									// Special message when disabling save notifications
+									if (!checked) {
+										toast.info("You won't see save confirmations anymore", {
+											duration: 3000,
+										});
+									}
 								}}
 							/>
 						</div>
@@ -238,7 +260,7 @@ export default function SettingsPage() {
 								checked={showShortcutHints}
 								onCheckedChange={(checked) => {
 									setShowShortcutHints(checked);
-									updateStorage(STORAGE_KEYS.showShortcutHints, checked);
+									updateStorage(STORAGE_KEYS.showShortcutHints, checked, "Shortcut hints");
 								}}
 							/>
 						</div>

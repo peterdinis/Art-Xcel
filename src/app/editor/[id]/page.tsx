@@ -237,7 +237,9 @@ function EditorContent() {
 	const [newRangeName, setNewRangeName] = useState("");
 	const [newRangeRef, setNewRangeRef] = useState("");
 	const [cellNote, setCellNote] = useState("");
-	const [validationType, setValidationType] = useState<"number" | "text" | "list" | "date">("number");
+	const [validationType, setValidationType] = useState<
+		"number" | "text" | "list" | "date"
+	>("number");
 	const [validationMin, setValidationMin] = useState<number>(0);
 	const [validationMax, setValidationMax] = useState<number>(100);
 	const [validationList, setValidationList] = useState<string>("");
@@ -250,7 +252,9 @@ function EditorContent() {
 	const [showShapeDialog, setShowShapeDialog] = useState(false);
 	const [showIconDialog, setShowIconDialog] = useState(false);
 	const [iconName, setIconName] = useState("Activity");
-	const [shapeType, setShapeType] = useState<"rectangle" | "circle" | "line">("rectangle");
+	const [shapeType, setShapeType] = useState<"rectangle" | "circle" | "line">(
+		"rectangle",
+	);
 	const [chartType, setChartType] = useState<"bar" | "line" | "pie">("bar");
 	const [chartTitle, setChartTitle] = useState("New Chart");
 	const [showShortcutsDialog, setShowShortcutsDialog] = useState(false);
@@ -270,7 +274,7 @@ function EditorContent() {
 			try {
 				setIsLoading(true);
 				// Simulate loading delay for better UX
-				await new Promise(resolve => setTimeout(resolve, 500));
+				await new Promise((resolve) => setTimeout(resolve, 500));
 
 				const stored = localStorage.getItem("excel-editor-files");
 				if (stored) {
@@ -323,7 +327,9 @@ function EditorContent() {
 			if (stored) {
 				try {
 					const spreadsheets = JSON.parse(stored);
-					const index = spreadsheets.findIndex((s: { id: string; }) => s.id === id);
+					const index = spreadsheets.findIndex(
+						(s: { id: string }) => s.id === id,
+					);
 					if (index !== -1) {
 						spreadsheets[index] = {
 							...spreadsheets[index],
@@ -348,51 +354,102 @@ function EditorContent() {
 	}, [data, id, sheetName, shareSettings, isLoading]);
 
 	// Keyboard shortcuts with @tanstack/react-hotkeys
-	useHotkey("Mod+S", (e: KeyboardEvent) => { e.preventDefault(); handleSave(); });
-	useHotkey("Mod+Z", (e: KeyboardEvent) => { e.preventDefault(); handleUndo(); });
-	useHotkey("Mod+Y", (e: KeyboardEvent) => { e.preventDefault(); handleRedo(); });
-	useHotkey("Mod+Shift+Z", (e: KeyboardEvent) => { e.preventDefault(); handleRedo(); });
-	useHotkey("Mod+B", (e: KeyboardEvent) => { e.preventDefault(); if (selectedCell) updateCellStyle(selectedCell, { bold: !data[selectedCell]?.style?.bold }); });
-	useHotkey("Mod+I", (e: KeyboardEvent) => { e.preventDefault(); if (selectedCell) updateCellStyle(selectedCell, { italic: !data[selectedCell]?.style?.italic }); });
-	useHotkey("Mod+U", (e: KeyboardEvent) => { e.preventDefault(); if (selectedCell) updateCellStyle(selectedCell, { underline: !data[selectedCell]?.style?.underline }); });
-	useHotkey("Mod+C", (e: KeyboardEvent) => { e.preventDefault(); handleCopy(); });
-	useHotkey("Mod+X", (e: KeyboardEvent) => { e.preventDefault(); handleCut(); });
-	useHotkey("Mod+V", (e: KeyboardEvent) => { e.preventDefault(); handlePaste(); });
-	useHotkey("Delete", (e: KeyboardEvent) => { e.preventDefault(); if (selectedCell) updateCell(selectedCell, ""); });
-	useHotkey("Backspace", (e: KeyboardEvent) => { if (selectedCell) updateCell(selectedCell, ""); });
-
-	const handleCellChange = useCallback((cellId: string, value: string) => {
-		// Validate before update
-		if (!validateCell(cellId, value)) {
-			toast.error("Validation failed", {
-				description: "The value does not meet validation criteria",
+	useHotkey("Mod+S", (e: KeyboardEvent) => {
+		e.preventDefault();
+		handleSave();
+	});
+	useHotkey("Mod+Z", (e: KeyboardEvent) => {
+		e.preventDefault();
+		handleUndo();
+	});
+	useHotkey("Mod+Y", (e: KeyboardEvent) => {
+		e.preventDefault();
+		handleRedo();
+	});
+	useHotkey("Mod+Shift+Z", (e: KeyboardEvent) => {
+		e.preventDefault();
+		handleRedo();
+	});
+	useHotkey("Mod+B", (e: KeyboardEvent) => {
+		e.preventDefault();
+		if (selectedCell)
+			updateCellStyle(selectedCell, { bold: !data[selectedCell]?.style?.bold });
+	});
+	useHotkey("Mod+I", (e: KeyboardEvent) => {
+		e.preventDefault();
+		if (selectedCell)
+			updateCellStyle(selectedCell, {
+				italic: !data[selectedCell]?.style?.italic,
 			});
-			return;
-		}
+	});
+	useHotkey("Mod+U", (e: KeyboardEvent) => {
+		e.preventDefault();
+		if (selectedCell)
+			updateCellStyle(selectedCell, {
+				underline: !data[selectedCell]?.style?.underline,
+			});
+	});
+	useHotkey("Mod+C", (e: KeyboardEvent) => {
+		e.preventDefault();
+		handleCopy();
+	});
+	useHotkey("Mod+X", (e: KeyboardEvent) => {
+		e.preventDefault();
+		handleCut();
+	});
+	useHotkey("Mod+V", (e: KeyboardEvent) => {
+		e.preventDefault();
+		handlePaste();
+	});
+	useHotkey("Delete", (e: KeyboardEvent) => {
+		e.preventDefault();
+		if (selectedCell) updateCell(selectedCell, "");
+	});
+	useHotkey("Backspace", (e: KeyboardEvent) => {
+		if (selectedCell) updateCell(selectedCell, "");
+	});
 
-		updateCell(cellId, value);
-		toast.success(`Cell ${cellId} updated`, {
-			duration: 1000,
-		});
-	}, [validateCell, updateCell]);
+	const handleCellChange = useCallback(
+		(cellId: string, value: string) => {
+			// Validate before update
+			if (!validateCell(cellId, value)) {
+				toast.error("Validation failed", {
+					description: "The value does not meet validation criteria",
+				});
+				return;
+			}
 
-	const handleFormulaBarChange = useCallback((value: string) => {
-		if (selectedCell) {
-			updateCell(selectedCell, value);
-		}
-	}, [selectedCell, updateCell]);
-
-	const handleStyleChange = useCallback((style: any) => {
-		if (selectedCell) {
-			const currentStyle = data[selectedCell]?.style || {};
-			const newStyle = { ...currentStyle, ...style };
-			updateCellStyle(selectedCell, newStyle);
-
-			toast.success("Style applied", {
+			updateCell(cellId, value);
+			toast.success(`Cell ${cellId} updated`, {
 				duration: 1000,
 			});
-		}
-	}, [selectedCell, data, updateCellStyle]);
+		},
+		[validateCell, updateCell],
+	);
+
+	const handleFormulaBarChange = useCallback(
+		(value: string) => {
+			if (selectedCell) {
+				updateCell(selectedCell, value);
+			}
+		},
+		[selectedCell, updateCell],
+	);
+
+	const handleStyleChange = useCallback(
+		(style: any) => {
+			if (selectedCell) {
+				const currentStyle = data[selectedCell]?.style || {};
+				const newStyle = { ...currentStyle, ...style };
+				updateCellStyle(selectedCell, newStyle);
+
+				toast.success("Style applied", {
+					duration: 1000,
+				});
+			}
+		},
+		[selectedCell, data, updateCellStyle],
+	);
 
 	const handleSave = useCallback(async () => {
 		const result = await saveSpreadsheetAction(id as string, data);
@@ -408,18 +465,21 @@ function EditorContent() {
 		}
 	}, [id, data]);
 
-	const handleFormulaClick = useCallback((formula: string) => {
-		if (selectedCell) {
-			updateCell(selectedCell, `=${formula}( )`);
-			toast.info(`Inserted ${formula}`, {
-				description: `Formula template inserted for ${formula}`,
-			});
-		} else {
-			toast.error("No cell selected", {
-				description: "Please select a cell to insert a formula",
-			});
-		}
-	}, [selectedCell, updateCell]);
+	const handleFormulaClick = useCallback(
+		(formula: string) => {
+			if (selectedCell) {
+				updateCell(selectedCell, `=${formula}( )`);
+				toast.info(`Inserted ${formula}`, {
+					description: `Formula template inserted for ${formula}`,
+				});
+			} else {
+				toast.error("No cell selected", {
+					description: "Please select a cell to insert a formula",
+				});
+			}
+		},
+		[selectedCell, updateCell],
+	);
 
 	const handleUndo = useCallback(() => {
 		undo();
@@ -507,7 +567,7 @@ function EditorContent() {
 		if (selectedCell) {
 			if (selectionRange && selectionRange.length > 1) {
 				const updates: Record<string, string> = {};
-				selectionRange.forEach(cell => {
+				selectionRange.forEach((cell) => {
 					updates[cell] = "";
 				});
 				updateCells(updates);
@@ -709,7 +769,6 @@ function EditorContent() {
 		}
 	}, [selectedCell, deleteColumn]);
 
-
 	const handleFormatCells = useCallback(() => {
 		toast.success("Format Cells", {
 			description: "Format cells dialog opened",
@@ -724,49 +783,69 @@ function EditorContent() {
 		});
 	}, []);
 
-	const handleNumberFormat = useCallback((format: string) => {
-		if (selectedCell) {
-			updateCellStyle(selectedCell, { numberFormat: format as unknown as "number" | "general" | "currency" | "percentage" | "date" | "time"  });
-			toast.success("Number Format", {
-				description: `Applied ${format} format to cell ${selectedCell}`,
-				icon: <Table className="h-4 w-4" />,
-			});
-		} else {
-			toast.error("No cell selected", {
-				description: "Please select a cell to apply number format",
-			});
-		}
-	}, [selectedCell, updateCellStyle]);
-
-	const handleAlignment = useCallback((align: string) => {
-		if (selectedCell) {
-			// Map alignment to style
-			let alignValue: "left" | "center" | "right" | undefined;
-
-			if (align === "Left") alignValue = "left";
-			else if (align === "Center") alignValue = "center";
-			else if (align === "Right") alignValue = "right";
-
-			if (alignValue) {
-				updateCellStyle(selectedCell, { align: alignValue });
+	const handleNumberFormat = useCallback(
+		(format: string) => {
+			if (selectedCell) {
+				updateCellStyle(selectedCell, {
+					numberFormat: format as unknown as
+						| "number"
+						| "general"
+						| "currency"
+						| "percentage"
+						| "date"
+						| "time",
+				});
+				toast.success("Number Format", {
+					description: `Applied ${format} format to cell ${selectedCell}`,
+					icon: <Table className="h-4 w-4" />,
+				});
+			} else {
+				toast.error("No cell selected", {
+					description: "Please select a cell to apply number format",
+				});
 			}
+		},
+		[selectedCell, updateCellStyle],
+	);
 
-			toast.success("Alignment", {
-				description: `Applied ${align} alignment to cell ${selectedCell}`,
-				icon: align === "Left" ? <AlignLeft className="h-4 w-4" /> :
-					align === "Center" ? <AlignCenter className="h-4 w-4" /> :
-						<AlignRight className="h-4 w-4" />,
-			});
-		} else {
-			toast.error("No cell selected", {
-				description: "Please select a cell to apply alignment",
-			});
-		}
-	}, [selectedCell, updateCellStyle]);
+	const handleAlignment = useCallback(
+		(align: string) => {
+			if (selectedCell) {
+				// Map alignment to style
+				let alignValue: "left" | "center" | "right" | undefined;
+
+				if (align === "Left") alignValue = "left";
+				else if (align === "Center") alignValue = "center";
+				else if (align === "Right") alignValue = "right";
+
+				if (alignValue) {
+					updateCellStyle(selectedCell, { align: alignValue });
+				}
+
+				toast.success("Alignment", {
+					description: `Applied ${align} alignment to cell ${selectedCell}`,
+					icon:
+						align === "Left" ? (
+							<AlignLeft className="h-4 w-4" />
+						) : align === "Center" ? (
+							<AlignCenter className="h-4 w-4" />
+						) : (
+							<AlignRight className="h-4 w-4" />
+						),
+				});
+			} else {
+				toast.error("No cell selected", {
+					description: "Please select a cell to apply alignment",
+				});
+			}
+		},
+		[selectedCell, updateCellStyle],
+	);
 
 	const handleSort = useCallback(() => {
 		if (selectionRange && selectionRange.length > 0) {
-			const range = selectionRange[0] + ":" + selectionRange[selectionRange.length - 1];
+			const range =
+				selectionRange[0] + ":" + selectionRange[selectionRange.length - 1];
 			sortRange(range, 0, true);
 			toast.success("Sort", {
 				description: "Range sorted",
@@ -781,7 +860,8 @@ function EditorContent() {
 
 	const handleFilter = useCallback(() => {
 		if (selectionRange && selectionRange.length > 0) {
-			const range = selectionRange[0] + ":" + selectionRange[selectionRange.length - 1];
+			const range =
+				selectionRange[0] + ":" + selectionRange[selectionRange.length - 1];
 			filterRange(range, 0, (val) => val !== "");
 			toast.success("Filter", {
 				description: "Filter applied (hiding empty cells)",
@@ -803,7 +883,8 @@ function EditorContent() {
 
 	const handleRemoveDuplicates = useCallback(() => {
 		if (selectionRange && selectionRange.length > 0) {
-			const range = selectionRange[0] + ":" + selectionRange[selectionRange.length - 1];
+			const range =
+				selectionRange[0] + ":" + selectionRange[selectionRange.length - 1];
 			removeDuplicates(range, 0);
 			toast.success("Remove Duplicates", {
 				description: "Duplicates removed from selected range",
@@ -818,7 +899,8 @@ function EditorContent() {
 
 	const handleTextToColumns = useCallback(() => {
 		if (selectionRange && selectionRange.length > 0) {
-			const range = selectionRange[0] + ":" + selectionRange[selectionRange.length - 1];
+			const range =
+				selectionRange[0] + ":" + selectionRange[selectionRange.length - 1];
 			textToColumns(range, ",");
 			toast.success("Text to Columns", {
 				description: "Text split by comma",
@@ -831,7 +913,8 @@ function EditorContent() {
 
 	const handleInsertChart = useCallback(() => {
 		if (selectionRange && selectionRange.length > 0) {
-			const range = selectionRange[0] + ":" + selectionRange[selectionRange.length - 1];
+			const range =
+				selectionRange[0] + ":" + selectionRange[selectionRange.length - 1];
 			addChart({
 				type: chartType,
 				range,
@@ -851,48 +934,57 @@ function EditorContent() {
 		}
 	}, [selectionRange, chartType, chartTitle, addChart]);
 
-	const handleInsertImage = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-		const file = e.target.files?.[0];
-		if (file) {
-			const reader = new FileReader();
-			reader.onload = (event) => {
-				addImage({
-					src: event.target?.result as string,
-					position: { x: 150, y: 150 },
-					size: { width: 300, height: 200 },
-				});
-				toast.success("Image Inserted", {
-					icon: <ImageIcon className="h-4 w-4" />,
-				});
-			};
-			reader.readAsDataURL(file);
-		}
-	}, [addImage]);
-
-	const handleInsertShape = useCallback((type: "rectangle" | "circle" | "line") => {
-		addShape({
-			type,
-			position: { x: 200, y: 200 },
-			size: { width: 150, height: 100 },
-			style: {
-				fill: "rgba(59, 130, 246, 0.5)",
-				stroke: "#2563eb",
-				strokeWidth: 2,
+	const handleInsertImage = useCallback(
+		(e: React.ChangeEvent<HTMLInputElement>) => {
+			const file = e.target.files?.[0];
+			if (file) {
+				const reader = new FileReader();
+				reader.onload = (event) => {
+					addImage({
+						src: event.target?.result as string,
+						position: { x: 150, y: 150 },
+						size: { width: 300, height: 200 },
+					});
+					toast.success("Image Inserted", {
+						icon: <ImageIcon className="h-4 w-4" />,
+					});
+				};
+				reader.readAsDataURL(file);
 			}
-		});
-		toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} Inserted`);
-	}, [addShape]);
+		},
+		[addImage],
+	);
 
-	const handleInsertIcon = useCallback((name: string) => {
-		addIcon({
-			iconName: name,
-			position: { x: 250, y: 250 },
-			size: 48,
-			color: "#3b82f6",
-		});
-		setShowIconDialog(false);
-		toast.success("Icon Inserted");
-	}, [addIcon]);
+	const handleInsertShape = useCallback(
+		(type: "rectangle" | "circle" | "line") => {
+			addShape({
+				type,
+				position: { x: 200, y: 200 },
+				size: { width: 150, height: 100 },
+				style: {
+					fill: "rgba(59, 130, 246, 0.5)",
+					stroke: "#2563eb",
+					strokeWidth: 2,
+				},
+			});
+			toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} Inserted`);
+		},
+		[addShape],
+	);
+
+	const handleInsertIcon = useCallback(
+		(name: string) => {
+			addIcon({
+				iconName: name,
+				position: { x: 250, y: 250 },
+				size: 48,
+				color: "#3b82f6",
+			});
+			setShowIconDialog(false);
+			toast.success("Icon Inserted");
+		},
+		[addIcon],
+	);
 
 	const handleDataValidation = useCallback(() => {
 		if (selectedCell) {
@@ -998,32 +1090,40 @@ function EditorContent() {
 		}
 	}, [sheetNames, currentSheetIndex, deleteSheet]);
 
-	const handleRenameSheet = useCallback((index: number, newName: string) => {
-		const oldName = sheetNames[index];
-		renameSheet(index, newName);
-		if (index === currentSheetIndex) {
-			setSheetName(newName);
-		}
-		toast.success("Sheet renamed", {
-			description: `"${oldName}" renamed to "${newName}"`,
-			icon: <FileSpreadsheet className="h-4 w-4" />,
-		});
-	}, [currentSheetIndex, renameSheet, sheetNames]);
+	const handleRenameSheet = useCallback(
+		(index: number, newName: string) => {
+			const oldName = sheetNames[index];
+			renameSheet(index, newName);
+			if (index === currentSheetIndex) {
+				setSheetName(newName);
+			}
+			toast.success("Sheet renamed", {
+				description: `"${oldName}" renamed to "${newName}"`,
+				icon: <FileSpreadsheet className="h-4 w-4" />,
+			});
+		},
+		[currentSheetIndex, renameSheet, sheetNames],
+	);
 
-	const handleSwitchSheet = useCallback((index: number) => {
-		switchSheet(index);
-		setSheetName(sheetNames[index]);
-		toast.success(`Switched to "${sheetNames[index]}"`, {
-			duration: 1500,
-			icon: <FileSpreadsheet className="h-4 w-4" />,
-		});
-	}, [sheetNames, switchSheet]);
+	const handleSwitchSheet = useCallback(
+		(index: number) => {
+			switchSheet(index);
+			setSheetName(sheetNames[index]);
+			toast.success(`Switched to "${sheetNames[index]}"`, {
+				duration: 1500,
+				icon: <FileSpreadsheet className="h-4 w-4" />,
+			});
+		},
+		[sheetNames, switchSheet],
+	);
 
 	// Named ranges
 	const handleAddNamedRange = useCallback(() => {
 		if (selectionRange && selectionRange.length > 0) {
 			setShowNamedRangeDialog(true);
-			setNewRangeRef(selectionRange[0] + ":" + selectionRange[selectionRange.length - 1]);
+			setNewRangeRef(
+				selectionRange[0] + ":" + selectionRange[selectionRange.length - 1],
+			);
 		} else if (selectedCell) {
 			setShowNamedRangeDialog(true);
 			setNewRangeRef(selectedCell);
@@ -1054,7 +1154,10 @@ function EditorContent() {
 				type: validationType,
 				min: validationType === "number" ? validationMin : undefined,
 				max: validationType === "number" ? validationMax : undefined,
-				list: validationType === "list" ? validationList.split(",").map(s => s.trim()) : undefined,
+				list:
+					validationType === "list"
+						? validationList.split(",").map((s) => s.trim())
+						: undefined,
 				required: validationRequired,
 			};
 			addValidation(selectedCell, validation);
@@ -1064,7 +1167,15 @@ function EditorContent() {
 			});
 			setShowValidationDialog(false);
 		}
-	}, [selectedCell, validationType, validationMin, validationMax, validationList, validationRequired, addValidation]);
+	}, [
+		selectedCell,
+		validationType,
+		validationMin,
+		validationMax,
+		validationList,
+		validationRequired,
+		addValidation,
+	]);
 
 	// Share handlers
 	const handleShareSave = async (settings: ShareSettings) => {
@@ -1170,9 +1281,9 @@ function EditorContent() {
 					setTimeout(() => window.location.reload(), 1000);
 				}}
 				onOpen={() => {
-					const input = document.createElement('input');
-					input.type = 'file';
-					input.accept = '.xlsx,.xls,.csv,.ods';
+					const input = document.createElement("input");
+					input.type = "file";
+					input.accept = ".xlsx,.xls,.csv,.ods";
 					input.onchange = (e) => {
 						const file = (e.target as HTMLInputElement).files?.[0];
 						if (file) handleImport(file);
@@ -1184,10 +1295,26 @@ function EditorContent() {
 				onCopy={handleCopy}
 				onPaste={handlePaste}
 				onSelectAll={handleSelectAll}
-				onToggleToolbars={() => toast.info("Toggle Toolbars", { description: "Toolbar visibility settings coming soon" })}
-				onToggleFormulaBar={() => toast.info("Toggle Formula Bar", { description: "Formula bar visibility toggle coming soon" })}
-				onToggleStatusBar={() => toast.info("Toggle Status Bar", { description: "Status bar visibility toggle coming soon" })}
-				onToggleFreezePanes={() => toast.info("Freeze Panes", { description: "Freeze panes functionality coming soon" })}
+				onToggleToolbars={() =>
+					toast.info("Toggle Toolbars", {
+						description: "Toolbar visibility settings coming soon",
+					})
+				}
+				onToggleFormulaBar={() =>
+					toast.info("Toggle Formula Bar", {
+						description: "Formula bar visibility toggle coming soon",
+					})
+				}
+				onToggleStatusBar={() =>
+					toast.info("Toggle Status Bar", {
+						description: "Status bar visibility toggle coming soon",
+					})
+				}
+				onToggleFreezePanes={() =>
+					toast.info("Freeze Panes", {
+						description: "Freeze panes functionality coming soon",
+					})
+				}
 				onToggleFullScreen={() => {
 					if (!document.fullscreenElement) {
 						document.documentElement.requestFullscreen();
@@ -1197,12 +1324,29 @@ function EditorContent() {
 						toast.success("Exited Full Screen");
 					}
 				}}
-				onFormatSpacing={() => toast.info("Spacing", { description: "Cell spacing and padding coming soon" })}
-				onFormatAlignment={() => toast.info("Alignment", { description: "Use the alignment icons in the toolbar for quick access" })}
+				onFormatSpacing={() =>
+					toast.info("Spacing", {
+						description: "Cell spacing and padding coming soon",
+					})
+				}
+				onFormatAlignment={() =>
+					toast.info("Alignment", {
+						description:
+							"Use the alignment icons in the toolbar for quick access",
+					})
+				}
 				onConditionalFormatting={handleConditionalFormatting}
-				onUserGuides={() => toast.info("User Guides", { description: "Documentation and user guides are under development" })}
+				onUserGuides={() =>
+					toast.info("User Guides", {
+						description: "Documentation and user guides are under development",
+					})
+				}
 				onShortcuts={() => setShowShortcutsDialog(true)}
-				onAbout={() => toast.info("About Art-Xcel", { description: "Art-Xcel Spreadsheet v0.1.0 - Premium Edition" })}
+				onAbout={() =>
+					toast.info("About Art-Xcel", {
+						description: "Art-Xcel Spreadsheet v0.1.0 - Premium Edition",
+					})
+				}
 				onToggleGrid={() => setShowGrid(!showGrid)}
 			/>
 
@@ -1214,7 +1358,10 @@ function EditorContent() {
 			/>
 
 			{/* Main Grid Area */}
-			<div className="flex-1 overflow-hidden relative" style={{ zoom: `${zoom}%` }}>
+			<div
+				className="flex-1 overflow-hidden relative"
+				style={{ zoom: `${zoom}%` }}
+			>
 				<Grid
 					ref={gridRef}
 					data={data}
@@ -1282,7 +1429,9 @@ function EditorContent() {
 				onUndo={handleUndo}
 				onRedo={handleRedo}
 				onHelp={() => setShowShortcutsDialog(true)}
-				onSettings={() => toast.info("Settings", { description: "Editor settings coming soon" })}
+				onSettings={() =>
+					toast.info("Settings", { description: "Editor settings coming soon" })
+				}
 			/>
 
 			<EditorDialogs

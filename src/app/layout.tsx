@@ -135,11 +135,10 @@ export default function RootLayout({
 					enableSystem
 					disableTransitionOnChange
 				>
-					<Suspense fallback={<Loading />}>{children}
-						<Toaster
-							position="top-center"
-							closeButton
-						/></Suspense>
+					<Suspense fallback={<Loading />}>
+						{children}
+						<Toaster position="top-center" closeButton />
+					</Suspense>
 				</ThemeProvider>
 			</body>
 		</html>

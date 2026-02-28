@@ -25,13 +25,21 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Plus, FileSpreadsheet, Trash2, Loader2, Search, X } from "lucide-react";
+import {
+	Plus,
+	FileSpreadsheet,
+	Trash2,
+	Loader2,
+	Search,
+	X,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, Suspense, useMemo } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion, AnimatePresence } from "framer-motion";
 import { ExcelUpload } from "@/components/dashboard/ExcelUpload";
+import { toast } from "sonner";
 
 import { SheetData } from "@/hooks/use-spreadsheet";
 
@@ -79,11 +87,11 @@ function DashboardContent() {
 	const [isLoading, setIsLoading] = useState(true);
 	const [isDeleting, setIsDeleting] = useState<string | null>(null);
 	const [isCreating, setIsCreating] = useState(false);
-	
+
 	// Search state
 	const [searchQuery, setSearchQuery] = useState("");
 	const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
-	
+
 	// Pagination state
 	const [currentPage, setCurrentPage] = useState(1);
 	const [itemsPerPage, setItemsPerPage] = useState(8);
@@ -103,7 +111,7 @@ function DashboardContent() {
 			setIsLoading(true);
 			try {
 				// Simulujeme načítanie pre lepšiu UX (aj keď je to localStorage)
-				await new Promise(resolve => setTimeout(resolve, 500));
+				await new Promise((resolve) => setTimeout(resolve, 500));
 
 				const stored = localStorage.getItem("excel-editor-files");
 				if (stored) {
@@ -131,10 +139,10 @@ function DashboardContent() {
 		if (!debouncedSearchQuery.trim()) {
 			return spreadsheets;
 		}
-		
+
 		const query = debouncedSearchQuery.toLowerCase().trim();
-		return spreadsheets.filter(sheet => 
-			sheet.name.toLowerCase().includes(query)
+		return spreadsheets.filter((sheet) =>
+			sheet.name.toLowerCase().includes(query),
 		);
 	}, [spreadsheets, debouncedSearchQuery]);
 
@@ -149,7 +157,7 @@ function DashboardContent() {
 	const handlePageChange = (page: number) => {
 		setCurrentPage(page);
 		// Scroll to top smoothly
-		window.scrollTo({ top: 0, behavior: 'smooth' });
+		window.scrollTo({ top: 0, behavior: "smooth" });
 	};
 
 	// Handle items per page change
@@ -168,7 +176,7 @@ function DashboardContent() {
 		setIsCreating(true);
 
 		// Simulujeme oneskorenie pre lepšiu UX
-		await new Promise(resolve => setTimeout(resolve, 300));
+		await new Promise((resolve) => setTimeout(resolve, 300));
 
 		try {
 			const newId = crypto.randomUUID();
@@ -186,10 +194,19 @@ function DashboardContent() {
 			localStorage.setItem("excel-editor-files", JSON.stringify(updated));
 			setSpreadsheets((prev) => [newFile, ...prev]);
 
+			// Show success toast
+			toast.success("✨ New spreadsheet created!", {
+				description: "Untitled Spreadsheet has been created.",
+				duration: 3000,
+			});
+
 			// Navigate
 			router.push(`/editor/${newId}`);
 		} catch (error) {
 			console.error("Failed to create spreadsheet:", error);
+			toast.error("Failed to create spreadsheet", {
+				description: "Please try again.",
+			});
 		} finally {
 			setIsCreating(false);
 		}
@@ -199,10 +216,13 @@ function DashboardContent() {
 		e.preventDefault();
 		e.stopPropagation();
 
+		// Find the spreadsheet name for the toast
+		const spreadsheetToDelete = spreadsheets.find((s) => s.id === id);
+
 		setIsDeleting(id);
 
 		// Simulujeme oneskorenie pre lepšiu UX
-		await new Promise(resolve => setTimeout(resolve, 300));
+		await new Promise((resolve) => setTimeout(resolve, 300));
 
 		try {
 			const stored = localStorage.getItem("excel-editor-files");
@@ -218,9 +238,18 @@ function DashboardContent() {
 
 				// Update local state
 				setSpreadsheets((prev) => prev.filter((s) => s.id !== id));
+
+				// Show success toast
+				toast.success("🗑️ Spreadsheet deleted", {
+					description: `"${spreadsheetToDelete?.name || "Untitled"}" has been moved to trash.`,
+					duration: 3000,
+				});
 			}
 		} catch (error) {
 			console.error("Failed to delete spreadsheet:", error);
+			toast.error("Failed to delete spreadsheet", {
+				description: "Please try again.",
+			});
 		} finally {
 			setIsDeleting(null);
 		}
@@ -230,7 +259,7 @@ function DashboardContent() {
 	const renderPaginationItems = () => {
 		const items = [];
 		const maxVisiblePages = 5;
-		
+
 		if (totalPages <= maxVisiblePages) {
 			// Show all pages
 			for (let i = 1; i <= totalPages; i++) {
@@ -246,7 +275,7 @@ function DashboardContent() {
 						>
 							{i}
 						</PaginationLink>
-					</PaginationItem>
+					</PaginationItem>,
 				);
 			}
 		} else {
@@ -263,7 +292,7 @@ function DashboardContent() {
 					>
 						1
 					</PaginationLink>
-				</PaginationItem>
+				</PaginationItem>,
 			);
 
 			// Show ellipsis if needed
@@ -271,7 +300,7 @@ function DashboardContent() {
 				items.push(
 					<PaginationItem key="ellipsis-start">
 						<PaginationEllipsis />
-					</PaginationItem>
+					</PaginationItem>,
 				);
 			}
 
@@ -293,7 +322,7 @@ function DashboardContent() {
 							>
 								{i}
 							</PaginationLink>
-						</PaginationItem>
+						</PaginationItem>,
 					);
 				}
 			}
@@ -303,7 +332,7 @@ function DashboardContent() {
 				items.push(
 					<PaginationItem key="ellipsis-end">
 						<PaginationEllipsis />
-					</PaginationItem>
+					</PaginationItem>,
 				);
 			}
 
@@ -320,7 +349,7 @@ function DashboardContent() {
 					>
 						{totalPages}
 					</PaginationLink>
-				</PaginationItem>
+				</PaginationItem>,
 			);
 		}
 
@@ -366,7 +395,9 @@ function DashboardContent() {
 				className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8"
 			>
 				<div>
-					<h1 className="text-3xl font-bold tracking-tight bg-linear-to-r from-primary to-primary/60 bg-clip-text text-transparent">Dashboard</h1>
+					<h1 className="text-3xl font-bold tracking-tight bg-linear-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+						Dashboard
+					</h1>
 					<p className="text-muted-foreground mt-1 text-sm md:text-base">
 						Manage your spreadsheets and create new ones with power and ease.
 					</p>
@@ -391,10 +422,12 @@ function DashboardContent() {
 				</Button>
 			</motion.div>
 
-			<ExcelUpload onUploadComplete={(newFile) => {
-				console.log("Upload complete, adding to state:", newFile);
-				setSpreadsheets((prev) => [newFile, ...prev]);
-			}} />
+			<ExcelUpload
+				onUploadComplete={(newFile) => {
+					console.log("Upload complete, adding to state:", newFile);
+					setSpreadsheets((prev) => [newFile, ...prev]);
+				}}
+			/>
 
 			{/* Search and Filter Bar */}
 			<motion.div
@@ -422,7 +455,9 @@ function DashboardContent() {
 				</div>
 
 				<div className="flex items-center gap-2 w-full sm:w-auto">
-					<span className="text-sm text-muted-foreground whitespace-nowrap">Show</span>
+					<span className="text-sm text-muted-foreground whitespace-nowrap">
+						Show
+					</span>
 					<Select
 						value={itemsPerPage.toString()}
 						onValueChange={handleItemsPerPageChange}
@@ -437,7 +472,9 @@ function DashboardContent() {
 							<SelectItem value="16">16</SelectItem>
 						</SelectContent>
 					</Select>
-					<span className="text-sm text-muted-foreground whitespace-nowrap">per page</span>
+					<span className="text-sm text-muted-foreground whitespace-nowrap">
+						per page
+					</span>
 				</div>
 			</motion.div>
 
@@ -448,7 +485,8 @@ function DashboardContent() {
 					animate={{ opacity: 1 }}
 					className="mb-4 text-sm text-muted-foreground"
 				>
-					Found {totalItems} {totalItems === 1 ? 'result' : 'results'} for "{debouncedSearchQuery}"
+					Found {totalItems} {totalItems === 1 ? "result" : "results"} for "
+					{debouncedSearchQuery}"
 				</motion.div>
 			)}
 
@@ -465,10 +503,12 @@ function DashboardContent() {
 							<FileSpreadsheet className="h-10 w-10 text-primary" />
 						</div>
 						<h3 className="text-xl font-semibold mb-2">
-							{debouncedSearchQuery ? "No results found" : "No spreadsheets yet"}
+							{debouncedSearchQuery
+								? "No results found"
+								: "No spreadsheets yet"}
 						</h3>
 						<p className="text-muted-foreground mb-6 max-w-sm">
-							{debouncedSearchQuery 
+							{debouncedSearchQuery
 								? `No spreadsheets match "${debouncedSearchQuery}". Try a different search term.`
 								: "Get started by creating your first spreadsheet to organize your data."}
 						</p>
@@ -519,12 +559,16 @@ function DashboardContent() {
 												<FileSpreadsheet className="h-12 w-12 text-muted-foreground/40 group-hover:text-primary group-hover:scale-110 transition-all duration-300" />
 											</div>
 											<CardHeader className="p-4 flex-1">
-												<CardTitle className="truncate pr-4 text-base font-semibold group-hover:text-primary transition-colors" title={sheet.name}>
+												<CardTitle
+													className="truncate pr-4 text-base font-semibold group-hover:text-primary transition-colors"
+													title={sheet.name}
+												>
 													{sheet.name}
 												</CardTitle>
 												<CardDescription className="flex items-center justify-between mt-2 text-xs">
 													<span>
-														Last modified: {new Date(sheet.lastModified).toLocaleDateString()}
+														Last modified:{" "}
+														{new Date(sheet.lastModified).toLocaleDateString()}
 													</span>
 												</CardDescription>
 											</CardHeader>
@@ -558,7 +602,8 @@ function DashboardContent() {
 								className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4"
 							>
 								<div className="text-sm text-muted-foreground order-2 sm:order-1">
-									Showing {startIndex + 1}-{Math.min(endIndex, totalItems)} of {totalItems} spreadsheets
+									Showing {startIndex + 1}-{Math.min(endIndex, totalItems)} of{" "}
+									{totalItems} spreadsheets
 								</div>
 								<Pagination className="order-1 sm:order-2">
 									<PaginationContent>
@@ -567,22 +612,32 @@ function DashboardContent() {
 												href="#"
 												onClick={(e) => {
 													e.preventDefault();
-													if (currentPage > 1) handlePageChange(currentPage - 1);
+													if (currentPage > 1)
+														handlePageChange(currentPage - 1);
 												}}
-												className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+												className={
+													currentPage === 1
+														? "pointer-events-none opacity-50"
+														: ""
+												}
 											/>
 										</PaginationItem>
-										
+
 										{renderPaginationItems()}
-										
+
 										<PaginationItem>
 											<PaginationNext
 												href="#"
 												onClick={(e) => {
 													e.preventDefault();
-													if (currentPage < totalPages) handlePageChange(currentPage + 1);
+													if (currentPage < totalPages)
+														handlePageChange(currentPage + 1);
 												}}
-												className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+												className={
+													currentPage === totalPages
+														? "pointer-events-none opacity-50"
+														: ""
+												}
 											/>
 										</PaginationItem>
 									</PaginationContent>
@@ -609,18 +664,20 @@ export default function Dashboard() {
 				</div>
 			</header>
 
-			<Suspense fallback={
-				<main className="container mx-auto py-10 px-6">
-					<div className="flex items-center justify-between mb-8">
-						<div>
-							<Skeleton className="h-9 w-48 mb-2" />
-							<Skeleton className="h-5 w-64" />
+			<Suspense
+				fallback={
+					<main className="container mx-auto py-10 px-6">
+						<div className="flex items-center justify-between mb-8">
+							<div>
+								<Skeleton className="h-9 w-48 mb-2" />
+								<Skeleton className="h-5 w-64" />
+							</div>
+							<Skeleton className="h-10 w-40 rounded-md" />
 						</div>
-						<Skeleton className="h-10 w-40 rounded-md" />
-					</div>
-					<SpreadsheetGridSkeleton />
-				</main>
-			}>
+						<SpreadsheetGridSkeleton />
+					</main>
+				}
+			>
 				<DashboardContent />
 			</Suspense>
 		</div>

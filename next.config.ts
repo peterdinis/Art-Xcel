@@ -6,7 +6,13 @@ const nextConfig: NextConfig = {
 		removeConsole: process.env.NODE_ENV === "production",
 	},
 	typedRoutes: true,
-	transpilePackages: ["lucide-react", "framer-motion", "xlsx", "exceljs", "sonner"],
+	transpilePackages: [
+		"lucide-react",
+		"framer-motion",
+		"xlsx",
+		"exceljs",
+		"sonner",
+	],
 	experimental: {
 		optimizePackageImports: [
 			"lucide-react",

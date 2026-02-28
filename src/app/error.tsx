@@ -12,7 +12,6 @@ interface ErrorProps {
 }
 
 export default function Error({ error, reset }: ErrorProps) {
-
 	return (
 		<div className="min-h-screen bg-background flex items-center justify-center p-4">
 			<motion.div
