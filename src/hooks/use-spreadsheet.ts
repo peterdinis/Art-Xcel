@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { all, create } from "mathjs";
+import { colLetterToIndex, indexToColLetter, parseCellId, getRangeCells } from "@/lib/excel-utils";
 
 export interface CellData {
 	value: string;
@@ -18,12 +19,12 @@ export interface CellData {
 		borderLeft?: string;
 		borderRight?: string;
 		numberFormat?:
-			| "general"
-			| "number"
-			| "currency"
-			| "percentage"
-			| "date"
-			| "time";
+		| "general"
+		| "number"
+		| "currency"
+		| "percentage"
+		| "date"
+		| "time";
 	};
 	note?: string;
 	validation?: {
@@ -162,10 +163,10 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				prev.map((sheet, i) =>
 					i === currentSheetIndex
 						? {
-								...sheet,
-								data:
-									typeof newData === "function" ? newData(sheet.data) : newData,
-							}
+							...sheet,
+							data:
+								typeof newData === "function" ? newData(sheet.data) : newData,
+						}
 						: sheet,
 				),
 			);
@@ -189,12 +190,12 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				prev.map((sheet, i) =>
 					i === currentSheetIndex
 						? {
-								...sheet,
-								charts:
-									typeof newCharts === "function"
-										? newCharts(sheet.charts)
-										: newCharts,
-							}
+							...sheet,
+							charts:
+								typeof newCharts === "function"
+									? newCharts(sheet.charts)
+									: newCharts,
+						}
 						: sheet,
 				),
 			);
@@ -208,12 +209,12 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				prev.map((sheet, i) =>
 					i === currentSheetIndex
 						? {
-								...sheet,
-								images:
-									typeof newImages === "function"
-										? newImages(sheet.images)
-										: newImages,
-							}
+							...sheet,
+							images:
+								typeof newImages === "function"
+									? newImages(sheet.images)
+									: newImages,
+						}
 						: sheet,
 				),
 			);
@@ -227,12 +228,12 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				prev.map((sheet, i) =>
 					i === currentSheetIndex
 						? {
-								...sheet,
-								shapes:
-									typeof newShapes === "function"
-										? newShapes(sheet.shapes)
-										: newShapes,
-							}
+							...sheet,
+							shapes:
+								typeof newShapes === "function"
+									? newShapes(sheet.shapes)
+									: newShapes,
+						}
 						: sheet,
 				),
 			);
@@ -246,12 +247,12 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				prev.map((sheet, i) =>
 					i === currentSheetIndex
 						? {
-								...sheet,
-								icons:
-									typeof newIcons === "function"
-										? newIcons(sheet.icons)
-										: newIcons,
-							}
+							...sheet,
+							icons:
+								typeof newIcons === "function"
+									? newIcons(sheet.icons)
+									: newIcons,
+						}
 						: sheet,
 				),
 			);
@@ -269,12 +270,12 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				prev.map((sheet, i) =>
 					i === currentSheetIndex
 						? {
-								...sheet,
-								namedRanges:
-									typeof newNamedRanges === "function"
-										? newNamedRanges(sheet.namedRanges)
-										: newNamedRanges,
-							}
+							...sheet,
+							namedRanges:
+								typeof newNamedRanges === "function"
+									? newNamedRanges(sheet.namedRanges)
+									: newNamedRanges,
+						}
 						: sheet,
 				),
 			);
@@ -288,12 +289,12 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				prev.map((sheet, i) =>
 					i === currentSheetIndex
 						? {
-								...sheet,
-								hiddenRows:
-									typeof newHiddenRows === "function"
-										? newHiddenRows(sheet.hiddenRows)
-										: newHiddenRows,
-							}
+							...sheet,
+							hiddenRows:
+								typeof newHiddenRows === "function"
+									? newHiddenRows(sheet.hiddenRows)
+									: newHiddenRows,
+						}
 						: sheet,
 				),
 			);
@@ -310,64 +311,36 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 	// Helper to expand ranges like A1:A5 to array of values
 	const getRangeValues = useCallback(
 		(range: string, currentData: SheetData) => {
-			const [start, end] = range.split(":");
-			const startCol = start.match(/[A-Z]+/)?.[0] || "";
-			const startRow = parseInt(start.match(/[0-9]+/)?.[0] || "1");
-			const endCol = end.match(/[A-Z]+/)?.[0] || "";
-			const endRow = parseInt(end.match(/[0-9]+/)?.[0] || "1");
-
-			const values: (number | string)[] = [];
-			const startColIdx = startCol.charCodeAt(0);
-			const endColIdx = endCol.charCodeAt(0);
-
-			for (let c = startColIdx; c <= endColIdx; c++) {
-				for (let r = startRow; r <= endRow; r++) {
-					const cellId = `${String.fromCharCode(c)}${r}`;
-					const val = currentData[cellId]?.value || "";
-					values.push(!isNaN(Number(val)) && val !== "" ? Number(val) : val);
-				}
-			}
-			return values;
+			const cells = getRangeCells(range);
+			return cells.map((cellId) => {
+				const val = currentData[cellId]?.value || "";
+				return !isNaN(Number(val)) && val !== "" ? Number(val) : val;
+			});
 		},
 		[],
 	);
 
 	// Get range of cells as strings
 	const getRange = useCallback((range: string): string[] => {
-		const [start, end] = range.split(":");
-		const startCol = start.match(/[A-Z]+/)?.[0] || "";
-		const startRow = parseInt(start.match(/[0-9]+/)?.[0] || "1");
-		const endCol = end.match(/[A-Z]+/)?.[0] || "";
-		const endRow = parseInt(end.match(/[0-9]+/)?.[0] || "1");
-
-		const cells: string[] = [];
-		const startColIdx = startCol.charCodeAt(0);
-		const endColIdx = endCol.charCodeAt(0);
-
-		for (let c = startColIdx; c <= endColIdx; c++) {
-			for (let r = startRow; r <= endRow; r++) {
-				cells.push(`${String.fromCharCode(c)}${r}`);
-			}
-		}
-		return cells;
+		return getRangeCells(range);
 	}, []);
 
 	// Get range as 2D array of values
 	const getRange2D = useCallback((range: string, currentData: SheetData) => {
 		const [start, end] = range.split(":");
-		const startCol = start.match(/[A-Z]+/)?.[0] || "";
-		const startRow = parseInt(start.match(/[0-9]+/)?.[0] || "1");
-		const endCol = end.match(/[A-Z]+/)?.[0] || "";
-		const endRow = parseInt(end.match(/[0-9]+/)?.[0] || "1");
+		const { col: startCol, row: startRow } = parseCellId(start);
+		const { col: endCol, row: endRow } = parseCellId(end);
 
 		const grid: unknown[][] = [];
-		const startColIdx = startCol.charCodeAt(0);
-		const endColIdx = endCol.charCodeAt(0);
 
-		for (let r = startRow; r <= endRow; r++) {
+		for (let r = Math.min(startRow, endRow); r <= Math.max(startRow, endRow); r++) {
 			const row: unknown[] = [];
-			for (let c = startColIdx; c <= endColIdx; c++) {
-				const cellId = `${String.fromCharCode(c)}${r}`;
+			for (
+				let c = Math.min(startCol, endCol);
+				c <= Math.max(startCol, endCol);
+				c++
+			) {
+				const cellId = `${indexToColLetter(c)}${r + 1}`;
 				const val = currentData[cellId]?.value || "";
 				row.push(!isNaN(Number(val)) && val !== "" ? Number(val) : val);
 			}
@@ -501,7 +474,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 						const avg = nums.reduce((a, b) => a + b, 0) / nums.length;
 						const std = Math.sqrt(
 							nums.map((x) => Math.pow(x - avg, 2)).reduce((a, b) => a + b, 0) /
-								nums.length,
+							nums.length,
 						);
 						return isFinite(std) ? std : 0;
 					},
