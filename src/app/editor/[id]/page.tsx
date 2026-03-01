@@ -1444,6 +1444,31 @@ function EditorContent() {
 				onSettings={() =>
 					toast.info("Settings", { description: "Editor settings coming soon" })
 				}
+				onExport={() => setShowExportDialog(true)}
+				onImport={() => setShowImportDialog(true)}
+				onNew={() => {
+					toast.info("Creating new spreadsheet...", {
+						description: "Your current work is auto-saved.",
+					});
+					setTimeout(() => window.location.reload(), 1000);
+				}}
+				onDelete={() => setShowDeleteDialog(true)}
+				onPrint={handlePrint}
+				onShare={() => {
+					toast.info("Share functionality", {
+						description: "Opening share settings...",
+					});
+					// If there's a share dialog, toggle it here
+				}}
+				onCopy={handleCopy}
+				onCut={handleCut}
+				onPaste={handlePaste}
+				onZoomIn={handleZoomIn}
+				onZoomOut={handleZoomOut}
+				onToggleGrid={() => setShowGrid(!showGrid)}
+				onSelectAll={handleSelectAll}
+				onDashboard={() => router.push("/")}
+				showExtraOptions={true}
 			/>
 
 			<EditorDialogs

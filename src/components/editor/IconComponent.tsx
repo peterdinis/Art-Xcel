@@ -23,13 +23,8 @@ export const IconComponent = ({
 	onRemove,
 	onUpdatePosition,
 }: IconComponentProps) => {
-	// @ts-ignore — dynamický prístup k ikone
-	const Icon =
-		(LucideIcons[iconName] as React.FC<{
-			size: number;
-			color: string;
-			className?: string;
-		}>) || LucideIcons.HelpCircle;
+	// Safe access to Lucide icons with type assertion
+	const Icon = (LucideIcons as any)[iconName] || LucideIcons.HelpCircle;
 
 	const dragState = useRef<{
 		startMouseX: number;
