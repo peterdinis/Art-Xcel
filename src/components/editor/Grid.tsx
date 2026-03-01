@@ -155,7 +155,8 @@ const Cell = memo(
 				className={cn(
 					"relative flex items-center overflow-hidden select-none cursor-cell h-full w-full",
 					showGrid && "border-r border-b border-border dark:border-neutral-700",
-					isSelected && "ring-2 ring-primary ring-inset z-10 dark:ring-primary/80",
+					isSelected &&
+						"ring-2 ring-primary ring-inset z-10 dark:ring-primary/80",
 					isInRange && !isSelected && "bg-primary/10 dark:bg-primary/20",
 					style?.bold && "font-bold",
 					style?.italic && "italic",
@@ -227,7 +228,7 @@ const RowHeader = memo(
 				className={cn(
 					"relative flex items-center justify-center text-xs text-muted-foreground border-r border-b border-border dark:border-neutral-700 bg-muted/50 dark:bg-neutral-800 select-none shrink-0",
 					isActive &&
-					"bg-primary/15 dark:bg-primary/25 font-semibold text-primary",
+						"bg-primary/15 dark:bg-primary/25 font-semibold text-primary",
 				)}
 				style={{ width: ROW_HEADER_WIDTH, minWidth: ROW_HEADER_WIDTH, height }}
 			>
@@ -369,15 +370,18 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 			cellId: string;
 		} | null>(null);
 
-		const handleContextMenu = useCallback((e: React.MouseEvent, cellId: string) => {
-			e.preventDefault();
-			setContextMenu({
-				x: e.clientX,
-				y: e.clientY,
-				cellId,
-			});
-			onSelectCell(cellId);
-		}, [onSelectCell]);
+		const handleContextMenu = useCallback(
+			(e: React.MouseEvent, cellId: string) => {
+				e.preventDefault();
+				setContextMenu({
+					x: e.clientX,
+					y: e.clientY,
+					cellId,
+				});
+				onSelectCell(cellId);
+			},
+			[onSelectCell],
+		);
 
 		const closeContextMenu = useCallback(() => {
 			setContextMenu(null);
@@ -582,9 +586,9 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 					rafId = requestAnimationFrame(handleGridScroll);
 				};
 
-				grid.addEventListener('scroll', onScroll, { passive: true });
+				grid.addEventListener("scroll", onScroll, { passive: true });
 				return () => {
-					grid.removeEventListener('scroll', onScroll);
+					grid.removeEventListener("scroll", onScroll);
 					cancelAnimationFrame(rafId);
 				};
 			}
@@ -1035,7 +1039,7 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 													width={virtualCol.size}
 													height={rowHeight}
 													showGrid={showGrid}
-													onClick={() => { }}
+													onClick={() => {}}
 													onContextMenu={handleContextMenu}
 													onChange={handleCellChange}
 													onKeyDown={handleKeyDown}
@@ -1138,21 +1142,36 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 						style={{ left: contextMenu.x, top: contextMenu.y }}
 					>
 						<CellContextMenu
-							onCopy={() => { onCopy(); closeContextMenu(); }}
-							onCut={() => { onCut(); closeContextMenu(); }}
-							onPaste={() => { onPaste(); closeContextMenu(); }}
+							onCopy={() => {
+								onCopy();
+								closeContextMenu();
+							}}
+							onCut={() => {
+								onCut();
+								closeContextMenu();
+							}}
+							onPaste={() => {
+								onPaste();
+								closeContextMenu();
+							}}
 							onInsertRowAbove={() => {
-								const row = parseInt(contextMenu.cellId.match(/\d+/)?.[0] || "1");
+								const row = parseInt(
+									contextMenu.cellId.match(/\d+/)?.[0] || "1",
+								);
 								onInsertRow(row);
 								closeContextMenu();
 							}}
 							onInsertRowBelow={() => {
-								const row = parseInt(contextMenu.cellId.match(/\d+/)?.[0] || "1");
+								const row = parseInt(
+									contextMenu.cellId.match(/\d+/)?.[0] || "1",
+								);
 								onInsertRow(row + 1);
 								closeContextMenu();
 							}}
 							onDeleteRow={() => {
-								const row = parseInt(contextMenu.cellId.match(/\d+/)?.[0] || "1");
+								const row = parseInt(
+									contextMenu.cellId.match(/\d+/)?.[0] || "1",
+								);
 								onDeleteRow(row);
 								closeContextMenu();
 							}}
@@ -1171,8 +1190,14 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 								onDeleteColumn(colLabelToNumber(col));
 								closeContextMenu();
 							}}
-							onClearCell={() => { onClearCell(contextMenu.cellId); closeContextMenu(); }}
-							onShowShortcuts={() => { onShowShortcuts?.(); closeContextMenu(); }}
+							onClearCell={() => {
+								onClearCell(contextMenu.cellId);
+								closeContextMenu();
+							}}
+							onShowShortcuts={() => {
+								onShowShortcuts?.();
+								closeContextMenu();
+							}}
 						>
 							<div className="w-0 h-0 invisible" />
 						</CellContextMenu>
@@ -1180,7 +1205,10 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 						<div
 							className="fixed inset-0 z-[-1]"
 							onClick={closeContextMenu}
-							onContextMenu={(e) => { e.preventDefault(); closeContextMenu(); }}
+							onContextMenu={(e) => {
+								e.preventDefault();
+								closeContextMenu();
+							}}
 						/>
 					</div>
 				)}

@@ -207,7 +207,10 @@ export const EditorDialogs: React.FC<EditorDialogsProps> = (props) => {
 	// Helper function to format shortcuts based on platform
 	const getShortcutText = (shortcut: string): string => {
 		if (isMac) {
-			return shortcut.replace(/Ctrl\+/g, '⌘').replace(/Alt\+/g, '⌥').replace(/Shift\+/g, '⇧');
+			return shortcut
+				.replace(/Ctrl\+/g, "⌘")
+				.replace(/Alt\+/g, "⌥")
+				.replace(/Shift\+/g, "⇧");
 		}
 		return shortcut;
 	};
@@ -772,19 +775,27 @@ export const EditorDialogs: React.FC<EditorDialogsProps> = (props) => {
 							<div className="space-y-2">
 								<div className="flex justify-between text-sm">
 									<span>Undo / Redo</span>
-									<kbd className="bg-muted px-1.5 rounded">{getShortcutText('Ctrl+Z')} / Y</kbd>
+									<kbd className="bg-muted px-1.5 rounded">
+										{getShortcutText("Ctrl+Z")} / Y
+									</kbd>
 								</div>
 								<div className="flex justify-between text-sm">
 									<span>Save</span>
-									<kbd className="bg-muted px-1.5 rounded">{getShortcutText('Ctrl+S')}</kbd>
+									<kbd className="bg-muted px-1.5 rounded">
+										{getShortcutText("Ctrl+S")}
+									</kbd>
 								</div>
 								<div className="flex justify-between text-sm">
 									<span>Find</span>
-									<kbd className="bg-muted px-1.5 rounded">{getShortcutText('Ctrl+F')}</kbd>
+									<kbd className="bg-muted px-1.5 rounded">
+										{getShortcutText("Ctrl+F")}
+									</kbd>
 								</div>
 								<div className="flex justify-between text-sm">
 									<span>Help / Shortcuts</span>
-									<kbd className="bg-muted px-1.5 rounded">{getShortcutText('Ctrl+/')}</kbd>
+									<kbd className="bg-muted px-1.5 rounded">
+										{getShortcutText("Ctrl+/")}
+									</kbd>
 								</div>
 							</div>
 						</div>
@@ -793,7 +804,9 @@ export const EditorDialogs: React.FC<EditorDialogsProps> = (props) => {
 							<div className="space-y-2">
 								<div className="flex justify-between text-sm">
 									<span>Copy / Cut / Paste</span>
-									<kbd className="bg-muted px-1.5 rounded">{getShortcutText('Ctrl+C')} / X / V</kbd>
+									<kbd className="bg-muted px-1.5 rounded">
+										{getShortcutText("Ctrl+C")} / X / V
+									</kbd>
 								</div>
 								<div className="flex justify-between text-sm">
 									<span>Clear Cell</span>
@@ -805,7 +818,9 @@ export const EditorDialogs: React.FC<EditorDialogsProps> = (props) => {
 								</div>
 								<div className="flex justify-between text-sm">
 									<span>Bold / Italic</span>
-									<kbd className="bg-muted px-1.5 rounded">{getShortcutText('Ctrl+B')} / I</kbd>
+									<kbd className="bg-muted px-1.5 rounded">
+										{getShortcutText("Ctrl+B")} / I
+									</kbd>
 								</div>
 							</div>
 						</div>

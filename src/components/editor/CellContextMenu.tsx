@@ -53,7 +53,10 @@ export const CellContextMenu = ({
 	// Helper function to format shortcuts based on platform
 	const getShortcutText = (shortcut: string): string => {
 		if (isMac) {
-			return shortcut.replace(/Ctrl\+/g, '⌘').replace(/Alt\+/g, '⌥').replace(/Shift\+/g, '⇧');
+			return shortcut
+				.replace(/Ctrl\+/g, "⌘")
+				.replace(/Alt\+/g, "⌥")
+				.replace(/Shift\+/g, "⇧");
 		}
 		return shortcut;
 	};
@@ -65,17 +68,23 @@ export const CellContextMenu = ({
 				<ContextMenuItem onClick={onCopy} className="gap-2">
 					<Copy className="h-4 w-4" />
 					<span>Copy</span>
-					<span className="ml-auto text-xs text-muted-foreground">{getShortcutText('Ctrl+C')}</span>
+					<span className="ml-auto text-xs text-muted-foreground">
+						{getShortcutText("Ctrl+C")}
+					</span>
 				</ContextMenuItem>
 				<ContextMenuItem onClick={onCut} className="gap-2">
 					<Scissors className="h-4 w-4" />
 					<span>Cut</span>
-					<span className="ml-auto text-xs text-muted-foreground">{getShortcutText('Ctrl+X')}</span>
+					<span className="ml-auto text-xs text-muted-foreground">
+						{getShortcutText("Ctrl+X")}
+					</span>
 				</ContextMenuItem>
 				<ContextMenuItem onClick={onPaste} className="gap-2">
 					<Clipboard className="h-4 w-4" />
 					<span>Paste</span>
-					<span className="ml-auto text-xs text-muted-foreground">{getShortcutText('Ctrl+V')}</span>
+					<span className="ml-auto text-xs text-muted-foreground">
+						{getShortcutText("Ctrl+V")}
+					</span>
 				</ContextMenuItem>
 
 				<ContextMenuSeparator />
@@ -127,7 +136,9 @@ export const CellContextMenu = ({
 				<ContextMenuItem onClick={onShowShortcuts} className="gap-2">
 					<Keyboard className="h-4 w-4" />
 					<span>Available Shortcuts</span>
-					<span className="ml-auto text-xs text-muted-foreground">{getShortcutText('Ctrl+/')}</span>
+					<span className="ml-auto text-xs text-muted-foreground">
+						{getShortcutText("Ctrl+/")}
+					</span>
 				</ContextMenuItem>
 			</ContextMenuContent>
 		</ContextMenu>

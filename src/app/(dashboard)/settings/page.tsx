@@ -72,13 +72,19 @@ export default function SettingsPage() {
 		setShowHeaders(getStoredBoolean(STORAGE_KEYS.showHeaders, true));
 		setDefaultZoom(getStoredZoom(100));
 		setShowSaveToasts(getStoredBoolean(STORAGE_KEYS.showSaveToasts, true));
-		setShowShortcutHints(getStoredBoolean(STORAGE_KEYS.showShortcutHints, true));
+		setShowShortcutHints(
+			getStoredBoolean(STORAGE_KEYS.showShortcutHints, true),
+		);
 	}, []);
 
-	const updateStorage = (key: string, value: boolean | number, settingName: string) => {
+	const updateStorage = (
+		key: string,
+		value: boolean | number,
+		settingName: string,
+	) => {
 		if (typeof window === "undefined") return;
 		localStorage.setItem(key, String(value));
-		
+
 		// Show toast notification
 		toast.success(`⚙️ ${settingName} updated`, {
 			description: `Your preference has been saved.`,
@@ -112,7 +118,8 @@ export default function SettingsPage() {
 							Appearance
 						</CardTitle>
 						<CardDescription>
-							Customize how the application looks. Theme applies across the app and editor.
+							Customize how the application looks. Theme applies across the app
+							and editor.
 						</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-6">
@@ -150,7 +157,8 @@ export default function SettingsPage() {
 							Editor
 						</CardTitle>
 						<CardDescription>
-							Default behavior when you open a spreadsheet. Changes apply to new sessions.
+							Default behavior when you open a spreadsheet. Changes apply to new
+							sessions.
 						</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-6">
@@ -238,8 +246,12 @@ export default function SettingsPage() {
 								checked={showSaveToasts}
 								onCheckedChange={(checked) => {
 									setShowSaveToasts(checked);
-									updateStorage(STORAGE_KEYS.showSaveToasts, checked, "Save notifications");
-									
+									updateStorage(
+										STORAGE_KEYS.showSaveToasts,
+										checked,
+										"Save notifications",
+									);
+
 									// Special message when disabling save notifications
 									if (!checked) {
 										toast.info("You won't see save confirmations anymore", {
@@ -260,7 +272,11 @@ export default function SettingsPage() {
 								checked={showShortcutHints}
 								onCheckedChange={(checked) => {
 									setShowShortcutHints(checked);
-									updateStorage(STORAGE_KEYS.showShortcutHints, checked, "Shortcut hints");
+									updateStorage(
+										STORAGE_KEYS.showShortcutHints,
+										checked,
+										"Shortcut hints",
+									);
 								}}
 							/>
 						</div>
@@ -274,12 +290,13 @@ export default function SettingsPage() {
 							<Info className="h-5 w-5" />
 							About
 						</CardTitle>
-						<CardDescription>
-							Application information.
-						</CardDescription>
+						<CardDescription>Application information.</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-2 text-sm text-muted-foreground">
-						<p><strong className="text-foreground">Art-Xcel</strong> — Spreadsheet editor</p>
+						<p>
+							<strong className="text-foreground">Art-Xcel</strong> —
+							Spreadsheet editor
+						</p>
 						<p>Version 0.1.0 (Premium Edition)</p>
 					</CardContent>
 				</Card>
