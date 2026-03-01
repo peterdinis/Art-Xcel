@@ -49,8 +49,8 @@ export default function TrashPage() {
 			setIsLoading(true);
 			try {
 				// Simulate loading for better UX
-				await new Promise(resolve => setTimeout(resolve, 500));
-				
+				await new Promise((resolve) => setTimeout(resolve, 500));
+
 				const stored = localStorage.getItem("excel-editor-files");
 				if (stored) {
 					try {
@@ -72,9 +72,9 @@ export default function TrashPage() {
 
 	const restoreSpreadsheet = async (id: string, name: string) => {
 		setRestoringId(id);
-		
+
 		// Simulate loading for better UX
-		await new Promise(resolve => setTimeout(resolve, 300));
+		await new Promise((resolve) => setTimeout(resolve, 300));
 
 		try {
 			const stored = localStorage.getItem("excel-editor-files");
@@ -89,7 +89,7 @@ export default function TrashPage() {
 				});
 				localStorage.setItem("excel-editor-files", JSON.stringify(updated));
 				setSpreadsheets((prev) => prev.filter((s) => s.id !== id));
-				
+
 				toast.success(`"${name}" has been restored`, {
 					description: "You can find it in your spreadsheets",
 					duration: 3000,
@@ -105,9 +105,9 @@ export default function TrashPage() {
 
 	const permanentlyDelete = async (id: string, name: string) => {
 		setDeletingId(id);
-		
+
 		// Simulate loading for better UX
-		await new Promise(resolve => setTimeout(resolve, 300));
+		await new Promise((resolve) => setTimeout(resolve, 300));
 
 		try {
 			const stored = localStorage.getItem("excel-editor-files");
@@ -299,7 +299,11 @@ export default function TrashPage() {
 										>
 											<motion.div
 												animate={{ rotate: 360 }}
-												transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+												transition={{
+													duration: 1,
+													repeat: Infinity,
+													ease: "linear",
+												}}
 												className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full"
 											/>
 										</motion.div>
@@ -307,7 +311,11 @@ export default function TrashPage() {
 									<div className="h-32 bg-secondary/50 flex items-center justify-center border-b relative overflow-hidden">
 										<motion.div
 											initial={false}
-											animate={restoringId === sheet.id || deletingId === sheet.id ? { scale: 1.2, opacity: 0.5 } : { scale: 1, opacity: 1 }}
+											animate={
+												restoringId === sheet.id || deletingId === sheet.id
+													? { scale: 1.2, opacity: 0.5 }
+													: { scale: 1, opacity: 1 }
+											}
 											className="relative"
 										>
 											<FileSpreadsheet className="h-12 w-12 text-muted-foreground/50" />
@@ -328,7 +336,8 @@ export default function TrashPage() {
 												{sheet.name}
 											</CardTitle>
 											<CardDescription className="text-xs mt-1">
-												Deleted: {new Date(sheet.deletedAt!).toLocaleDateString()}
+												Deleted:{" "}
+												{new Date(sheet.deletedAt!).toLocaleDateString()}
 											</CardDescription>
 										</motion.div>
 									</CardHeader>
@@ -342,11 +351,19 @@ export default function TrashPage() {
 												size="sm"
 												onClick={() => restoreSpreadsheet(sheet.id, sheet.name)}
 												title="Restore"
-												disabled={restoringId === sheet.id || deletingId === sheet.id}
+												disabled={
+													restoringId === sheet.id || deletingId === sheet.id
+												}
 											>
 												<motion.span
-													animate={restoringId === sheet.id ? { rotate: 360 } : {}}
-													transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+													animate={
+														restoringId === sheet.id ? { rotate: 360 } : {}
+													}
+													transition={{
+														duration: 1,
+														repeat: Infinity,
+														ease: "linear",
+													}}
 												>
 													<RotateCcw className="h-4 w-4 mr-1" />
 												</motion.span>
@@ -360,9 +377,13 @@ export default function TrashPage() {
 											<Button
 												variant="destructive"
 												size="sm"
-												onClick={() => handlePermanentDelete(sheet.id, sheet.name)}
+												onClick={() =>
+													handlePermanentDelete(sheet.id, sheet.name)
+												}
 												title="Delete Permanently"
-												disabled={restoringId === sheet.id || deletingId === sheet.id}
+												disabled={
+													restoringId === sheet.id || deletingId === sheet.id
+												}
 											>
 												<Trash2 className="h-4 w-4" />
 											</Button>

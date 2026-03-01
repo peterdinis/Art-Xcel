@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import ExcelJS from "exceljs";
 import * as XLSX from "xlsx";
 import { SheetData, CellData } from "./use-spreadsheet";
+import { colLetterToIndex, indexToColLetter, parseCellId } from "@/lib/excel-utils";
 
 interface ExcelCellValue {
 	formula?: string;
@@ -19,23 +20,6 @@ interface ExcelPatternFill {
 	bgColor?: { argb: string };
 }
 
-const colLetterToIndex = (colLetter: string): number => {
-	return colLetter.charCodeAt(0) - 65;
-};
-
-const indexToColLetter = (index: number): string => {
-	return String.fromCharCode(65 + index);
-};
-
-const parseCellId = (cellId: string): { col: number; row: number } => {
-	const colMatch = cellId.match(/[A-Z]+/)?.[0] || "";
-	const rowMatch = cellId.match(/\d+/)?.[0] || "1";
-
-	const col = colLetterToIndex(colMatch);
-	const row = parseInt(rowMatch, 10) - 1;
-
-	return { col, row };
-};
 
 const formatColor = (color: string | undefined): string | undefined => {
 	if (!color) return undefined;
