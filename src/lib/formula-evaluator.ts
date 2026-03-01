@@ -138,26 +138,41 @@ export const registerCustomFunctions = () => {
 };
 
 const getVal = (cellId: string, currentData: SheetData) => {
-    const val = currentData[cellId]?.value;
-    return val && !isNaN(Number(val)) ? Number(val) : 0;
+    const val = currentData[cellId]?.value || "";
+    if (val !== "" && !isNaN(Number(val))) {
+        return Number(val);
+    }
+    return val;
 };
 
 const getRangeValues = (range: string, currentData: SheetData) => {
     const cells = getRangeCells(range);
     return cells.map((cellId) => {
         const val = currentData[cellId]?.value || "";
-        return !isNaN(Number(val)) && val !== "" ? Number(val) : val;
+        if (val !== "" && !isNaN(Number(val))) {
+            return Number(val);
+        }
+        return val;
     });
 };
 
 const getRange2D = (range: string, currentData: SheetData) => {
-    const { col: startCol, row: startRow } = parseCellId(range.split(":")[0]);
-    const { col: endCol, row: endRow } = parseCellId(range.split(":")[1]);
+    const [start, end] = range.split(":");
+    const { col: startCol, row: startRow } = parseCellId(start);
+    const { col: endCol, row: endRow } = parseCellId(end);
 
     const grid: unknown[][] = [];
-    for (let r = Math.min(startRow, endRow); r <= Math.max(startRow, endRow); r++) {
+    for (
+        let r = Math.min(startRow, endRow);
+        r <= Math.max(startRow, endRow);
+        r++
+    ) {
         const row: unknown[] = [];
-        for (let c = Math.min(startCol, endCol); c <= Math.max(startCol, endCol); c++) {
+        for (
+            let c = Math.min(startCol, endCol);
+            c <= Math.max(startCol, endCol);
+            c++
+        ) {
             const cellId = `${indexToColLetter(c)}${r + 1}`;
             const val = currentData[cellId]?.value || "";
             row.push(!isNaN(Number(val)) && val !== "" ? Number(val) : val);
@@ -187,6 +202,34 @@ const functionMap: Record<string, string> = {
     log: "log",
     exp: "exp",
     mod: "mod",
+    // Custom functions (ensure they are lowercase in mathjs scope)
+    if: "if",
+    sumif: "sumif",
+    countif: "countif",
+    vlookup: "vlookup",
+    len: "len",
+    upper: "upper",
+    lower: "lower",
+    concat: "concat",
+    left: "left",
+    right: "right",
+    today: "today",
+    now: "now",
+    year: "year",
+    month: "month",
+    day: "day",
+    and: "and",
+    or: "or",
+    not: "not",
+    pmt: "pmt",
+    fv: "fv",
+    pv: "pv",
+    stdev: "stdev",
+    var: "var",
+    median: "median",
+    isnumber: "isnumber",
+    istext: "istext",
+    isblank: "isblank",
 };
 
 export const evaluateFormula = (
@@ -208,7 +251,8 @@ export const evaluateFormula = (
         Object.entries(options.namedRanges).forEach(([name, range]) => {
             const rangeValues = getRangeValues(range, currentData);
             const regex = new RegExp(`\\b${name}\\b`, "gi");
-            expression = expression.replace(regex, `[${rangeValues.join(",")}]`);
+            const items = rangeValues.map(v => typeof v === 'string' ? `"${v.replace(/"/g, '\\"')}"` : v);
+            expression = expression.replace(regex, `[${items.join(",")}]`);
         });
     }
 
@@ -220,17 +264,16 @@ export const evaluateFormula = (
             return JSON.stringify(values2D);
         }
         const values = getRangeValues(match.toUpperCase(), currentData);
-        return `[${values.join(",")}]`;
+        const items = values.map(v => typeof v === 'string' ? `"${v.replace(/"/g, '\\"')}"` : v);
+        return `[${items.join(",")}]`;
     });
 
     // 2. Pre-process Cell References
     const cellRegex = /\b([a-zA-Z]+[0-9]+)\b/g;
     expression = expression.replace(cellRegex, (match) => {
         const val = getVal(match.toUpperCase(), currentData);
-        return String(val);
+        return typeof val === 'string' ? `"${val.replace(/"/g, '\\"')}"` : String(val);
     });
-
-    expression = expression.toLowerCase();
 
     Object.entries(functionMap).forEach(([excel, mathjs]) => {
         const regex = new RegExp(`\\b${excel}\\(`, "gi");
@@ -248,7 +291,7 @@ export const evaluateFormula = (
             if (cellId && currentData[cellId]?.style?.numberFormat) {
                 finalResult = formatNumber(
                     result,
-                    currentData[cellId].style!.numberFormat!
+                    currentData[cellId].style!.numberFormat!,
                 );
             } else {
                 finalResult = String(result);
