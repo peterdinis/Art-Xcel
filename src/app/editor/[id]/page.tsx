@@ -268,14 +268,6 @@ function EditorContent() {
 		password: null,
 	});
 
-	// Detect platform for showing correct shortcut hints
-	const [isMac, setIsMac] = useState(false);
-	
-	useEffect(() => {
-		// Detect if user is on Mac
-		setIsMac(navigator.platform.toUpperCase().indexOf('MAC') >= 0);
-	}, []);
-
 	// Load data from localStorage
 	useEffect(() => {
 		const loadData = async () => {
@@ -1356,8 +1348,6 @@ function EditorContent() {
 					})
 				}
 				onToggleGrid={() => setShowGrid(!showGrid)}
-				// Pass platform info for showing correct shortcut hints
-				isMac={isMac}
 			/>
 
 			{/* Formula Bar */}
@@ -1406,8 +1396,6 @@ function EditorContent() {
 					onUpdateShape={updateShape}
 					onUpdateIcon={updateIcon}
 					onShowShortcuts={() => setShowShortcutsDialog(true)}
-					// Pass platform info for context menu shortcuts
-					isMac={isMac}
 				/>
 			</div>
 
@@ -1545,8 +1533,6 @@ function EditorContent() {
 				handleInsertIcon={handleInsertIcon}
 				showShortcutsDialog={showShortcutsDialog}
 				setShowShortcutsDialog={setShowShortcutsDialog}
-				// Pass platform info for showing correct shortcut hints in dialogs
-				isMac={isMac}
 			/>
 		</div>
 	);

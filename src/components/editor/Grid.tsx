@@ -62,35 +62,22 @@ interface GridProps {
 	onAutoSave?: (data: SheetData) => Promise<void>;
 	autoSaveInterval?: number;
 	showAutoSaveStatus?: boolean;
-	isMac?: boolean;
 }
 
 export interface GridHandle {
 	scrollToTop: () => void;
-	scrollToCell: (cellId: string) => void;
 	forceSave: () => Promise<void>;
 }
 
-// Konštanty pre nekonečný scroll
 const DEFAULT_ROW_HEIGHT = 32;
 const DEFAULT_COL_WIDTH = 100;
 const ROW_HEADER_WIDTH = 40;
-const INITIAL_ROWS = 200;
-const INITIAL_COLS = 100;
 const ROW_BATCH_SIZE = 100;
-<<<<<<< HEAD
-const COL_BATCH_SIZE = 50;
-const ROW_LOAD_THRESHOLD = 50; // Kedy začať načítavať ďalšie riadky
-const COL_LOAD_THRESHOLD = 20; // Kedy začať načítavať ďalšie stĺpce
-const OVERSCAN = 10; // Koľko riadkov/stĺpcov vykresliť mimo obrazovky
-=======
 const COL_BATCH_SIZE = 26;
 const ROW_LOAD_THRESHOLD = 30;
 const COL_LOAD_THRESHOLD = 10;
 const OVERSCAN = 15;
->>>>>>> main
 
-// Konverzia čísla na Excelovský label stĺpca (A, B, ..., Z, AA, AB, ...)
 const numberToColLabel = (index: number): string => {
 	let result = "";
 	let num = index + 1;
@@ -103,21 +90,12 @@ const numberToColLabel = (index: number): string => {
 	return result;
 };
 
-// Konverzia Excelovského labelu na číslo
 const colLabelToNumber = (colLabel: string): number => {
 	let result = 0;
 	for (let i = 0; i < colLabel.length; i++) {
 		result = result * 26 + (colLabel.charCodeAt(i) - 64);
 	}
 	return result - 1;
-};
-
-// Parsovanie cell ID na row a col
-const parseCellId = (cellId: string): { row: number; col: string; colIndex: number } => {
-	const col = cellId.match(/[A-Z]+/)?.[0] || "A";
-	const row = parseInt(cellId.match(/\d+/)?.[0] || "1");
-	const colIndex = colLabelToNumber(col);
-	return { row, col, colIndex };
 };
 
 interface CellProps {
@@ -148,7 +126,6 @@ interface CellProps {
 	onDeleteColumn: () => void;
 	onClearCell: () => void;
 	onShowShortcuts?: () => void;
-	isMac?: boolean;
 }
 
 const Cell = memo(
@@ -170,48 +147,10 @@ const Cell = memo(
 		onBlur,
 		inputRef,
 		onResize,
-<<<<<<< HEAD
-		onCopy,
-		onCut,
-		onPaste,
-		onInsertRowAbove,
-		onInsertRowBelow,
-		onDeleteRow,
-		onInsertColumnLeft,
-		onInsertColumnRight,
-		onDeleteColumn,
-		onClearCell,
-		onShowShortcuts,
-		isMac = false,
-	}: CellProps) => {
-=======
 	}: any) => {
->>>>>>> main
 		const displayValue = isEditing ? formula || value : value;
 
-		const getShortcutText = (shortcut: string): string => {
-			if (isMac) {
-				return shortcut.replace(/Ctrl\+/g, '⌘').replace(/Alt\+/g, '⌥').replace(/Shift\+/g, '⇧');
-			}
-			return shortcut;
-		};
-
 		return (
-<<<<<<< HEAD
-			<CellContextMenu
-				onCopy={onCopy}
-				onCut={onCut}
-				onPaste={onPaste}
-				onInsertRowAbove={onInsertRowAbove}
-				onInsertRowBelow={onInsertRowBelow}
-				onDeleteRow={onDeleteRow}
-				onInsertColumnLeft={onInsertColumnLeft}
-				onInsertColumnRight={onInsertColumnRight}
-				onDeleteColumn={onDeleteColumn}
-				onClearCell={onClearCell}
-				onShowShortcuts={onShowShortcuts}
-				isMac={isMac}
-=======
 			<div
 				className={cn(
 					"relative flex items-center overflow-hidden select-none cursor-cell h-full w-full",
@@ -235,7 +174,6 @@ const Cell = memo(
 				}}
 				onClick={onClick}
 				onContextMenu={(e) => onContextMenu(e, id)}
->>>>>>> main
 			>
 				{formula && !isEditing && (
 					<span className="absolute top-0 right-0 text-[8px] text-green-600 dark:text-green-400 leading-none p-px">
@@ -394,7 +332,6 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 			onAutoSave,
 			autoSaveInterval = 30000,
 			showAutoSaveStatus = true,
-			isMac = false,
 		},
 		ref,
 	) => {
@@ -411,9 +348,8 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 		const [saveError, setSaveError] = useState<string | null>(null);
 		const [hasChanges, setHasChanges] = useState(false);
 
-		// Dynamické počty riadkov a stĺpcov pre nekonečný scroll
-		const [totalRows, setTotalRows] = useState(INITIAL_ROWS);
-		const [totalCols, setTotalCols] = useState(INITIAL_COLS);
+		const [totalRows, setTotalRows] = useState(200);
+		const [totalCols, setTotalCols] = useState(52);
 
 		const inputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
 		const gridRef = useRef<HTMLDivElement>(null);
@@ -504,31 +440,6 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 			await performSave(true);
 		}, [performSave]);
 
-		const scrollToCell = useCallback((cellId: string) => {
-			const { row, colIndex } = parseCellId(cellId);
-			
-			// Zabezpečíme, že máme dosť riadkov a stĺpcov
-			if (row > totalRows) {
-				setTotalRows(prev => Math.max(prev, row + ROW_BATCH_SIZE));
-			}
-			if (colIndex > totalCols) {
-				setTotalCols(prev => Math.max(prev, colIndex + COL_BATCH_SIZE));
-			}
-
-			// Scroll na pozíciu
-			setTimeout(() => {
-				if (gridRef.current) {
-					const rowOffset = (row - 1) * DEFAULT_ROW_HEIGHT;
-					const colOffset = colIndex * DEFAULT_COL_WIDTH;
-					gridRef.current.scrollTo({
-						top: rowOffset,
-						left: colOffset,
-						behavior: "smooth",
-					});
-				}
-			}, 100);
-		}, [totalRows, totalCols]);
-
 		useImperativeHandle(
 			ref,
 			() => ({
@@ -537,10 +448,9 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 						gridRef.current.scrollTo({ top: 0, left: 0, behavior: "smooth" });
 					}
 				},
-				scrollToCell,
 				forceSave,
 			}),
-			[scrollToCell, forceSave],
+			[forceSave],
 		);
 
 		useEffect(() => {
@@ -631,17 +541,6 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 			getScrollElement: () => gridRef.current,
 			estimateSize: getRowHeight,
 			overscan: OVERSCAN,
-			// Pri scrollovaní na koniec automaticky načítať ďalšie
-			rangeExtractor: (range) => {
-				// Dynamické načítavanie - keď sa blížime ku koncu, pridáme ďalšie riadky
-				if (range.endIndex >= totalRows - ROW_LOAD_THRESHOLD) {
-					setTotalRows((prev) => prev + ROW_BATCH_SIZE);
-				}
-				return Array.from(
-					{ length: range.endIndex - range.startIndex + 1 },
-					(_, i) => range.startIndex + i
-				);
-			}
 		});
 
 		const colVirtualizer = useVirtualizer({
@@ -650,17 +549,6 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 			horizontal: true,
 			estimateSize: getColWidth,
 			overscan: OVERSCAN,
-			// Pri scrollovaní na koniec automaticky načítať ďalšie
-			rangeExtractor: (range) => {
-				// Dynamické načítavanie - keď sa blížime ku koncu, pridáme ďalšie stĺpce
-				if (range.endIndex >= totalCols - COL_LOAD_THRESHOLD) {
-					setTotalCols((prev) => prev + COL_BATCH_SIZE);
-				}
-				return Array.from(
-					{ length: range.endIndex - range.startIndex + 1 },
-					(_, i) => range.startIndex + i
-				);
-			}
 		});
 
 		// Sync scroll positions
@@ -706,6 +594,34 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 			? parseInt(selectedCell.match(/\d+/)?.[0] || "0")
 			: null;
 		const activeCol = selectedCell ? selectedCell.match(/[A-Z]+/)?.[0] : null;
+
+		useEffect(() => {
+			const virtualRows = rowVirtualizer.getVirtualItems();
+			if (virtualRows.length === 0) return;
+			const lastIndex = virtualRows[virtualRows.length - 1].index;
+			if (lastIndex >= totalRows - ROW_LOAD_THRESHOLD) {
+				setTotalRows((prev) => prev + ROW_BATCH_SIZE);
+			}
+		}, [
+			rowVirtualizer.getVirtualItems()[
+				rowVirtualizer.getVirtualItems().length - 1
+			]?.index,
+			totalRows,
+		]);
+
+		useEffect(() => {
+			const virtualCols = colVirtualizer.getVirtualItems();
+			if (virtualCols.length === 0) return;
+			const lastIndex = virtualCols[virtualCols.length - 1].index;
+			if (lastIndex >= totalCols - COL_LOAD_THRESHOLD) {
+				setTotalCols((prev) => prev + COL_BATCH_SIZE);
+			}
+		}, [
+			colVirtualizer.getVirtualItems()[
+				colVirtualizer.getVirtualItems().length - 1
+			]?.index,
+			totalCols,
+		]);
 
 		useEffect(() => {
 			const handleMouseMove = (e: MouseEvent) => {
@@ -843,9 +759,8 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 					switch (direction) {
 						case "down":
 							nextCellId = colMatch + (row + 1);
-							// Dynamicky pridať riadok ak treba
-							if (row + 1 > totalRows) {
-								setTotalRows(prev => prev + ROW_BATCH_SIZE);
+							if (row + 1 > totalRows - ROW_LOAD_THRESHOLD) {
+								setTotalRows((prev) => prev + ROW_BATCH_SIZE);
 							}
 							rowVirtualizer.scrollToIndex(row, {
 								align: "auto",
@@ -865,9 +780,8 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 							const nextColNumber = colNumber + 1;
 							const nextCol = numberToColLabel(nextColNumber);
 							nextCellId = nextCol + row;
-							// Dynamicky pridať stĺpec ak treba
-							if (nextColNumber + 1 > totalCols) {
-								setTotalCols(prev => prev + COL_BATCH_SIZE);
+							if (nextColNumber > totalCols - COL_LOAD_THRESHOLD) {
+								setTotalCols((prev) => prev + COL_BATCH_SIZE);
 							}
 							colVirtualizer.scrollToIndex(nextColNumber, {
 								align: "auto",
@@ -1128,27 +1042,6 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 													onBlur={handleBlur}
 													inputRef={setInputRef(cellId)}
 													onResize={handleResizeStart}
-<<<<<<< HEAD
-													onCopy={onCopy}
-													onCut={onCut}
-													onPaste={onPaste}
-													onInsertRowAbove={() => onInsertRow(row)}
-													onInsertRowBelow={() => onInsertRow(row + 1)}
-													onDeleteRow={() => onDeleteRow(row)}
-													onInsertColumnLeft={() =>
-														onInsertColumn(virtualCol.index)
-													}
-													onInsertColumnRight={() =>
-														onInsertColumn(virtualCol.index + 1)
-													}
-													onDeleteColumn={() =>
-														onDeleteColumn(virtualCol.index)
-													}
-													onClearCell={() => onClearCell(cellId)}
-													onShowShortcuts={onShowShortcuts}
-													isMac={isMac}
-=======
->>>>>>> main
 												/>
 											</div>
 										);
