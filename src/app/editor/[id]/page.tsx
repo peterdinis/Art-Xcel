@@ -9,6 +9,7 @@ import { ClassicToolbar } from "@/components/editor/ClassicToolbar";
 import { StatusBar } from "@/components/editor/StatusBar";
 import { FormulaBar } from "@/components/editor/FormulaBar";
 import { EditorDialogs } from "@/components/editor/EditorDialogs";
+import { InsertFunctionDialog } from "@/components/editor/InsertFunctionDialog";
 import { SheetTabs } from "@/components/editor/SheetTabs";
 import { FloatingQuickMenu } from "@/components/editor/FloatingQuickMenu";
 import { saveSpreadsheetAction } from "./actions";
@@ -208,6 +209,7 @@ function EditorContent() {
 	const [showNamedRangeDialog, setShowNamedRangeDialog] = useState(false);
 	const [showValidationDialog, setShowValidationDialog] = useState(false);
 	const [showNoteDialog, setShowNoteDialog] = useState(false);
+	const [showInsertFunctionDialog, setShowInsertFunctionDialog] = useState(false);
 	const [findText, setFindText] = useState("");
 	const [replaceText, setReplaceText] = useState("");
 	const [matchCase, setMatchCase] = useState(false);
@@ -1281,6 +1283,7 @@ function EditorContent() {
 				onInsertShape={handleInsertShape}
 				onInsertIcon={() => setShowIconDialog(true)}
 				onInsertFunction={handleFormulaClick}
+				onOpenInsertFunctionDialog={() => setShowInsertFunctionDialog(true)}
 				onScrollToTop={handleScrollToTop}
 				onNew={() => {
 					toast.info("Creating new spreadsheet...", {
@@ -1356,6 +1359,12 @@ function EditorContent() {
 					})
 				}
 				onToggleGrid={() => setShowGrid(!showGrid)}
+				onNumberFormatChange={(format) => {
+					if (selectedCell) {
+						updateCellStyle(selectedCell, { numberFormat: format });
+						toast.success("Number format applied", { duration: 1000 });
+					}
+				}}
 				// Pass platform info for showing correct shortcut hints
 				isMac={isMac}
 			/>
@@ -1365,6 +1374,25 @@ function EditorContent() {
 				selectedCell={selectedCell}
 				value={selectedCell ? getCellFormula(selectedCell) : ""}
 				onChange={handleFormulaBarChange}
+				onInsertFunctionClick={() => setShowInsertFunctionDialog(true)}
+				previewValue={
+					selectedCell && data[selectedCell]?.formula?.startsWith("=")
+						? getCellValue(selectedCell)
+						: undefined
+				}
+			/>
+			<InsertFunctionDialog
+				open={showInsertFunctionDialog}
+				onOpenChange={setShowInsertFunctionDialog}
+				currentFormula={selectedCell ? getCellFormula(selectedCell) : ""}
+				onInsert={(_, template) => {
+					if (selectedCell) {
+						updateCell(selectedCell, template);
+						toast.success("Function inserted", {
+							description: "Edit the arguments in the formula bar.",
+						});
+					}
+				}}
 			/>
 
 			{/* Main Grid Area */}
@@ -1434,6 +1462,7 @@ function EditorContent() {
 				data={data}
 				selectedCell={selectedCell}
 				selectionRange={selectionRange}
+				zoom={zoom}
 			/>
 
 			<FloatingQuickMenu

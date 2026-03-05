@@ -108,6 +108,7 @@ interface ClassicToolbarProps {
 	onInsertShape?: (type: "rectangle" | "circle" | "line") => void;
 	onInsertIcon?: () => void;
 	onInsertFunction?: (formula: string) => void;
+	onOpenInsertFunctionDialog?: () => void;
 	onScrollToTop?: () => void;
 	onNew?: () => void;
 	onOpen?: () => void;
@@ -128,6 +129,7 @@ interface ClassicToolbarProps {
 	onShortcuts?: () => void;
 	onAbout?: () => void;
 	onToggleGrid?: () => void;
+	onNumberFormatChange?: (format: "general" | "number" | "currency" | "percentage" | "date" | "time") => void;
 	// Pridaná prop pre detekciu platformy
 	isMac?: boolean;
 }
@@ -187,6 +189,7 @@ export const ClassicToolbar = ({
 	onInsertShape,
 	onInsertIcon,
 	onInsertFunction,
+	onOpenInsertFunctionDialog,
 	onScrollToTop,
 	onNew,
 	onOpen,
@@ -207,6 +210,7 @@ export const ClassicToolbar = ({
 	onShortcuts,
 	onAbout,
 	onToggleGrid,
+	onNumberFormatChange,
 	isMac = false, // Default hodnota pre prípad, že prop nie je poskytnutá
 }: ClassicToolbarProps) => {
 	const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -374,7 +378,7 @@ export const ClassicToolbar = ({
 							Column Before
 						</DropdownMenuItem>
 						<DropdownMenuSeparator />
-						<DropdownMenuItem onClick={() => onInsertFunction?.("SUM")}>
+						<DropdownMenuItem onClick={onOpenInsertFunctionDialog ?? (() => onInsertFunction?.("SUM"))}>
 							Function...
 						</DropdownMenuItem>
 					</DropdownMenuContent>
@@ -403,6 +407,29 @@ export const ClassicToolbar = ({
 						<DropdownMenuItem onClick={onConditionalFormatting}>
 							Conditional Formatting...
 						</DropdownMenuItem>
+						<DropdownMenuSub>
+							<DropdownMenuSubTrigger>Number format</DropdownMenuSubTrigger>
+							<DropdownMenuSubContent>
+								<DropdownMenuItem onClick={() => onNumberFormatChange?.("general")}>
+									General
+								</DropdownMenuItem>
+								<DropdownMenuItem onClick={() => onNumberFormatChange?.("number")}>
+									Number
+								</DropdownMenuItem>
+								<DropdownMenuItem onClick={() => onNumberFormatChange?.("currency")}>
+									Currency
+								</DropdownMenuItem>
+								<DropdownMenuItem onClick={() => onNumberFormatChange?.("percentage")}>
+									Percentage
+								</DropdownMenuItem>
+								<DropdownMenuItem onClick={() => onNumberFormatChange?.("date")}>
+									Date
+								</DropdownMenuItem>
+								<DropdownMenuItem onClick={() => onNumberFormatChange?.("time")}>
+									Time
+								</DropdownMenuItem>
+							</DropdownMenuSubContent>
+						</DropdownMenuSub>
 					</DropdownMenuContent>
 				</DropdownMenu>
 
@@ -738,23 +765,31 @@ export const ClassicToolbar = ({
 					}
 				/>
 				<Separator orientation="vertical" className="h-5 mx-0.5" />
+				<Select
+					defaultValue="general"
+					onValueChange={(v) => onNumberFormatChange?.(v as "general" | "number" | "currency" | "percentage" | "date" | "time")}
+				>
+					<SelectTrigger className="h-7 w-[100px] text-xs bg-white dark:bg-zinc-950">
+						<SelectValue placeholder="Format" />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value="general">General</SelectItem>
+						<SelectItem value="number">Number</SelectItem>
+						<SelectItem value="currency">Currency</SelectItem>
+						<SelectItem value="percentage">Percentage</SelectItem>
+						<SelectItem value="date">Date</SelectItem>
+						<SelectItem value="time">Time</SelectItem>
+					</SelectContent>
+				</Select>
 				<ToolbarButton
 					icon={DollarSign}
 					tooltip="Currency"
-					onClick={() =>
-						toast.info("Currency", {
-							description: "Currency formatting coming soon",
-						})
-					}
+					onClick={() => onNumberFormatChange?.("currency")}
 				/>
 				<ToolbarButton
 					icon={Percent}
 					tooltip="Percent"
-					onClick={() =>
-						toast.info("Percent", {
-							description: "Percent formatting coming soon",
-						})
-					}
+					onClick={() => onNumberFormatChange?.("percentage")}
 				/>
 				<ToolbarButton
 					icon={Plus}

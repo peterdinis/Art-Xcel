@@ -24,6 +24,7 @@ export interface CellData {
 			| "percentage"
 			| "date"
 			| "time";
+		verticalAlign?: "top" | "middle" | "bottom";
 	};
 	note?: string;
 	validation?: {
@@ -407,130 +408,290 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 	const registerCustomFunctions = useCallback(() => {
 		try {
 			// IF(condition, true_val, false_val)
-			math.import(
-				{
-					if: (condition: unknown, trueVal: unknown, falseVal: unknown) =>
-						condition ? trueVal : falseVal,
-					// SUMIF(range_array, criteria, [sum_range_array])
-					sumif: (
-						range: unknown[],
-						criteria: unknown,
-						sumRange?: unknown[],
-					) => {
-						const targetRange = (sumRange || range) as (number | string)[];
-						let sum = 0;
-						range.forEach((val, idx) => {
-							if (val == criteria) {
-								sum += Number(targetRange[idx]) || 0;
-							}
-						});
-						return sum;
-					},
-					// COUNTIF(range_array, criteria)
-					countif: (range: unknown[], criteria: unknown) => {
-						return range.filter((val) => val == criteria).length;
-					},
-					// VLOOKUP(lookup_value, table_array, col_index, [exact_match])
-					vlookup: (
-						lookupValue: unknown,
-						table: unknown[][],
-						colIndex: number,
-						exactMatch: boolean = true,
-					) => {
-						if (!Array.isArray(table) || table.length === 0) return "#N/A";
-						for (const row of table) {
-							if (!Array.isArray(row)) continue;
-							const firstCell = row[0];
-							let match = false;
-							if (exactMatch) {
-								match = firstCell == lookupValue;
-							} else {
-								match = String(firstCell)
-									.toLowerCase()
-									.includes(String(lookupValue).toLowerCase());
-							}
-							if (match) return row[colIndex - 1] ?? "#REF!";
+			math.import({
+				if: (condition: unknown, trueVal: unknown, falseVal: unknown) =>
+					condition ? trueVal : falseVal,
+				// SUMIF(range_array, criteria, [sum_range_array])
+				sumif: (
+					range: unknown[],
+					criteria: unknown,
+					sumRange?: unknown[],
+				) => {
+					const targetRange = (sumRange || range) as (number | string)[];
+					let sum = 0;
+					range.forEach((val, idx) => {
+						if (val == criteria) {
+							sum += Number(targetRange[idx]) || 0;
 						}
-						return "#N/A";
-					},
-					// Text Functions
-					len: (str: string) => String(str).length,
-					upper: (str: string) => String(str).toUpperCase(),
-					lower: (str: string) => String(str).toLowerCase(),
-					concat: (...args: unknown[]) => args.join(""),
-					left: (str: string, num: number) => String(str).substring(0, num),
-					right: (str: string, num: number) => {
-						const s = String(str);
-						return s.substring(s.length - num);
-					},
-					// Date Functions
-					today: () => new Date().toLocaleDateString(),
-					now: () => new Date().toLocaleString(),
-					year: (dateStr: string) => new Date(dateStr).getFullYear(),
-					month: (dateStr: string) => new Date(dateStr).getMonth() + 1,
-					day: (dateStr: string) => new Date(dateStr).getDate(),
-					// Logical Functions
-					and: (...args: boolean[]) => args.every(Boolean),
-					or: (...args: boolean[]) => args.some(Boolean),
-					not: (arg: boolean) => !arg,
-					// Financial Functions (Simplified)
-					pmt: (rate: number, nper: number, pv: number) => {
-						const r = rate / 12;
-						const pmt =
-							(pv * r * Math.pow(1 + r, nper)) / (Math.pow(1 + r, nper) - 1);
-						return isFinite(pmt) ? pmt : 0;
-					},
-					fv: (rate: number, nper: number, pmt: number, pv = 0) => {
-						const r = rate;
-						const fv =
-							pv * Math.pow(1 + r, nper) +
-							pmt * ((Math.pow(1 + r, nper) - 1) / r);
-						return isFinite(fv) ? fv : 0;
-					},
-					pv: (rate: number, nper: number, pmt: number, fv = 0) => {
-						const r = rate;
-						const pv =
-							(fv - pmt * ((Math.pow(1 + r, nper) - 1) / r)) /
-							Math.pow(1 + r, nper);
-						return isFinite(pv) ? pv : 0;
-					},
-					// Statistical Functions
-					stdev: (...args: number[]) => {
-						const nums = args.map(Number).filter((n) => !isNaN(n));
-						if (nums.length === 0) return 0;
-						const avg = nums.reduce((a, b) => a + b, 0) / nums.length;
-						const std = Math.sqrt(
-							nums.map((x) => Math.pow(x - avg, 2)).reduce((a, b) => a + b, 0) /
-								nums.length,
-						);
-						return isFinite(std) ? std : 0;
-					},
-					var: (...args: number[]) => {
-						const nums = args.map(Number).filter((n) => !isNaN(n));
-						if (nums.length === 0) return 0;
-						const avg = nums.reduce((a, b) => a + b, 0) / nums.length;
-						const v =
-							nums.map((x) => Math.pow(x - avg, 2)).reduce((a, b) => a + b, 0) /
-							nums.length;
-						return isFinite(v) ? v : 0;
-					},
-					median: (...args: number[]) => {
-						const nums = args.map(Number).filter((n) => !isNaN(n));
-						if (nums.length === 0) return 0;
-						const sorted = [...nums].sort((a, b) => a - b);
-						const mid = Math.floor(sorted.length / 2);
-						return sorted.length % 2 !== 0
-							? sorted[mid]
-							: (sorted[mid - 1] + sorted[mid]) / 2;
-					},
-					// Information Functions
-					isnumber: (val: unknown) => typeof val === "number" && !isNaN(val),
-					istext: (val: unknown) => typeof val === "string",
-					isblank: (val: unknown) =>
-						val === undefined || val === null || val === "",
+					});
+					return sum;
 				},
-				{ override: true },
-			);
+				// COUNTIF(range_array, criteria)
+				countif: (range: unknown[], criteria: unknown) => {
+					return range.filter((val) => val == criteria).length;
+				},
+				// VLOOKUP(lookup_value, table_array, col_index, [exact_match])
+				vlookup: (
+					lookupValue: unknown,
+					table: unknown[][],
+					colIndex: number,
+					exactMatch: boolean = true,
+				) => {
+					if (!Array.isArray(table) || table.length === 0) return "#N/A";
+					for (const row of table) {
+						if (!Array.isArray(row)) continue;
+						const firstCell = row[0];
+						let match = false;
+						if (exactMatch) {
+							match = firstCell == lookupValue;
+						} else {
+							match = String(firstCell)
+								.toLowerCase()
+								.includes(String(lookupValue).toLowerCase());
+						}
+						if (match) return row[colIndex - 1] ?? "#REF!";
+					}
+					return "#N/A";
+				},
+				// Text Functions
+				len: (str: string) => String(str).length,
+				upper: (str: string) => String(str).toUpperCase(),
+				lower: (str: string) => String(str).toLowerCase(),
+				concat: (...args: unknown[]) => args.join(""),
+				left: (str: string, num: number) => String(str).substring(0, num),
+				right: (str: string, num: number) => {
+					const s = String(str);
+					return s.substring(s.length - num);
+				},
+				// Date Functions
+				today: () => new Date().toLocaleDateString(),
+				now: () => new Date().toLocaleString(),
+				year: (dateStr: string) => new Date(dateStr).getFullYear(),
+				month: (dateStr: string) => new Date(dateStr).getMonth() + 1,
+				day: (dateStr: string) => new Date(dateStr).getDate(),
+				// Logical Functions
+				and: (...args: boolean[]) => args.every(Boolean),
+				or: (...args: boolean[]) => args.some(Boolean),
+				not: (arg: boolean) => !arg,
+				// Financial Functions (Simplified)
+				pmt: (rate: number, nper: number, pv: number) => {
+					const r = rate / 12;
+					const pmt =
+						(pv * r * Math.pow(1 + r, nper)) / (Math.pow(1 + r, nper) - 1);
+					return isFinite(pmt) ? pmt : 0;
+				},
+				fv: (rate: number, nper: number, pmt: number, pv = 0) => {
+					const r = rate;
+					const fv =
+						pv * Math.pow(1 + r, nper) +
+						pmt * ((Math.pow(1 + r, nper) - 1) / r);
+					return isFinite(fv) ? fv : 0;
+				},
+				pv: (rate: number, nper: number, pmt: number, fv = 0) => {
+					const r = rate;
+					const pv =
+						(fv - pmt * ((Math.pow(1 + r, nper) - 1) / r)) /
+						Math.pow(1 + r, nper);
+					return isFinite(pv) ? pv : 0;
+				},
+				// Statistical Functions
+				stdev: (...args: number[]) => {
+					const nums = args.map(Number).filter((n) => !isNaN(n));
+					if (nums.length === 0) return 0;
+					const avg = nums.reduce((a, b) => a + b, 0) / nums.length;
+					const std = Math.sqrt(
+						nums.map((x) => Math.pow(x - avg, 2)).reduce((a, b) => a + b, 0) /
+							nums.length,
+					);
+					return isFinite(std) ? std : 0;
+				},
+				var: (...args: number[]) => {
+					const nums = args.map(Number).filter((n) => !isNaN(n));
+					if (nums.length === 0) return 0;
+					const avg = nums.reduce((a, b) => a + b, 0) / nums.length;
+					const v =
+						nums.map((x) => Math.pow(x - avg, 2)).reduce((a, b) => a + b, 0) /
+						nums.length;
+					return isFinite(v) ? v : 0;
+				},
+				median: (...args: number[]) => {
+					const nums = args.map(Number).filter((n) => !isNaN(n));
+					if (nums.length === 0) return 0;
+					const sorted = [...nums].sort((a, b) => a - b);
+					const mid = Math.floor(sorted.length / 2);
+					return sorted.length % 2 !== 0
+						? sorted[mid]
+						: (sorted[mid - 1] + sorted[mid]) / 2;
+				},
+				// Information Functions
+				isnumber: (val: unknown) => typeof val === "number" && !isNaN(val),
+				istext: (val: unknown) => typeof val === "string",
+				isblank: (val: unknown) =>
+					val === undefined || val === null || val === "",
+				// Lookup & Reference
+				index: (arr: unknown[] | unknown[][], row: number, col?: number) => {
+					const r = Math.max(0, Math.floor(Number(row)) - 1);
+					if (Array.isArray(arr[0]) && Array.isArray(arr)) {
+						const grid = arr as unknown[][];
+						const rowArr = grid[r];
+						if (!rowArr) return "#REF!";
+						const c = col != null ? Math.max(0, Math.floor(Number(col)) - 1) : 0;
+						return rowArr[c] ?? "#REF!";
+					}
+					const vec = arr as unknown[];
+					return vec[r] ?? "#REF!";
+				},
+					match: (
+						lookup: unknown,
+						lookupArray: unknown[],
+						matchType: number = 0,
+					) => {
+						if (matchType === 0) {
+							const idx = lookupArray.findIndex((v) => v == lookup);
+							return idx >= 0 ? idx + 1 : "#N/A";
+						}
+						const nums = lookupArray
+							.map(Number)
+							.filter((n) => !isNaN(n))
+							.sort((a, b) => a - b);
+						const l = Number(lookup);
+						if (matchType === 1) {
+							let i = nums.findIndex((n) => n > l);
+							if (i < 0) i = nums.length;
+							return i + 1; // 1-based position
+						}
+						let i = nums.findIndex((n) => n >= l);
+						if (i < 0) i = nums.length;
+						return i + 1;
+					},
+				// Conditional aggregation
+				countifs: (...args: unknown[]) => {
+					if (args.length < 2 || args.length % 2 !== 0) return 0;
+					const range = args[0] as unknown[];
+					const criteria = args[1];
+					let count = 0;
+					range.forEach((val, i) => {
+						let match = val == criteria;
+						for (let j = 2; j < args.length; j += 2) {
+							const r = args[j] as unknown[];
+							const c = args[j + 1];
+							if (r[i] != c) match = false;
+						}
+						if (match) count++;
+					});
+					return count;
+				},
+				sumifs: (sumRange: unknown[], ...pairs: unknown[]) => {
+					if (pairs.length < 2) return 0;
+					let sum = 0;
+					sumRange.forEach((_, i) => {
+						let match = true;
+						for (let j = 0; j < pairs.length; j += 2) {
+							const r = pairs[j] as unknown[];
+							const c = pairs[j + 1];
+							if (r[i] != c) match = false;
+						}
+						if (match) sum += Number(sumRange[i]) || 0;
+					});
+					return sum;
+				},
+				averageif: (
+					range: unknown[],
+					criteria: unknown,
+					averageRange?: unknown[],
+				) => {
+					const target = averageRange || range;
+					const vals: number[] = [];
+					range.forEach((val, i) => {
+						if (val == criteria)
+							vals.push(Number(target[i]) || 0);
+					});
+					if (vals.length === 0) return "#DIV/0!";
+					return vals.reduce((a, b) => a + b, 0) / vals.length;
+				},
+				averageifs: (...args: unknown[]) => {
+					if (args.length < 3) return "#DIV/0!";
+					const averageRange = args[0] as unknown[];
+					const pairs = args.slice(1);
+					if (pairs.length % 2 !== 0) return "#DIV/0!";
+					const vals: number[] = [];
+					averageRange.forEach((_, i) => {
+						let match = true;
+						for (let j = 0; j < pairs.length; j += 2) {
+							const r = pairs[j] as unknown[];
+							const c = pairs[j + 1];
+							if (r[i] != c) match = false;
+						}
+						if (match) vals.push(Number(averageRange[i]) || 0);
+					});
+					if (vals.length === 0) return "#DIV/0!";
+					return vals.reduce((a, b) => a + b, 0) / vals.length;
+				},
+				// Multiple conditions
+				ifs: (...args: unknown[]) => {
+					for (let i = 0; i < args.length - 1; i += 2) {
+						if (args[i]) return args[i + 1];
+					}
+					return args.length % 2 === 1 ? args[args.length - 1] : "#N/A";
+				},
+				switch: (expr: unknown, ...pairs: unknown[]) => {
+					for (let i = 0; i < pairs.length - 1; i += 2) {
+						if (pairs[i] == expr) return pairs[i + 1];
+					}
+					return pairs.length % 2 === 1 ? pairs[pairs.length - 1] : "#N/A";
+				},
+				// Text
+				text: (value: unknown, format: string) => {
+					const n = Number(value);
+					if (!isNaN(n) && format.toLowerCase().includes("0")) {
+						const dec = (format.match(/\.0+/)?.[0]?.length ?? 1) - 1;
+						return n.toFixed(dec);
+					}
+					return String(value);
+				},
+				trim: (str: string) => String(str).trim(),
+				mid: (str: string, start: number, numChars: number) => {
+					const s = String(str);
+					const startIdx = Math.max(0, Math.floor(Number(start)) - 1);
+					return s.substring(startIdx, startIdx + Math.floor(Number(numChars)));
+				},
+				find: (findText: string, withinText: string, startNum: number = 1) => {
+					const idx = String(withinText).indexOf(String(findText), Math.max(0, Math.floor(Number(startNum)) - 1));
+					return idx < 0 ? "#VALUE!" : idx + 1;
+				},
+				substitute: (text: string, oldText: string, newText: string, instance?: number) => {
+					let s = String(text);
+					const o = String(oldText);
+					const n = String(newText);
+					if (instance != null) {
+						let idx = 0;
+						for (let i = 0; i < instance; i++) {
+							const i2 = s.indexOf(o, idx);
+							if (i2 < 0) return s;
+							if (i === instance - 1) return s.substring(0, i2) + n + s.substring(i2 + o.length);
+							idx = i2 + 1;
+						}
+						return s;
+					}
+					return s.split(o).join(n);
+				},
+				rept: (text: string, count: number) =>
+					String(text).repeat(Math.max(0, Math.floor(Number(count)))),
+				roundup: (num: number, digits: number) => {
+					const d = Math.pow(10, Math.floor(Number(digits)));
+					return Math.ceil(Number(num) * d) / d;
+				},
+				rounddown: (num: number, digits: number) => {
+					const d = Math.pow(10, Math.floor(Number(digits)));
+					return Math.floor(Number(num) * d) / d;
+				},
+				mround: (num: number, multiple: number) => {
+					const m = Number(multiple);
+					if (m === 0) return 0;
+					return Math.round(Number(num) / m) * m;
+				},
+				int: (num: number) => Math.floor(Number(num)),
+			}, { override: true });
 		} catch (e) {
 			console.warn("MathJS custom functions registration failed:", e);
 		}
@@ -558,8 +719,9 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 
 			// 1. Pre-process Ranges: Replace A1:B2 with [val1, val2, ...] or [[val1, val2], ...]
 			const rangeRegex = /\b([a-zA-Z]+[0-9]+:[a-zA-Z]+[0-9]+)\b/g;
+			const needs2D = /vlookup|index\s*\(/i.test(expression);
 			expression = expression.replace(rangeRegex, (match) => {
-				if (expression.toLowerCase().includes("vlookup")) {
+				if (needs2D) {
 					const values2D = getRange2D(match.toUpperCase(), currentData);
 					return JSON.stringify(values2D);
 				}
@@ -577,7 +739,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 			// 3. Lowercase the rest
 			expression = expression.toLowerCase();
 
-			// 4. Map Excel functions
+			// 4. Map Excel functions to MathJS or custom (custom are registered above)
 			const functionMap: Record<string, string> = {
 				average: "mean",
 				avg: "mean",
@@ -598,6 +760,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				log: "log",
 				exp: "exp",
 				mod: "mod",
+				concatenate: "concat",
 			};
 
 			Object.entries(functionMap).forEach(([excel, mathjs]) => {
@@ -671,26 +834,26 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				const evaluated = evaluateFormula(input, prev, cellId);
 
 				newData[cellId] = {
-					...newData[cellId],
+					...(prev[cellId] || { value: "", formula: "" }),
 					value: evaluated,
 					formula: input,
 				};
 
 				// Track formula cells
 				if (input.startsWith("=")) {
-					setFormulaCells((prev) => {
-						const next = new Set(prev);
+					setFormulaCells((prevSet) => {
+						const next = new Set(prevSet);
 						next.add(cellId);
 						return next;
 					});
 				} else {
-					setFormulaCells((prev) => {
-						if (prev.has(cellId)) {
-							const next = new Set(prev);
+					setFormulaCells((prevSet) => {
+						if (prevSet.has(cellId)) {
+							const next = new Set(prevSet);
 							next.delete(cellId);
 							return next;
 						}
-						return prev;
+						return prevSet;
 					});
 				}
 
@@ -708,7 +871,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				return newData;
 			});
 		},
-		[evaluateFormula, formulaCells, saveToUndo],
+		[evaluateFormula, formulaCells, saveToUndo, setData],
 	);
 
 	// Update multiple cells
@@ -722,7 +885,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				Object.entries(updates).forEach(([cellId, input]) => {
 					const evaluated = evaluateFormula(input, newData, cellId);
 					newData[cellId] = {
-						...newData[cellId],
+						...(prev[cellId] || { value: "", formula: "" }),
 						value: evaluated,
 						formula: input,
 					};
@@ -742,7 +905,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				return newData;
 			});
 		},
-		[evaluateFormula, saveToUndo],
+		[evaluateFormula, saveToUndo, setData],
 	);
 
 	// Update cell style
@@ -761,7 +924,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				},
 			}));
 		},
-		[saveToUndo],
+		[saveToUndo, setData],
 	);
 
 	// Copy cells
@@ -841,7 +1004,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				setClipboard(null);
 			}
 		},
-		[clipboard, saveToUndo],
+		[clipboard, saveToUndo, setData],
 	);
 
 	// Undo
@@ -852,7 +1015,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 		setRedoStack((prev) => [...prev, data]);
 		setData(previous);
 		setUndoStack((prev) => prev.slice(0, -1));
-	}, [undoStack, data]);
+	}, [undoStack, data, setData]);
 
 	// Redo
 	const redo = useCallback(() => {
@@ -862,7 +1025,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 		setUndoStack((prev) => [...prev, data]);
 		setData(next);
 		setRedoStack((prev) => prev.slice(0, -1));
-	}, [redoStack, data]);
+	}, [redoStack, data, setData]);
 
 	// Insert row
 	const insertRow = useCallback(
@@ -888,7 +1051,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				return newData;
 			});
 		},
-		[saveToUndo],
+		[saveToUndo, setData],
 	);
 
 	// Delete row
@@ -916,7 +1079,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				return newData;
 			});
 		},
-		[saveToUndo],
+		[saveToUndo, setData],
 	);
 
 	// Insert column
@@ -944,7 +1107,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				return newData;
 			});
 		},
-		[saveToUndo],
+		[saveToUndo, setData],
 	);
 
 	// Delete column
@@ -973,7 +1136,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				return newData;
 			});
 		},
-		[saveToUndo],
+		[saveToUndo, setData],
 	);
 
 	// Sort range
@@ -1030,7 +1193,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				return newData;
 			});
 		},
-		[data, saveToUndo, getRange],
+		[data, saveToUndo, getRange, setData],
 	);
 
 	// Filter range
@@ -1068,7 +1231,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 
 			return { visibleRows: matches };
 		},
-		[data, getRange],
+		[data, getRange, setHiddenRows],
 	);
 
 	// Add note to cell
@@ -1080,7 +1243,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				note,
 			},
 		}));
-	}, []);
+	}, [setData]);
 
 	// Add data validation
 	const addValidation = useCallback(
@@ -1093,7 +1256,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				},
 			}));
 		},
-		[],
+		[setData],
 	);
 
 	// Validate cell value
@@ -1129,7 +1292,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 	// Create named range
 	const createNamedRange = useCallback((name: string, range: string) => {
 		setNamedRanges((prev) => ({ ...prev, [name]: range }));
-	}, []);
+	}, [setNamedRanges]);
 
 	// Delete named range
 	const deleteNamedRange = useCallback((name: string) => {
@@ -1137,7 +1300,8 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 			const { [name]: _, ...rest } = prev;
 			return rest;
 		});
-	}, []);
+	}, [setNamedRanges]);
+
 	// Remove duplicates from a range based on a column
 	const removeDuplicates = useCallback(
 		(range: string, column: number) => {
@@ -1173,7 +1337,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				return newData;
 			});
 		},
-		[data, getRange, saveToUndo],
+		[data, getRange, saveToUndo, setData],
 	);
 
 	// Text to columns (split by delimiter)
@@ -1205,7 +1369,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				return newData;
 			});
 		},
-		[getRange, saveToUndo],
+		[getRange, saveToUndo, setData],
 	);
 
 	// Find and replace
@@ -1260,7 +1424,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				return newData;
 			});
 		},
-		[saveToUndo],
+		[saveToUndo, setData],
 	);
 
 	// Clear sheet
@@ -1269,7 +1433,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 		setData({});
 		setSelectedCell("A1");
 		setSelectionRange(null);
-	}, [saveToUndo]);
+	}, [saveToUndo, setData, setSelectedCell, setSelectionRange]);
 
 	// Add new sheet
 	const addSheet = useCallback((name: string) => {
@@ -1313,65 +1477,65 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 	const addChart = useCallback((chart: Omit<ChartData, "id">) => {
 		const newChart = { ...chart, id: `chart-${Date.now()}` };
 		setCharts((prev) => [...prev, newChart]);
-	}, []);
+	}, [setCharts]);
 
 	const removeChart = useCallback((id: string) => {
 		setCharts((prev) => prev.filter((c) => c.id !== id));
-	}, []);
+	}, [setCharts]);
 
 	const updateChart = useCallback((id: string, updates: Partial<ChartData>) => {
 		setCharts((prev) =>
 			prev.map((c) => (c.id === id ? { ...c, ...updates } : c)),
 		);
-	}, []);
+	}, [setCharts]);
 
 	// Image operations
 	const addImage = useCallback((image: Omit<ImageData, "id">) => {
 		const newImage = { ...image, id: `image-${Date.now()}` };
 		setImages((prev) => [...prev, newImage]);
-	}, []);
+	}, [setImages]);
 
 	const removeImage = useCallback((id: string) => {
 		setImages((prev) => prev.filter((i) => i.id !== id));
-	}, []);
+	}, [setImages]);
 
 	const updateImage = useCallback((id: string, updates: Partial<ImageData>) => {
 		setImages((prev) =>
 			prev.map((i) => (i.id === id ? { ...i, ...updates } : i)),
 		);
-	}, []);
+	}, [setImages]);
 
 	// Shape operations
 	const addShape = useCallback((shape: Omit<ShapeData, "id">) => {
 		const newShape = { ...shape, id: `shape-${Date.now()}` };
 		setShapes((prev) => [...prev, newShape]);
-	}, []);
+	}, [setShapes]);
 
 	const removeShape = useCallback((id: string) => {
 		setShapes((prev) => prev.filter((s) => s.id !== id));
-	}, []);
+	}, [setShapes]);
 
 	const updateShape = useCallback((id: string, updates: Partial<ShapeData>) => {
 		setShapes((prev) =>
 			prev.map((s) => (s.id === id ? { ...s, ...updates } : s)),
 		);
-	}, []);
+	}, [setShapes]);
 
 	// Icon operations
 	const addIcon = useCallback((icon: Omit<IconData, "id">) => {
 		const newIcon = { ...icon, id: `icon-${Date.now()}` };
 		setIcons((prev) => [...prev, newIcon]);
-	}, []);
+	}, [setIcons]);
 
 	const removeIcon = useCallback((id: string) => {
 		setIcons((prev) => prev.filter((i) => i.id !== id));
-	}, []);
+	}, [setIcons]);
 
 	const updateIcon = useCallback((id: string, updates: Partial<IconData>) => {
 		setIcons((prev) =>
 			prev.map((i) => (i.id === id ? { ...i, ...updates } : i)),
 		);
-	}, []);
+	}, [setIcons]);
 
 	// Get cell formula
 	const getCellFormula = useCallback(
@@ -1392,7 +1556,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 	// Select cell
 	const selectCell = useCallback((cellId: string) => {
 		setSelectedCell(cellId);
-	}, []);
+	}, [setSelectedCell]);
 
 	// Select range
 	const selectRange = useCallback((range: string) => {
@@ -1401,7 +1565,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 		if (cells.length > 0) {
 			setSelectedCell(cells[0]);
 		}
-	}, []);
+	}, [getRange, setSelectionRange, setSelectedCell]);
 
 	// Update sheet name (placeholder - actual name is in EditorPage)
 	const updateSheetName = useCallback((name: string) => {

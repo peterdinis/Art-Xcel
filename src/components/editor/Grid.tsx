@@ -201,7 +201,10 @@ const Cell = memo(
 			>
 				<div
 					className={cn(
-						"relative flex items-center overflow-hidden select-none cursor-cell h-full w-full",
+						"relative flex overflow-hidden select-none cursor-cell h-full w-full",
+						style?.verticalAlign === "top" && "items-start",
+						(style?.verticalAlign === "middle" || !style?.verticalAlign) && "items-center",
+						style?.verticalAlign === "bottom" && "items-end",
 						showGrid &&
 							"border-r border-b border-border dark:border-neutral-700",
 						isSelected &&
