@@ -210,6 +210,9 @@ function EditorContent() {
 	const [showValidationDialog, setShowValidationDialog] = useState(false);
 	const [showNoteDialog, setShowNoteDialog] = useState(false);
 	const [showInsertFunctionDialog, setShowInsertFunctionDialog] = useState(false);
+	const [showFormulaBar, setShowFormulaBar] = useState(true);
+	const [showStatusBar, setShowStatusBar] = useState(true);
+	const [formatPainter, setFormatPainter] = useState<{ style: Record<string, unknown>; sourceCellId: string } | null>(null);
 	const [findText, setFindText] = useState("");
 	const [replaceText, setReplaceText] = useState("");
 	const [matchCase, setMatchCase] = useState(false);
@@ -272,11 +275,18 @@ function EditorContent() {
 
 	// Detect platform for showing correct shortcut hints
 	const [isMac, setIsMac] = useState(false);
-	
+
+	// Apply format painter when selection changes to a different cell
 	useEffect(() => {
-		// Detect if user is on Mac
-		setIsMac(navigator.platform.toUpperCase().indexOf('MAC') >= 0);
-	}, []);
+		if (!formatPainter) return;
+		const targetCells = selectionRange && selectionRange.length > 1 ? selectionRange : (selectedCell ? [selectedCell] : []);
+		if (targetCells.length === 0 || (targetCells.length === 1 && targetCells[0] === formatPainter.sourceCellId)) return;
+		targetCells.forEach((cellId) => {
+			updateCellStyle(cellId, formatPainter.style as Parameters<typeof updateCellStyle>[1]);
+		});
+		toast.success("Formát aplikovaný");
+		setFormatPainter(null);
+	}, [selectedCell, selectionRange, formatPainter, updateCellStyle]);
 
 	// Load data from localStorage
 	useEffect(() => {
@@ -1306,26 +1316,10 @@ function EditorContent() {
 				onCopy={handleCopy}
 				onPaste={handlePaste}
 				onSelectAll={handleSelectAll}
-				onToggleToolbars={() =>
-					toast.info("Toggle Toolbars", {
-						description: "Toolbar visibility settings coming soon",
-					})
-				}
-				onToggleFormulaBar={() =>
-					toast.info("Toggle Formula Bar", {
-						description: "Formula bar visibility toggle coming soon",
-					})
-				}
-				onToggleStatusBar={() =>
-					toast.info("Toggle Status Bar", {
-						description: "Status bar visibility toggle coming soon",
-					})
-				}
-				onToggleFreezePanes={() =>
-					toast.info("Freeze Panes", {
-						description: "Freeze panes functionality coming soon",
-					})
-				}
+				onToggleToolbars={() => toast.info("Toolbary")}
+				onToggleFormulaBar={() => setShowFormulaBar((v) => !v)}
+				onToggleStatusBar={() => setShowStatusBar((v) => !v)}
+				onToggleFreezePanes={() => setFreezePanes((v) => !v)}
 				onToggleFullScreen={() => {
 					if (!document.fullscreenElement) {
 						document.documentElement.requestFullscreen();
@@ -1335,34 +1329,36 @@ function EditorContent() {
 						toast.success("Exited Full Screen");
 					}
 				}}
-				onFormatSpacing={() =>
-					toast.info("Spacing", {
-						description: "Cell spacing and padding coming soon",
-					})
-				}
-				onFormatAlignment={() =>
-					toast.info("Alignment", {
-						description:
-							"Use the alignment icons in the toolbar for quick access",
-					})
-				}
+				onFormatSpacing={() => toast.info("Odsadenie")}
+				onFormatAlignment={() => toast.info("Zarovnanie")}
 				onConditionalFormatting={handleConditionalFormatting}
-				onUserGuides={() =>
-					toast.info("User Guides", {
-						description: "Documentation and user guides are under development",
-					})
-				}
+				onUserGuides={() => toast.info("Návod")}
 				onShortcuts={() => setShowShortcutsDialog(true)}
-				onAbout={() =>
-					toast.info("About Art-Xcel", {
-						description: "Art-Xcel Spreadsheet v0.1.0 - Premium Edition",
-					})
-				}
+				onAbout={() => toast.info("Art-Xcel Spreadsheet – Premium Edition")}
 				onToggleGrid={() => setShowGrid(!showGrid)}
 				onNumberFormatChange={(format) => {
 					if (selectedCell) {
 						updateCellStyle(selectedCell, { numberFormat: format });
-						toast.success("Number format applied", { duration: 1000 });
+						toast.success("Číselný formát aplikovaný", { duration: 1000 });
+					}
+				}}
+				onInsertComment={() => setShowNoteDialog(true)}
+				onFontColorPick={(color) => {
+					if (selectedCell) {
+						updateCellStyle(selectedCell, { color });
+						toast.success("Farba písma aplikovaná", { duration: 1000 });
+					}
+				}}
+				onBackgroundColorPick={(color) => {
+					if (selectedCell) {
+						updateCellStyle(selectedCell, { backgroundColor: color });
+						toast.success("Farba pozadia aplikovaná", { duration: 1000 });
+					}
+				}}
+				onFormatPainter={() => {
+					if (selectedCell && data[selectedCell]?.style) {
+						setFormatPainter({ style: data[selectedCell].style!, sourceCellId: selectedCell });
+						toast.success("Štýl skopírovaný – vyberte bunky na aplikovanie");
 					}
 				}}
 				// Pass platform info for showing correct shortcut hints
@@ -1370,17 +1366,19 @@ function EditorContent() {
 			/>
 
 			{/* Formula Bar */}
-			<FormulaBar
-				selectedCell={selectedCell}
-				value={selectedCell ? getCellFormula(selectedCell) : ""}
-				onChange={handleFormulaBarChange}
-				onInsertFunctionClick={() => setShowInsertFunctionDialog(true)}
-				previewValue={
-					selectedCell && data[selectedCell]?.formula?.startsWith("=")
-						? getCellValue(selectedCell)
-						: undefined
-				}
-			/>
+			{showFormulaBar && (
+				<FormulaBar
+					selectedCell={selectedCell}
+					value={selectedCell ? getCellFormula(selectedCell) : ""}
+					onChange={handleFormulaBarChange}
+					onInsertFunctionClick={() => setShowInsertFunctionDialog(true)}
+					previewValue={
+						selectedCell && data[selectedCell]?.formula?.startsWith("=")
+							? getCellValue(selectedCell)
+							: undefined
+					}
+				/>
+			)}
 			<InsertFunctionDialog
 				open={showInsertFunctionDialog}
 				onOpenChange={setShowInsertFunctionDialog}
@@ -1458,21 +1456,21 @@ function EditorContent() {
 			/>
 
 			{/* Status Bar */}
-			<StatusBar
-				data={data}
-				selectedCell={selectedCell}
-				selectionRange={selectionRange}
-				zoom={zoom}
-			/>
+			{showStatusBar && (
+				<StatusBar
+					data={data}
+					selectedCell={selectedCell}
+					selectionRange={selectionRange}
+					zoom={zoom}
+				/>
+			)}
 
 			<FloatingQuickMenu
 				onSave={handleSave}
 				onUndo={handleUndo}
 				onRedo={handleRedo}
 				onHelp={() => setShowShortcutsDialog(true)}
-				onSettings={() =>
-					toast.info("Settings", { description: "Editor settings coming soon" })
-				}
+				onSettings={() => router.push("/settings")}
 			/>
 
 			<EditorDialogs
