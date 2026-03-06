@@ -9,6 +9,7 @@ import { ClassicToolbar } from "@/components/editor/ClassicToolbar";
 import { StatusBar } from "@/components/editor/StatusBar";
 import { FormulaBar } from "@/components/editor/FormulaBar";
 import { EditorDialogs } from "@/components/editor/EditorDialogs";
+import { InsertFunctionDialog } from "@/components/editor/InsertFunctionDialog";
 import { SheetTabs } from "@/components/editor/SheetTabs";
 import { FloatingQuickMenu } from "@/components/editor/FloatingQuickMenu";
 import { saveSpreadsheetAction } from "./actions";
@@ -208,6 +209,10 @@ function EditorContent() {
 	const [showNamedRangeDialog, setShowNamedRangeDialog] = useState(false);
 	const [showValidationDialog, setShowValidationDialog] = useState(false);
 	const [showNoteDialog, setShowNoteDialog] = useState(false);
+	const [showInsertFunctionDialog, setShowInsertFunctionDialog] = useState(false);
+	const [showFormulaBar, setShowFormulaBar] = useState(true);
+	const [showStatusBar, setShowStatusBar] = useState(true);
+	const [formatPainter, setFormatPainter] = useState<{ style: Record<string, unknown>; sourceCellId: string } | null>(null);
 	const [findText, setFindText] = useState("");
 	const [replaceText, setReplaceText] = useState("");
 	const [matchCase, setMatchCase] = useState(false);
@@ -1273,6 +1278,7 @@ function EditorContent() {
 				onInsertShape={handleInsertShape}
 				onInsertIcon={() => setShowIconDialog(true)}
 				onInsertFunction={handleFormulaClick}
+				onOpenInsertFunctionDialog={() => setShowInsertFunctionDialog(true)}
 				onScrollToTop={handleScrollToTop}
 				onNew={() => {
 					toast.info("Creating new spreadsheet...", {
@@ -1295,26 +1301,10 @@ function EditorContent() {
 				onCopy={handleCopy}
 				onPaste={handlePaste}
 				onSelectAll={handleSelectAll}
-				onToggleToolbars={() =>
-					toast.info("Toggle Toolbars", {
-						description: "Toolbar visibility settings coming soon",
-					})
-				}
-				onToggleFormulaBar={() =>
-					toast.info("Toggle Formula Bar", {
-						description: "Formula bar visibility toggle coming soon",
-					})
-				}
-				onToggleStatusBar={() =>
-					toast.info("Toggle Status Bar", {
-						description: "Status bar visibility toggle coming soon",
-					})
-				}
-				onToggleFreezePanes={() =>
-					toast.info("Freeze Panes", {
-						description: "Freeze panes functionality coming soon",
-					})
-				}
+				onToggleToolbars={() => toast.info("Toolbars")}
+				onToggleFormulaBar={() => setShowFormulaBar((v) => !v)}
+				onToggleStatusBar={() => setShowStatusBar((v) => !v)}
+				onToggleFreezePanes={() => setFreezePanes((v) => !v)}
 				onToggleFullScreen={() => {
 					if (!document.fullscreenElement) {
 						document.documentElement.requestFullscreen();
@@ -1324,37 +1314,41 @@ function EditorContent() {
 						toast.success("Exited Full Screen");
 					}
 				}}
-				onFormatSpacing={() =>
-					toast.info("Spacing", {
-						description: "Cell spacing and padding coming soon",
-					})
-				}
-				onFormatAlignment={() =>
-					toast.info("Alignment", {
-						description:
-							"Use the alignment icons in the toolbar for quick access",
-					})
-				}
+				onFormatSpacing={() => toast.info("Spacing")}
+				onFormatAlignment={() => toast.info("Alignment")}
 				onConditionalFormatting={handleConditionalFormatting}
-				onUserGuides={() =>
-					toast.info("User Guides", {
-						description: "Documentation and user guides are under development",
-					})
-				}
+				onUserGuides={() => toast.info("User guide")}
 				onShortcuts={() => setShowShortcutsDialog(true)}
-				onAbout={() =>
-					toast.info("About Art-Xcel", {
-						description: "Art-Xcel Spreadsheet v0.1.0 - Premium Edition",
-					})
-				}
+				onAbout={() => toast.info("Art-Xcel Spreadsheet – Premium Edition")}
 				onToggleGrid={() => setShowGrid(!showGrid)}
 			/>
 
 			{/* Formula Bar */}
-			<FormulaBar
-				selectedCell={selectedCell}
-				value={selectedCell ? getCellFormula(selectedCell) : ""}
-				onChange={handleFormulaBarChange}
+			{showFormulaBar && (
+				<FormulaBar
+					selectedCell={selectedCell}
+					value={selectedCell ? getCellFormula(selectedCell) : ""}
+					onChange={handleFormulaBarChange}
+					onInsertFunctionClick={() => setShowInsertFunctionDialog(true)}
+					previewValue={
+						selectedCell && data[selectedCell]?.formula?.startsWith("=")
+							? getCellValue(selectedCell)
+							: undefined
+					}
+				/>
+			)}
+			<InsertFunctionDialog
+				open={showInsertFunctionDialog}
+				onOpenChange={setShowInsertFunctionDialog}
+				currentFormula={selectedCell ? getCellFormula(selectedCell) : ""}
+				onInsert={(_, template) => {
+					if (selectedCell) {
+						updateCell(selectedCell, template);
+						toast.success("Function inserted", {
+							description: "Edit the arguments in the formula bar.",
+						});
+					}
+				}}
 			/>
 
 			{/* Main Grid Area */}
@@ -1418,11 +1412,14 @@ function EditorContent() {
 			/>
 
 			{/* Status Bar */}
-			<StatusBar
-				data={data}
-				selectedCell={selectedCell}
-				selectionRange={selectionRange}
-			/>
+			{showStatusBar && (
+				<StatusBar
+					data={data}
+					selectedCell={selectedCell}
+					selectionRange={selectionRange}
+					zoom={zoom}
+				/>
+			)}
 
 			<FloatingQuickMenu
 				onSave={handleSave}

@@ -96,7 +96,7 @@ export const FloatingQuickMenu = ({
 }: FloatingQuickMenuProps) => {
 	const [isOpen, setIsOpen] = React.useState(false);
 
-	// Hlavné menu položky (vždy zobrazené)
+	// Main menu items (always visible)
 	const mainMenuItems: MenuItem[] = [
 		{
 			icon: LayoutDashboard,
@@ -141,7 +141,7 @@ export const FloatingQuickMenu = ({
 		},
 	];
 
-	// Rozšírené menu položky (voliteľné)
+	// Extended menu items (optional)
 	const extraMenuItems: MenuItem[] = [
 		...(onNew
 			? [
@@ -286,7 +286,7 @@ export const FloatingQuickMenu = ({
 			: []),
 	];
 
-	// Kombinované menu podľa nastavenia
+	// Combined menu based on settings
 	const menuItems = showExtraOptions
 		? [...mainMenuItems, ...extraMenuItems]
 		: mainMenuItems;
