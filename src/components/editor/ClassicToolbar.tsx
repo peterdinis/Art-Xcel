@@ -135,7 +135,7 @@ interface ClassicToolbarProps {
 	onFontColorPick?: (color: string) => void;
 	onBackgroundColorPick?: (color: string) => void;
 	onFormatPainter?: () => void;
-	// Pridaná prop pre detekciu platformy
+	// Platform detection for shortcut labels
 	isMac?: boolean;
 }
 
@@ -220,7 +220,7 @@ export const ClassicToolbar = ({
 	onFontColorPick,
 	onBackgroundColorPick,
 	onFormatPainter,
-	isMac = false, // Default hodnota pre prípad, že prop nie je poskytnutá
+	isMac = false, // Default value when prop is not provided
 }: ClassicToolbarProps) => {
 	const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
 		const file = event.target.files?.[0];
@@ -229,7 +229,7 @@ export const ClassicToolbar = ({
 		}
 	};
 
-	// Funkcia na získanie textu skratky podľa platformy
+	// Get shortcut label by platform
 	const getShortcutText = (shortcut: string): string => {
 		if (isMac) {
 			return shortcut.replace(/Ctrl\+/g, '⌘').replace(/Alt\+/g, '⌥').replace(/Shift\+/g, '⇧');
@@ -567,7 +567,7 @@ export const ClassicToolbar = ({
 				<ToolbarButton
 					icon={CheckCircle2}
 					tooltip="Spelling"
-					onClick={() => toast.info("Kontrola pravopisu")}
+					onClick={() => toast.info("Spelling")}
 				/>
 				<ToolbarButton
 					icon={Grid3X3}
@@ -592,17 +592,17 @@ export const ClassicToolbar = ({
 				<ToolbarButton
 					icon={Type}
 					tooltip="Insert Text Box"
-					onClick={() => toast.info("Textové pole")}
+					onClick={() => toast.info("Text box")}
 				/>
 				<ToolbarButton
 					icon={AtSign}
 					tooltip="Special Character"
-					onClick={() => toast.info("Špeciálny znak")}
+					onClick={() => toast.info("Special character")}
 				/>
 				<ToolbarButton
 					icon={LinkIcon}
 					tooltip="Insert Hyperlink"
-					onClick={() => toast.info("Hypertextový odkaz")}
+					onClick={() => toast.info("Hyperlink")}
 				/>
 				<ToolbarButton
 					icon={MessageSquare}
@@ -737,7 +737,7 @@ export const ClassicToolbar = ({
 				<ToolbarButton
 					icon={Square}
 					tooltip="Merge Cells"
-					onClick={() => toast.info("Zlúčiť bunky")}
+					onClick={() => toast.info("Merge cells")}
 				/>
 				<Separator orientation="vertical" className="h-5 mx-0.5" />
 				<Select
@@ -780,12 +780,12 @@ export const ClassicToolbar = ({
 				<ToolbarButton
 					icon={ArrowLeftToLine}
 					tooltip="Decrease Indent"
-					onClick={() => toast.info("Znížiť odsadenie")}
+					onClick={() => toast.info("Decrease indent")}
 				/>
 				<ToolbarButton
 					icon={ArrowRightToLine}
 					tooltip="Increase Indent"
-					onClick={() => toast.info("Zvýšiť odsadenie")}
+					onClick={() => toast.info("Increase indent")}
 				/>
 				<Separator orientation="vertical" className="h-5 mx-0.5" />
 				<ToolbarButton

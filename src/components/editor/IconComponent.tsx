@@ -23,7 +23,7 @@ export const IconComponent = ({
 	onRemove,
 	onUpdatePosition,
 }: IconComponentProps) => {
-	// @ts-ignore — dynamický prístup k ikone
+	// @ts-ignore — dynamic access to icon
 	const Icon =
 		(LucideIcons[iconName] as React.FC<{
 			size: number;

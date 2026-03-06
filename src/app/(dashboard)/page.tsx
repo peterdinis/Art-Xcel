@@ -51,7 +51,7 @@ export interface Spreadsheet {
 	data?: SheetData;
 }
 
-// Loading komponent pre jednotlivú kartu
+// Loading skeleton for a single card
 function SpreadsheetCardSkeleton() {
 	return (
 		<Card className="h-full overflow-hidden">
@@ -69,7 +69,7 @@ function SpreadsheetCardSkeleton() {
 	);
 }
 
-// Loading komponent pre celú mriežku
+// Loading skeleton for the full grid
 function SpreadsheetGridSkeleton() {
 	return (
 		<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -80,7 +80,7 @@ function SpreadsheetGridSkeleton() {
 	);
 }
 
-// Hlavný obsah dashboardu
+// Main dashboard content
 function DashboardContent() {
 	const router = useRouter();
 	const [spreadsheets, setSpreadsheets] = useState<Spreadsheet[]>([]);
@@ -110,7 +110,7 @@ function DashboardContent() {
 		const loadSpreadsheets = async () => {
 			setIsLoading(true);
 			try {
-				// Simulujeme načítanie pre lepšiu UX (aj keď je to localStorage)
+				// Simulate loading for better UX (even with localStorage)
 				await new Promise((resolve) => setTimeout(resolve, 500));
 
 				const stored = localStorage.getItem("excel-editor-files");
@@ -175,7 +175,7 @@ function DashboardContent() {
 	const createNewSpreadsheet = async () => {
 		setIsCreating(true);
 
-		// Simulujeme oneskorenie pre lepšiu UX
+		// Simulate delay for better UX
 		await new Promise((resolve) => setTimeout(resolve, 300));
 
 		try {
@@ -221,7 +221,7 @@ function DashboardContent() {
 
 		setIsDeleting(id);
 
-		// Simulujeme oneskorenie pre lepšiu UX
+		// Simulate delay for better UX
 		await new Promise((resolve) => setTimeout(resolve, 300));
 
 		try {
@@ -356,7 +356,7 @@ function DashboardContent() {
 		return items;
 	};
 
-	// Animácie pre framer-motion
+	// Animation variants for framer-motion
 	const containerVariants = {
 		hidden: { opacity: 0 },
 		show: {
@@ -651,7 +651,7 @@ function DashboardContent() {
 	);
 }
 
-// Hlavný komponent s Suspense
+// Main component with Suspense
 export default function Dashboard() {
 	return (
 		<div className="min-h-screen bg-muted/20 font-sans">

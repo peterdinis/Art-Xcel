@@ -45,11 +45,17 @@ export const FormulaBar = ({
 		onChange(v);
 	};
 
+	const handleConfirm = () => {
+		// Always commit current value when user confirms (Enter or Check button)
+		onChange(localValue);
+		onConfirm?.();
+		(inputRef.current || textareaRef.current)?.blur();
+	};
+
 	const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
 		if (e.key === "Enter" && !e.shiftKey) {
 			e.preventDefault();
-			onConfirm?.();
-			(inputRef.current || textareaRef.current)?.blur();
+			handleConfirm();
 		}
 		if (e.key === "Escape") {
 			e.preventDefault();
@@ -146,10 +152,7 @@ export const FormulaBar = ({
 					variant="ghost"
 					size="icon"
 					className="h-8 w-8 rounded-none text-muted-foreground hover:text-foreground"
-					onClick={() => {
-						onConfirm?.();
-						(inputRef.current || textareaRef.current)?.blur();
-					}}
+					onClick={handleConfirm}
 					title="Enter"
 				>
 					<Check className="h-4 w-4" />

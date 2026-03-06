@@ -284,7 +284,7 @@ function EditorContent() {
 		targetCells.forEach((cellId) => {
 			updateCellStyle(cellId, formatPainter.style as Parameters<typeof updateCellStyle>[1]);
 		});
-		toast.success("Formát aplikovaný");
+		toast.success("Format applied");
 		setFormatPainter(null);
 	}, [selectedCell, selectionRange, formatPainter, updateCellStyle]);
 
@@ -1316,7 +1316,7 @@ function EditorContent() {
 				onCopy={handleCopy}
 				onPaste={handlePaste}
 				onSelectAll={handleSelectAll}
-				onToggleToolbars={() => toast.info("Toolbary")}
+				onToggleToolbars={() => toast.info("Toolbars")}
 				onToggleFormulaBar={() => setShowFormulaBar((v) => !v)}
 				onToggleStatusBar={() => setShowStatusBar((v) => !v)}
 				onToggleFreezePanes={() => setFreezePanes((v) => !v)}
@@ -1329,36 +1329,36 @@ function EditorContent() {
 						toast.success("Exited Full Screen");
 					}
 				}}
-				onFormatSpacing={() => toast.info("Odsadenie")}
-				onFormatAlignment={() => toast.info("Zarovnanie")}
+				onFormatSpacing={() => toast.info("Spacing")}
+				onFormatAlignment={() => toast.info("Alignment")}
 				onConditionalFormatting={handleConditionalFormatting}
-				onUserGuides={() => toast.info("Návod")}
+				onUserGuides={() => toast.info("User guide")}
 				onShortcuts={() => setShowShortcutsDialog(true)}
 				onAbout={() => toast.info("Art-Xcel Spreadsheet – Premium Edition")}
 				onToggleGrid={() => setShowGrid(!showGrid)}
 				onNumberFormatChange={(format) => {
 					if (selectedCell) {
 						updateCellStyle(selectedCell, { numberFormat: format });
-						toast.success("Číselný formát aplikovaný", { duration: 1000 });
+						toast.success("Number format applied", { duration: 1000 });
 					}
 				}}
 				onInsertComment={() => setShowNoteDialog(true)}
 				onFontColorPick={(color) => {
 					if (selectedCell) {
 						updateCellStyle(selectedCell, { color });
-						toast.success("Farba písma aplikovaná", { duration: 1000 });
+						toast.success("Font color applied", { duration: 1000 });
 					}
 				}}
 				onBackgroundColorPick={(color) => {
 					if (selectedCell) {
 						updateCellStyle(selectedCell, { backgroundColor: color });
-						toast.success("Farba pozadia aplikovaná", { duration: 1000 });
+						toast.success("Background color applied", { duration: 1000 });
 					}
 				}}
 				onFormatPainter={() => {
 					if (selectedCell && data[selectedCell]?.style) {
 						setFormatPainter({ style: data[selectedCell].style!, sourceCellId: selectedCell });
-						toast.success("Štýl skopírovaný – vyberte bunky na aplikovanie");
+						toast.success("Style copied – select cells to apply");
 					}
 				}}
 				// Pass platform info for showing correct shortcut hints

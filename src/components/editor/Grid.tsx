@@ -71,7 +71,7 @@ export interface GridHandle {
 	forceSave: () => Promise<void>;
 }
 
-// Konštanty pre nekonečný scroll
+// Constants for infinite scroll
 const DEFAULT_ROW_HEIGHT = 32;
 const DEFAULT_COL_WIDTH = 100;
 const ROW_HEADER_WIDTH = 40;
@@ -79,11 +79,11 @@ const INITIAL_ROWS = 200;
 const INITIAL_COLS = 100;
 const ROW_BATCH_SIZE = 100;
 const COL_BATCH_SIZE = 50;
-const ROW_LOAD_THRESHOLD = 50; // Kedy začať načítavať ďalšie riadky
-const COL_LOAD_THRESHOLD = 20; // Kedy začať načítavať ďalšie stĺpce
-const OVERSCAN = 10; // Koľko riadkov/stĺpcov vykresliť mimo obrazovky
+const ROW_LOAD_THRESHOLD = 50; // When to start loading more rows
+const COL_LOAD_THRESHOLD = 20; // When to start loading more columns
+const OVERSCAN = 10; // Rows/columns to render outside viewport
 
-// Konverzia čísla na Excelovský label stĺpca (A, B, ..., Z, AA, AB, ...)
+// Convert column index to Excel-style label (A, B, ..., Z, AA, AB, ...)
 const numberToColLabel = (index: number): string => {
 	let result = "";
 	let num = index + 1;
@@ -96,7 +96,7 @@ const numberToColLabel = (index: number): string => {
 	return result;
 };
 
-// Konverzia Excelovského labelu na číslo
+// Convert Excel column label to number
 const colLabelToNumber = (colLabel: string): number => {
 	let result = 0;
 	for (let i = 0; i < colLabel.length; i++) {
@@ -401,7 +401,7 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 		const [saveError, setSaveError] = useState<string | null>(null);
 		const [hasChanges, setHasChanges] = useState(false);
 
-		// Dynamické počty riadkov a stĺpcov pre nekonečný scroll
+		// Dynamic row/column counts for infinite scroll
 		const [totalRows, setTotalRows] = useState(INITIAL_ROWS);
 		const [totalCols, setTotalCols] = useState(INITIAL_COLS);
 
@@ -477,7 +477,7 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 		const scrollToCell = useCallback((cellId: string) => {
 			const { row, colIndex } = parseCellId(cellId);
 			
-			// Zabezpečíme, že máme dosť riadkov a stĺpcov
+			// Ensure we have enough rows and columns
 			if (row > totalRows) {
 				setTotalRows(prev => Math.max(prev, row + ROW_BATCH_SIZE));
 			}
@@ -485,7 +485,7 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 				setTotalCols(prev => Math.max(prev, colIndex + COL_BATCH_SIZE));
 			}
 
-			// Scroll na pozíciu
+			// Scroll to position
 			setTimeout(() => {
 				if (gridRef.current) {
 					const rowOffset = (row - 1) * DEFAULT_ROW_HEIGHT;
@@ -601,9 +601,9 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 			getScrollElement: () => gridRef.current,
 			estimateSize: getRowHeight,
 			overscan: OVERSCAN,
-			// Pri scrollovaní na koniec automaticky načítať ďalšie
+			// Auto-load more when scrolling to end
 			rangeExtractor: (range) => {
-				// Dynamické načítavanie - keď sa blížime ku koncu, pridáme ďalšie riadky
+				// Dynamic loading: add more rows when approaching the end
 				if (range.endIndex >= totalRows - ROW_LOAD_THRESHOLD) {
 					setTotalRows((prev) => prev + ROW_BATCH_SIZE);
 				}
@@ -620,9 +620,9 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 			horizontal: true,
 			estimateSize: getColWidth,
 			overscan: OVERSCAN,
-			// Pri scrollovaní na koniec automaticky načítať ďalšie
+			// Auto-load more when scrolling to end
 			rangeExtractor: (range) => {
-				// Dynamické načítavanie - keď sa blížime ku koncu, pridáme ďalšie stĺpce
+				// Dynamic loading: add more columns when approaching the end
 				if (range.endIndex >= totalCols - COL_LOAD_THRESHOLD) {
 					setTotalCols((prev) => prev + COL_BATCH_SIZE);
 				}
@@ -801,7 +801,7 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 					switch (direction) {
 						case "down":
 							nextCellId = colMatch + (row + 1);
-							// Dynamicky pridať riadok ak treba
+							// Add row if needed
 							if (row + 1 > totalRows) {
 								setTotalRows(prev => prev + ROW_BATCH_SIZE);
 							}
@@ -823,7 +823,7 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 							const nextColNumber = colNumber + 1;
 							const nextCol = numberToColLabel(nextColNumber);
 							nextCellId = nextCol + row;
-							// Dynamicky pridať stĺpec ak treba
+							// Add column if needed
 							if (nextColNumber + 1 > totalCols) {
 								setTotalCols(prev => prev + COL_BATCH_SIZE);
 							}
