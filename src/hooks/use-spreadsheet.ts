@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
-import { all, create } from "mathjs";
+import { colLetterToIndex, indexToColLetter, parseCellId, getRangeCells, formatNumber } from "@/lib/excel-utils";
+import { evaluateFormula as libEvaluateFormula } from "@/lib/formula-evaluator";
 
 export interface CellData {
 	value: string;
@@ -18,13 +19,12 @@ export interface CellData {
 		borderLeft?: string;
 		borderRight?: string;
 		numberFormat?:
-			| "general"
-			| "number"
-			| "currency"
-			| "percentage"
-			| "date"
-			| "time";
-		verticalAlign?: "top" | "middle" | "bottom";
+		| "general"
+		| "number"
+		| "currency"
+		| "percentage"
+		| "date"
+		| "time";
 	};
 	note?: string;
 	validation?: {
@@ -54,7 +54,6 @@ export interface SpreadsheetState {
 	namedRanges: Record<string, string>;
 }
 
-const math = create(all);
 
 export interface ChartData {
 	id: string;
@@ -163,10 +162,10 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				prev.map((sheet, i) =>
 					i === currentSheetIndex
 						? {
-								...sheet,
-								data:
-									typeof newData === "function" ? newData(sheet.data) : newData,
-							}
+							...sheet,
+							data:
+								typeof newData === "function" ? newData(sheet.data) : newData,
+						}
 						: sheet,
 				),
 			);
@@ -190,12 +189,12 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				prev.map((sheet, i) =>
 					i === currentSheetIndex
 						? {
-								...sheet,
-								charts:
-									typeof newCharts === "function"
-										? newCharts(sheet.charts)
-										: newCharts,
-							}
+							...sheet,
+							charts:
+								typeof newCharts === "function"
+									? newCharts(sheet.charts)
+									: newCharts,
+						}
 						: sheet,
 				),
 			);
@@ -209,12 +208,12 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				prev.map((sheet, i) =>
 					i === currentSheetIndex
 						? {
-								...sheet,
-								images:
-									typeof newImages === "function"
-										? newImages(sheet.images)
-										: newImages,
-							}
+							...sheet,
+							images:
+								typeof newImages === "function"
+									? newImages(sheet.images)
+									: newImages,
+						}
 						: sheet,
 				),
 			);
@@ -228,12 +227,12 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				prev.map((sheet, i) =>
 					i === currentSheetIndex
 						? {
-								...sheet,
-								shapes:
-									typeof newShapes === "function"
-										? newShapes(sheet.shapes)
-										: newShapes,
-							}
+							...sheet,
+							shapes:
+								typeof newShapes === "function"
+									? newShapes(sheet.shapes)
+									: newShapes,
+						}
 						: sheet,
 				),
 			);
@@ -247,12 +246,12 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				prev.map((sheet, i) =>
 					i === currentSheetIndex
 						? {
-								...sheet,
-								icons:
-									typeof newIcons === "function"
-										? newIcons(sheet.icons)
-										: newIcons,
-							}
+							...sheet,
+							icons:
+								typeof newIcons === "function"
+									? newIcons(sheet.icons)
+									: newIcons,
+						}
 						: sheet,
 				),
 			);
@@ -270,12 +269,12 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				prev.map((sheet, i) =>
 					i === currentSheetIndex
 						? {
-								...sheet,
-								namedRanges:
-									typeof newNamedRanges === "function"
-										? newNamedRanges(sheet.namedRanges)
-										: newNamedRanges,
-							}
+							...sheet,
+							namedRanges:
+								typeof newNamedRanges === "function"
+									? newNamedRanges(sheet.namedRanges)
+									: newNamedRanges,
+						}
 						: sheet,
 				),
 			);
@@ -289,12 +288,12 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				prev.map((sheet, i) =>
 					i === currentSheetIndex
 						? {
-								...sheet,
-								hiddenRows:
-									typeof newHiddenRows === "function"
-										? newHiddenRows(sheet.hiddenRows)
-										: newHiddenRows,
-							}
+							...sheet,
+							hiddenRows:
+								typeof newHiddenRows === "function"
+									? newHiddenRows(sheet.hiddenRows)
+									: newHiddenRows,
+						}
 						: sheet,
 				),
 			);
@@ -311,64 +310,36 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 	// Helper to expand ranges like A1:A5 to array of values
 	const getRangeValues = useCallback(
 		(range: string, currentData: SheetData) => {
-			const [start, end] = range.split(":");
-			const startCol = start.match(/[A-Z]+/)?.[0] || "";
-			const startRow = parseInt(start.match(/[0-9]+/)?.[0] || "1");
-			const endCol = end.match(/[A-Z]+/)?.[0] || "";
-			const endRow = parseInt(end.match(/[0-9]+/)?.[0] || "1");
-
-			const values: (number | string)[] = [];
-			const startColIdx = startCol.charCodeAt(0);
-			const endColIdx = endCol.charCodeAt(0);
-
-			for (let c = startColIdx; c <= endColIdx; c++) {
-				for (let r = startRow; r <= endRow; r++) {
-					const cellId = `${String.fromCharCode(c)}${r}`;
-					const val = currentData[cellId]?.value || "";
-					values.push(!isNaN(Number(val)) && val !== "" ? Number(val) : val);
-				}
-			}
-			return values;
+			const cells = getRangeCells(range);
+			return cells.map((cellId) => {
+				const val = currentData[cellId]?.value || "";
+				return !isNaN(Number(val)) && val !== "" ? Number(val) : val;
+			});
 		},
 		[],
 	);
 
 	// Get range of cells as strings
 	const getRange = useCallback((range: string): string[] => {
-		const [start, end] = range.split(":");
-		const startCol = start.match(/[A-Z]+/)?.[0] || "";
-		const startRow = parseInt(start.match(/[0-9]+/)?.[0] || "1");
-		const endCol = end.match(/[A-Z]+/)?.[0] || "";
-		const endRow = parseInt(end.match(/[0-9]+/)?.[0] || "1");
-
-		const cells: string[] = [];
-		const startColIdx = startCol.charCodeAt(0);
-		const endColIdx = endCol.charCodeAt(0);
-
-		for (let c = startColIdx; c <= endColIdx; c++) {
-			for (let r = startRow; r <= endRow; r++) {
-				cells.push(`${String.fromCharCode(c)}${r}`);
-			}
-		}
-		return cells;
+		return getRangeCells(range);
 	}, []);
 
 	// Get range as 2D array of values
 	const getRange2D = useCallback((range: string, currentData: SheetData) => {
 		const [start, end] = range.split(":");
-		const startCol = start.match(/[A-Z]+/)?.[0] || "";
-		const startRow = parseInt(start.match(/[0-9]+/)?.[0] || "1");
-		const endCol = end.match(/[A-Z]+/)?.[0] || "";
-		const endRow = parseInt(end.match(/[0-9]+/)?.[0] || "1");
+		const { col: startCol, row: startRow } = parseCellId(start);
+		const { col: endCol, row: endRow } = parseCellId(end);
 
 		const grid: unknown[][] = [];
-		const startColIdx = startCol.charCodeAt(0);
-		const endColIdx = endCol.charCodeAt(0);
 
-		for (let r = startRow; r <= endRow; r++) {
+		for (let r = Math.min(startRow, endRow); r <= Math.max(startRow, endRow); r++) {
 			const row: unknown[] = [];
-			for (let c = startColIdx; c <= endColIdx; c++) {
-				const cellId = `${String.fromCharCode(c)}${r}`;
+			for (
+				let c = Math.min(startCol, endCol);
+				c <= Math.max(startCol, endCol);
+				c++
+			) {
+				const cellId = `${indexToColLetter(c)}${r + 1}`;
 				const val = currentData[cellId]?.value || "";
 				row.push(!isNaN(Number(val)) && val !== "" ? Number(val) : val);
 			}
@@ -377,327 +348,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 		return grid;
 	}, []);
 
-	// Format number based on format type
-	const formatNumber = useCallback((value: unknown, format: string): string => {
-		const num = Number(value);
-		if (isNaN(num)) return String(value);
-
-		switch (format) {
-			case "currency":
-				return new Intl.NumberFormat("sk-SK", {
-					style: "currency",
-					currency: "EUR",
-				}).format(num);
-			case "percentage":
-				return new Intl.NumberFormat("sk-SK", {
-					style: "percent",
-					minimumFractionDigits: 2,
-				}).format(num / 100);
-			case "date":
-				return new Date(num).toLocaleDateString("sk-SK");
-			case "time":
-				return new Date(num).toLocaleTimeString("sk-SK");
-			case "number":
-				return new Intl.NumberFormat("sk-SK").format(num);
-			default:
-				return String(value);
-		}
-	}, []);
-
-	// Custom MathJS functions for Excel compatibility
-	const registerCustomFunctions = useCallback(() => {
-		try {
-			// IF(condition, true_val, false_val)
-			math.import({
-				if: (condition: unknown, trueVal: unknown, falseVal: unknown) =>
-					condition ? trueVal : falseVal,
-				// SUMIF(range_array, criteria, [sum_range_array])
-				sumif: (
-					range: unknown[],
-					criteria: unknown,
-					sumRange?: unknown[],
-				) => {
-					const targetRange = (sumRange || range) as (number | string)[];
-					let sum = 0;
-					range.forEach((val, idx) => {
-						if (val == criteria) {
-							sum += Number(targetRange[idx]) || 0;
-						}
-					});
-					return sum;
-				},
-				// COUNTIF(range_array, criteria)
-				countif: (range: unknown[], criteria: unknown) => {
-					return range.filter((val) => val == criteria).length;
-				},
-				// VLOOKUP(lookup_value, table_array, col_index, [exact_match])
-				vlookup: (
-					lookupValue: unknown,
-					table: unknown[][],
-					colIndex: number,
-					exactMatch: boolean = true,
-				) => {
-					if (!Array.isArray(table) || table.length === 0) return "#N/A";
-					for (const row of table) {
-						if (!Array.isArray(row)) continue;
-						const firstCell = row[0];
-						let match = false;
-						if (exactMatch) {
-							match = firstCell == lookupValue;
-						} else {
-							match = String(firstCell)
-								.toLowerCase()
-								.includes(String(lookupValue).toLowerCase());
-						}
-						if (match) return row[colIndex - 1] ?? "#REF!";
-					}
-					return "#N/A";
-				},
-				// Text Functions
-				len: (str: string) => String(str).length,
-				upper: (str: string) => String(str).toUpperCase(),
-				lower: (str: string) => String(str).toLowerCase(),
-				concat: (...args: unknown[]) => args.join(""),
-				left: (str: string, num: number) => String(str).substring(0, num),
-				right: (str: string, num: number) => {
-					const s = String(str);
-					return s.substring(s.length - num);
-				},
-				// Date Functions
-				today: () => new Date().toLocaleDateString(),
-				now: () => new Date().toLocaleString(),
-				year: (dateStr: string) => new Date(dateStr).getFullYear(),
-				month: (dateStr: string) => new Date(dateStr).getMonth() + 1,
-				day: (dateStr: string) => new Date(dateStr).getDate(),
-				// Logical Functions
-				and: (...args: boolean[]) => args.every(Boolean),
-				or: (...args: boolean[]) => args.some(Boolean),
-				not: (arg: boolean) => !arg,
-				// Financial Functions (Simplified)
-				pmt: (rate: number, nper: number, pv: number) => {
-					const r = rate / 12;
-					const pmt =
-						(pv * r * Math.pow(1 + r, nper)) / (Math.pow(1 + r, nper) - 1);
-					return isFinite(pmt) ? pmt : 0;
-				},
-				fv: (rate: number, nper: number, pmt: number, pv = 0) => {
-					const r = rate;
-					const fv =
-						pv * Math.pow(1 + r, nper) +
-						pmt * ((Math.pow(1 + r, nper) - 1) / r);
-					return isFinite(fv) ? fv : 0;
-				},
-				pv: (rate: number, nper: number, pmt: number, fv = 0) => {
-					const r = rate;
-					const pv =
-						(fv - pmt * ((Math.pow(1 + r, nper) - 1) / r)) /
-						Math.pow(1 + r, nper);
-					return isFinite(pv) ? pv : 0;
-				},
-				// Statistical Functions
-				stdev: (...args: number[]) => {
-					const nums = args.map(Number).filter((n) => !isNaN(n));
-					if (nums.length === 0) return 0;
-					const avg = nums.reduce((a, b) => a + b, 0) / nums.length;
-					const std = Math.sqrt(
-						nums.map((x) => Math.pow(x - avg, 2)).reduce((a, b) => a + b, 0) /
-							nums.length,
-					);
-					return isFinite(std) ? std : 0;
-				},
-				var: (...args: number[]) => {
-					const nums = args.map(Number).filter((n) => !isNaN(n));
-					if (nums.length === 0) return 0;
-					const avg = nums.reduce((a, b) => a + b, 0) / nums.length;
-					const v =
-						nums.map((x) => Math.pow(x - avg, 2)).reduce((a, b) => a + b, 0) /
-						nums.length;
-					return isFinite(v) ? v : 0;
-				},
-				median: (...args: number[]) => {
-					const nums = args.map(Number).filter((n) => !isNaN(n));
-					if (nums.length === 0) return 0;
-					const sorted = [...nums].sort((a, b) => a - b);
-					const mid = Math.floor(sorted.length / 2);
-					return sorted.length % 2 !== 0
-						? sorted[mid]
-						: (sorted[mid - 1] + sorted[mid]) / 2;
-				},
-				// Information Functions
-				isnumber: (val: unknown) => typeof val === "number" && !isNaN(val),
-				istext: (val: unknown) => typeof val === "string",
-				isblank: (val: unknown) =>
-					val === undefined || val === null || val === "",
-				// Lookup & Reference
-				index: (arr: unknown[] | unknown[][], row: number, col?: number) => {
-					const r = Math.max(0, Math.floor(Number(row)) - 1);
-					if (Array.isArray(arr[0]) && Array.isArray(arr)) {
-						const grid = arr as unknown[][];
-						const rowArr = grid[r];
-						if (!rowArr) return "#REF!";
-						const c = col != null ? Math.max(0, Math.floor(Number(col)) - 1) : 0;
-						return rowArr[c] ?? "#REF!";
-					}
-					const vec = arr as unknown[];
-					return vec[r] ?? "#REF!";
-				},
-					match: (
-						lookup: unknown,
-						lookupArray: unknown[],
-						matchType: number = 0,
-					) => {
-						if (matchType === 0) {
-							const idx = lookupArray.findIndex((v) => v == lookup);
-							return idx >= 0 ? idx + 1 : "#N/A";
-						}
-						const nums = lookupArray
-							.map(Number)
-							.filter((n) => !isNaN(n))
-							.sort((a, b) => a - b);
-						const l = Number(lookup);
-						if (matchType === 1) {
-							let i = nums.findIndex((n) => n > l);
-							if (i < 0) i = nums.length;
-							return i + 1; // 1-based position
-						}
-						let i = nums.findIndex((n) => n >= l);
-						if (i < 0) i = nums.length;
-						return i + 1;
-					},
-				// Conditional aggregation
-				countifs: (...args: unknown[]) => {
-					if (args.length < 2 || args.length % 2 !== 0) return 0;
-					const range = args[0] as unknown[];
-					const criteria = args[1];
-					let count = 0;
-					range.forEach((val, i) => {
-						let match = val == criteria;
-						for (let j = 2; j < args.length; j += 2) {
-							const r = args[j] as unknown[];
-							const c = args[j + 1];
-							if (r[i] != c) match = false;
-						}
-						if (match) count++;
-					});
-					return count;
-				},
-				sumifs: (sumRange: unknown[], ...pairs: unknown[]) => {
-					if (pairs.length < 2) return 0;
-					let sum = 0;
-					sumRange.forEach((_, i) => {
-						let match = true;
-						for (let j = 0; j < pairs.length; j += 2) {
-							const r = pairs[j] as unknown[];
-							const c = pairs[j + 1];
-							if (r[i] != c) match = false;
-						}
-						if (match) sum += Number(sumRange[i]) || 0;
-					});
-					return sum;
-				},
-				averageif: (
-					range: unknown[],
-					criteria: unknown,
-					averageRange?: unknown[],
-				) => {
-					const target = averageRange || range;
-					const vals: number[] = [];
-					range.forEach((val, i) => {
-						if (val == criteria)
-							vals.push(Number(target[i]) || 0);
-					});
-					if (vals.length === 0) return "#DIV/0!";
-					return vals.reduce((a, b) => a + b, 0) / vals.length;
-				},
-				averageifs: (...args: unknown[]) => {
-					if (args.length < 3) return "#DIV/0!";
-					const averageRange = args[0] as unknown[];
-					const pairs = args.slice(1);
-					if (pairs.length % 2 !== 0) return "#DIV/0!";
-					const vals: number[] = [];
-					averageRange.forEach((_, i) => {
-						let match = true;
-						for (let j = 0; j < pairs.length; j += 2) {
-							const r = pairs[j] as unknown[];
-							const c = pairs[j + 1];
-							if (r[i] != c) match = false;
-						}
-						if (match) vals.push(Number(averageRange[i]) || 0);
-					});
-					if (vals.length === 0) return "#DIV/0!";
-					return vals.reduce((a, b) => a + b, 0) / vals.length;
-				},
-				// Multiple conditions
-				ifs: (...args: unknown[]) => {
-					for (let i = 0; i < args.length - 1; i += 2) {
-						if (args[i]) return args[i + 1];
-					}
-					return args.length % 2 === 1 ? args[args.length - 1] : "#N/A";
-				},
-				switch: (expr: unknown, ...pairs: unknown[]) => {
-					for (let i = 0; i < pairs.length - 1; i += 2) {
-						if (pairs[i] == expr) return pairs[i + 1];
-					}
-					return pairs.length % 2 === 1 ? pairs[pairs.length - 1] : "#N/A";
-				},
-				// Text
-				text: (value: unknown, format: string) => {
-					const n = Number(value);
-					if (!isNaN(n) && format.toLowerCase().includes("0")) {
-						const dec = (format.match(/\.0+/)?.[0]?.length ?? 1) - 1;
-						return n.toFixed(dec);
-					}
-					return String(value);
-				},
-				trim: (str: string) => String(str).trim(),
-				mid: (str: string, start: number, numChars: number) => {
-					const s = String(str);
-					const startIdx = Math.max(0, Math.floor(Number(start)) - 1);
-					return s.substring(startIdx, startIdx + Math.floor(Number(numChars)));
-				},
-				find: (findText: string, withinText: string, startNum: number = 1) => {
-					const idx = String(withinText).indexOf(String(findText), Math.max(0, Math.floor(Number(startNum)) - 1));
-					return idx < 0 ? "#VALUE!" : idx + 1;
-				},
-				substitute: (text: string, oldText: string, newText: string, instance?: number) => {
-					let s = String(text);
-					const o = String(oldText);
-					const n = String(newText);
-					if (instance != null) {
-						let idx = 0;
-						for (let i = 0; i < instance; i++) {
-							const i2 = s.indexOf(o, idx);
-							if (i2 < 0) return s;
-							if (i === instance - 1) return s.substring(0, i2) + n + s.substring(i2 + o.length);
-							idx = i2 + 1;
-						}
-						return s;
-					}
-					return s.split(o).join(n);
-				},
-				rept: (text: string, count: number) =>
-					String(text).repeat(Math.max(0, Math.floor(Number(count)))),
-				roundup: (num: number, digits: number) => {
-					const d = Math.pow(10, Math.floor(Number(digits)));
-					return Math.ceil(Number(num) * d) / d;
-				},
-				rounddown: (num: number, digits: number) => {
-					const d = Math.pow(10, Math.floor(Number(digits)));
-					return Math.floor(Number(num) * d) / d;
-				},
-				mround: (num: number, multiple: number) => {
-					const m = Number(multiple);
-					if (m === 0) return 0;
-					return Math.round(Number(num) / m) * m;
-				},
-				int: (num: number) => Math.floor(Number(num)),
-			}, { override: true });
-		} catch (e) {
-			console.warn("MathJS custom functions registration failed:", e);
-		}
-	}, []);
-
-	// Formula evaluator using MathJS
+	// Formula evaluator wrapper
 	const evaluateFormula = useCallback(
 		(
 			formula: string,
@@ -706,115 +357,15 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 		): string => {
 			if (!formula.startsWith("=")) return formula;
 
-			registerCustomFunctions();
-
-			let expression = formula.substring(1);
-
-			// Replace named ranges
-			Object.entries(namedRanges).forEach(([name, range]) => {
-				const rangeValues = getRangeValues(range, currentData);
-				const regex = new RegExp(`\\b${name}\\b`, "gi");
-				expression = expression.replace(regex, `[${rangeValues.join(",")}]`);
+			// Check cache (using formula as key, but we should probably use a better key if it depends on data)
+			// Actually, the expression changes when cell values change, so caching the expression is better
+			// But for now let's use the helper from lib
+			return libEvaluateFormula(formula, currentData as any, {
+				targetCellId: targetCellId || selectedCell || undefined,
+				namedRanges,
 			});
-
-			// 1. Pre-process Ranges: Replace A1:B2 with [val1, val2, ...] or [[val1, val2], ...]
-			const rangeRegex = /\b([a-zA-Z]+[0-9]+:[a-zA-Z]+[0-9]+)\b/g;
-			const needs2D = /vlookup|index\s*\(/i.test(expression);
-			expression = expression.replace(rangeRegex, (match) => {
-				if (needs2D) {
-					const values2D = getRange2D(match.toUpperCase(), currentData);
-					return JSON.stringify(values2D);
-				}
-				const values = getRangeValues(match.toUpperCase(), currentData);
-				return `[${values.join(",")}]`;
-			});
-
-			// 2. Pre-process Cell References: Replace A1 with value
-			const cellRegex = /\b([a-zA-Z]+[0-9]+)\b/g;
-			expression = expression.replace(cellRegex, (match) => {
-				const val = getVal(match.toUpperCase(), currentData);
-				return String(val);
-			});
-
-			// 3. Lowercase the rest
-			expression = expression.toLowerCase();
-
-			// 4. Map Excel functions to MathJS or custom (custom are registered above)
-			const functionMap: Record<string, string> = {
-				average: "mean",
-				avg: "mean",
-				sum: "sum",
-				max: "max",
-				min: "min",
-				count: "count",
-				round: "round",
-				floor: "floor",
-				ceil: "ceil",
-				abs: "abs",
-				sin: "sin",
-				cos: "cos",
-				tan: "tan",
-				pi: "pi",
-				power: "pow",
-				sqrt: "sqrt",
-				log: "log",
-				exp: "exp",
-				mod: "mod",
-				concatenate: "concat",
-			};
-
-			Object.entries(functionMap).forEach(([excel, mathjs]) => {
-				const regex = new RegExp(`\\b${excel}\\(`, "gi");
-				expression = expression.replace(regex, `${mathjs}(`);
-			});
-
-			try {
-				// Check cache
-				if (formulaCache[expression]) {
-					return formulaCache[expression];
-				}
-
-				const result = math.evaluate(expression);
-				let finalResult: string;
-
-				if (Array.isArray(result)) {
-					finalResult = result.length > 0 ? String(result[0]) : "";
-				} else {
-					const cellId = targetCellId || selectedCell;
-					if (cellId && currentData[cellId]?.style?.numberFormat) {
-						finalResult = formatNumber(
-							result,
-							currentData[cellId].style.numberFormat,
-						);
-					} else {
-						finalResult = String(result);
-					}
-				}
-
-				// Update cache
-				setFormulaCache((prev) => ({ ...prev, [expression]: finalResult }));
-
-				return finalResult;
-			} catch (e) {
-				console.error(
-					"Formula evaluation error:",
-					e,
-					"Expression:",
-					expression,
-				);
-				return "#REF!";
-			}
 		},
-		[
-			formatNumber,
-			getRange2D,
-			getRangeValues,
-			getVal,
-			namedRanges,
-			registerCustomFunctions,
-			selectedCell,
-			formulaCache,
-		],
+		[namedRanges, selectedCell],
 	);
 
 	// Save state to undo stack

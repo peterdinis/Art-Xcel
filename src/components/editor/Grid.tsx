@@ -62,28 +62,22 @@ interface GridProps {
 	onAutoSave?: (data: SheetData) => Promise<void>;
 	autoSaveInterval?: number;
 	showAutoSaveStatus?: boolean;
-	isMac?: boolean;
 }
 
 export interface GridHandle {
 	scrollToTop: () => void;
-	scrollToCell: (cellId: string) => void;
 	forceSave: () => Promise<void>;
 }
 
-// Constants for infinite scroll
 const DEFAULT_ROW_HEIGHT = 32;
 const DEFAULT_COL_WIDTH = 100;
 const ROW_HEADER_WIDTH = 40;
-const INITIAL_ROWS = 200;
-const INITIAL_COLS = 100;
 const ROW_BATCH_SIZE = 100;
-const COL_BATCH_SIZE = 50;
-const ROW_LOAD_THRESHOLD = 50; // When to start loading more rows
-const COL_LOAD_THRESHOLD = 20; // When to start loading more columns
-const OVERSCAN = 10; // Rows/columns to render outside viewport
+const COL_BATCH_SIZE = 26;
+const ROW_LOAD_THRESHOLD = 30;
+const COL_LOAD_THRESHOLD = 10;
+const OVERSCAN = 15;
 
-// Convert column index to Excel-style label (A, B, ..., Z, AA, AB, ...)
 const numberToColLabel = (index: number): string => {
 	let result = "";
 	let num = index + 1;
@@ -96,21 +90,12 @@ const numberToColLabel = (index: number): string => {
 	return result;
 };
 
-// Convert Excel column label to number
 const colLabelToNumber = (colLabel: string): number => {
 	let result = 0;
 	for (let i = 0; i < colLabel.length; i++) {
 		result = result * 26 + (colLabel.charCodeAt(i) - 64);
 	}
 	return result - 1;
-};
-
-// Parsovanie cell ID na row a col
-const parseCellId = (cellId: string): { row: number; col: string; colIndex: number } => {
-	const col = cellId.match(/[A-Z]+/)?.[0] || "A";
-	const row = parseInt(cellId.match(/\d+/)?.[0] || "1");
-	const colIndex = colLabelToNumber(col);
-	return { row, col, colIndex };
 };
 
 interface CellProps {
@@ -141,7 +126,6 @@ interface CellProps {
 	onDeleteColumn: () => void;
 	onClearCell: () => void;
 	onShowShortcuts?: () => void;
-	isMac?: boolean;
 }
 
 const Cell = memo(
@@ -157,101 +141,66 @@ const Cell = memo(
 		height,
 		showGrid = true,
 		onClick,
+		onContextMenu,
 		onChange,
 		onKeyDown,
 		onBlur,
 		inputRef,
 		onResize,
-		onCopy,
-		onCut,
-		onPaste,
-		onInsertRowAbove,
-		onInsertRowBelow,
-		onDeleteRow,
-		onInsertColumnLeft,
-		onInsertColumnRight,
-		onDeleteColumn,
-		onClearCell,
-		onShowShortcuts,
-		isMac = false,
-	}: CellProps) => {
+	}: any) => {
 		const displayValue = isEditing ? formula || value : value;
 
-		const getShortcutText = (shortcut: string): string => {
-			if (isMac) {
-				return shortcut.replace(/Ctrl\+/g, '⌘').replace(/Alt\+/g, '⌥').replace(/Shift\+/g, '⇧');
-			}
-			return shortcut;
-		};
-
 		return (
-			<CellContextMenu
-				onCopy={onCopy}
-				onCut={onCut}
-				onPaste={onPaste}
-				onInsertRowAbove={onInsertRowAbove}
-				onInsertRowBelow={onInsertRowBelow}
-				onDeleteRow={onDeleteRow}
-				onInsertColumnLeft={onInsertColumnLeft}
-				onInsertColumnRight={onInsertColumnRight}
-				onDeleteColumn={onDeleteColumn}
-				onClearCell={onClearCell}
-				onShowShortcuts={onShowShortcuts}
-				isMac={isMac}
+			<div
+				className={cn(
+					"relative flex items-center overflow-hidden select-none cursor-cell h-full w-full",
+					showGrid && "border-r border-b border-border dark:border-neutral-700",
+					isSelected &&
+						"ring-2 ring-primary ring-inset z-10 dark:ring-primary/80",
+					isInRange && !isSelected && "bg-primary/10 dark:bg-primary/20",
+					style?.bold && "font-bold",
+					style?.italic && "italic",
+					style?.underline && "underline",
+				)}
+				style={{
+					width,
+					height,
+					backgroundColor: isSelected
+						? undefined
+						: style?.backgroundColor || undefined,
+					color: style?.color || undefined,
+					fontSize: style?.fontSize ? `${style.fontSize}px` : undefined,
+					textAlign: style?.align || "left",
+					contain: "layout style paint",
+				}}
+				onClick={onClick}
+				onContextMenu={(e) => onContextMenu(e, id)}
 			>
-				<div
-					className={cn(
-						"relative flex overflow-hidden select-none cursor-cell h-full w-full",
-						style?.verticalAlign === "top" && "items-start",
-						(style?.verticalAlign === "middle" || !style?.verticalAlign) && "items-center",
-						style?.verticalAlign === "bottom" && "items-end",
-						showGrid &&
-							"border-r border-b border-border dark:border-neutral-700",
-						isSelected &&
-							"ring-2 ring-primary ring-inset z-10 dark:ring-primary/80",
-						isInRange && !isSelected && "bg-primary/10 dark:bg-primary/20",
-						style?.bold && "font-bold",
-						style?.italic && "italic",
-						style?.underline && "underline",
-					)}
-					style={{
-						width,
-						height,
-						backgroundColor: isSelected
-							? undefined
-							: style?.backgroundColor || undefined,
-						color: style?.color || undefined,
-						fontSize: style?.fontSize ? `${style.fontSize}px` : undefined,
-						textAlign: style?.align || "left",
-					}}
-					onClick={onClick}
-				>
-					{formula && !isEditing && (
-						<span className="absolute top-0 right-0 text-[8px] text-green-600 dark:text-green-400 leading-none p-px">
-							ƒ
-						</span>
-					)}
-					{isEditing ? (
-						<input
-							ref={inputRef}
-							className="absolute inset-0 w-full h-full px-1 outline-none border-none bg-background dark:bg-zinc-900 z-20 text-sm text-foreground"
-							value={displayValue}
-							onChange={onChange}
-							onKeyDown={onKeyDown}
-							onBlur={onBlur}
-							autoFocus
-						/>
-					) : (
-						<span className="px-1 text-sm truncate w-full">{displayValue}</span>
-					)}
-					<div
-						className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/50 z-30 opacity-0 hover:opacity-100"
-						onMouseDown={(e) => onResize?.(e)}
-						data-resize="col"
-						data-cell={id}
+				{formula && !isEditing && (
+					<span className="absolute top-0 right-0 text-[8px] text-green-600 dark:text-green-400 leading-none p-px">
+						ƒ
+					</span>
+				)}
+				{isEditing ? (
+					<input
+						ref={inputRef}
+						className="absolute inset-0 w-full h-full px-1 outline-none border-none bg-background dark:bg-zinc-900 z-20 text-sm text-foreground"
+						value={displayValue}
+						onChange={(e) => onChange(id, e)}
+						onKeyDown={(e) => onKeyDown(id, e)}
+						onBlur={() => onBlur(id)}
+						autoFocus
 					/>
-				</div>
-			</CellContextMenu>
+				) : (
+					<span className="px-1 text-sm truncate w-full">{displayValue}</span>
+				)}
+				<div
+					className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/50 z-30 opacity-0 hover:opacity-100"
+					onMouseDown={(e) => onResize?.(e)}
+					data-resize="col"
+					data-cell={id}
+				/>
+			</div>
 		);
 	},
 );
@@ -384,7 +333,6 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 			onAutoSave,
 			autoSaveInterval = 30000,
 			showAutoSaveStatus = true,
-			isMac = false,
 		},
 		ref,
 	) => {
@@ -401,9 +349,8 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 		const [saveError, setSaveError] = useState<string | null>(null);
 		const [hasChanges, setHasChanges] = useState(false);
 
-		// Dynamic row/column counts for infinite scroll
-		const [totalRows, setTotalRows] = useState(INITIAL_ROWS);
-		const [totalCols, setTotalCols] = useState(INITIAL_COLS);
+		const [totalRows, setTotalRows] = useState(200);
+		const [totalCols, setTotalCols] = useState(52);
 
 		const inputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
 		const gridRef = useRef<HTMLDivElement>(null);
@@ -416,6 +363,29 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 			startPos: number;
 			startSize: number;
 		} | null>(null);
+
+		const [contextMenu, setContextMenu] = useState<{
+			x: number;
+			y: number;
+			cellId: string;
+		} | null>(null);
+
+		const handleContextMenu = useCallback(
+			(e: React.MouseEvent, cellId: string) => {
+				e.preventDefault();
+				setContextMenu({
+					x: e.clientX,
+					y: e.clientY,
+					cellId,
+				});
+				onSelectCell(cellId);
+			},
+			[onSelectCell],
+		);
+
+		const closeContextMenu = useCallback(() => {
+			setContextMenu(null);
+		}, []);
 
 		const dataRef = useRef(data);
 		const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -474,31 +444,6 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 			await performSave(true);
 		}, [performSave]);
 
-		const scrollToCell = useCallback((cellId: string) => {
-			const { row, colIndex } = parseCellId(cellId);
-			
-			// Ensure we have enough rows and columns
-			if (row > totalRows) {
-				setTotalRows(prev => Math.max(prev, row + ROW_BATCH_SIZE));
-			}
-			if (colIndex > totalCols) {
-				setTotalCols(prev => Math.max(prev, colIndex + COL_BATCH_SIZE));
-			}
-
-			// Scroll to position
-			setTimeout(() => {
-				if (gridRef.current) {
-					const rowOffset = (row - 1) * DEFAULT_ROW_HEIGHT;
-					const colOffset = colIndex * DEFAULT_COL_WIDTH;
-					gridRef.current.scrollTo({
-						top: rowOffset,
-						left: colOffset,
-						behavior: "smooth",
-					});
-				}
-			}, 100);
-		}, [totalRows, totalCols]);
-
 		useImperativeHandle(
 			ref,
 			() => ({
@@ -507,10 +452,9 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 						gridRef.current.scrollTo({ top: 0, left: 0, behavior: "smooth" });
 					}
 				},
-				scrollToCell,
 				forceSave,
 			}),
-			[scrollToCell, forceSave],
+			[forceSave],
 		);
 
 		useEffect(() => {
@@ -601,17 +545,6 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 			getScrollElement: () => gridRef.current,
 			estimateSize: getRowHeight,
 			overscan: OVERSCAN,
-			// Auto-load more when scrolling to end
-			rangeExtractor: (range) => {
-				// Dynamic loading: add more rows when approaching the end
-				if (range.endIndex >= totalRows - ROW_LOAD_THRESHOLD) {
-					setTotalRows((prev) => prev + ROW_BATCH_SIZE);
-				}
-				return Array.from(
-					{ length: range.endIndex - range.startIndex + 1 },
-					(_, i) => range.startIndex + i
-				);
-			}
 		});
 
 		const colVirtualizer = useVirtualizer({
@@ -620,23 +553,12 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 			horizontal: true,
 			estimateSize: getColWidth,
 			overscan: OVERSCAN,
-			// Auto-load more when scrolling to end
-			rangeExtractor: (range) => {
-				// Dynamic loading: add more columns when approaching the end
-				if (range.endIndex >= totalCols - COL_LOAD_THRESHOLD) {
-					setTotalCols((prev) => prev + COL_BATCH_SIZE);
-				}
-				return Array.from(
-					{ length: range.endIndex - range.startIndex + 1 },
-					(_, i) => range.startIndex + i
-				);
-			}
 		});
 
 		// Sync scroll positions
 		const handleGridScroll = useCallback(() => {
 			if (!gridRef.current) return;
-			
+
 			const { scrollLeft, scrollTop } = gridRef.current;
 
 			// Update column headers scroll
@@ -653,8 +575,22 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 		useEffect(() => {
 			const grid = gridRef.current;
 			if (grid) {
-				grid.addEventListener('scroll', handleGridScroll, { passive: true });
-				return () => grid.removeEventListener('scroll', handleGridScroll);
+				let rafId: number;
+				const syncScroll = () => {
+					handleGridScroll();
+					rafId = requestAnimationFrame(syncScroll);
+				};
+
+				const onScroll = () => {
+					cancelAnimationFrame(rafId);
+					rafId = requestAnimationFrame(handleGridScroll);
+				};
+
+				grid.addEventListener("scroll", onScroll, { passive: true });
+				return () => {
+					grid.removeEventListener("scroll", onScroll);
+					cancelAnimationFrame(rafId);
+				};
 			}
 		}, [handleGridScroll]);
 
@@ -662,6 +598,34 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 			? parseInt(selectedCell.match(/\d+/)?.[0] || "0")
 			: null;
 		const activeCol = selectedCell ? selectedCell.match(/[A-Z]+/)?.[0] : null;
+
+		useEffect(() => {
+			const virtualRows = rowVirtualizer.getVirtualItems();
+			if (virtualRows.length === 0) return;
+			const lastIndex = virtualRows[virtualRows.length - 1].index;
+			if (lastIndex >= totalRows - ROW_LOAD_THRESHOLD) {
+				setTotalRows((prev) => prev + ROW_BATCH_SIZE);
+			}
+		}, [
+			rowVirtualizer.getVirtualItems()[
+				rowVirtualizer.getVirtualItems().length - 1
+			]?.index,
+			totalRows,
+		]);
+
+		useEffect(() => {
+			const virtualCols = colVirtualizer.getVirtualItems();
+			if (virtualCols.length === 0) return;
+			const lastIndex = virtualCols[virtualCols.length - 1].index;
+			if (lastIndex >= totalCols - COL_LOAD_THRESHOLD) {
+				setTotalCols((prev) => prev + COL_BATCH_SIZE);
+			}
+		}, [
+			colVirtualizer.getVirtualItems()[
+				colVirtualizer.getVirtualItems().length - 1
+			]?.index,
+			totalCols,
+		]);
 
 		useEffect(() => {
 			const handleMouseMove = (e: MouseEvent) => {
@@ -780,11 +744,9 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 
 		const handleCellChange = useCallback(
 			(cellId: string, e: React.ChangeEvent<HTMLInputElement>) => {
-				if (editingCell === cellId) {
-					setEditValue(e.target.value);
-				}
+				setEditValue(e.target.value);
 			},
-			[editingCell],
+			[],
 		);
 
 		const saveAndMove = useCallback(
@@ -801,9 +763,8 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 					switch (direction) {
 						case "down":
 							nextCellId = colMatch + (row + 1);
-							// Add row if needed
-							if (row + 1 > totalRows) {
-								setTotalRows(prev => prev + ROW_BATCH_SIZE);
+							if (row + 1 > totalRows - ROW_LOAD_THRESHOLD) {
+								setTotalRows((prev) => prev + ROW_BATCH_SIZE);
 							}
 							rowVirtualizer.scrollToIndex(row, {
 								align: "auto",
@@ -823,9 +784,8 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 							const nextColNumber = colNumber + 1;
 							const nextCol = numberToColLabel(nextColNumber);
 							nextCellId = nextCol + row;
-							// Add column if needed
-							if (nextColNumber + 1 > totalCols) {
-								setTotalCols(prev => prev + COL_BATCH_SIZE);
+							if (nextColNumber > totalCols - COL_LOAD_THRESHOLD) {
+								setTotalCols((prev) => prev + COL_BATCH_SIZE);
 							}
 							colVirtualizer.scrollToIndex(nextColNumber, {
 								align: "auto",
@@ -988,7 +948,7 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 								const row = virtualRow.index + 1;
 								if (hiddenRows.has(row)) return null;
 								const isRowActive = activeRow === row;
-								
+
 								return (
 									<div
 										key={virtualRow.key}
@@ -1021,9 +981,11 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 						left: showHeaders ? ROW_HEADER_WIDTH : 0,
 						right: 0,
 						bottom: 0,
-						willChange: "transform",
+						willChange: "transform, scroll-position",
 						overscrollBehavior: "none",
 						WebkitOverflowScrolling: "touch",
+						transform: "translateZ(0)",
+						backfaceVisibility: "hidden",
 					}}
 				>
 					<div
@@ -1078,29 +1040,12 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 													height={rowHeight}
 													showGrid={showGrid}
 													onClick={() => {}}
-													onChange={(e) => handleCellChange(cellId, e)}
-													onKeyDown={(e) => handleKeyDown(cellId, e)}
-													onBlur={() => handleBlur(cellId)}
+													onContextMenu={handleContextMenu}
+													onChange={handleCellChange}
+													onKeyDown={handleKeyDown}
+													onBlur={handleBlur}
 													inputRef={setInputRef(cellId)}
 													onResize={handleResizeStart}
-													onCopy={onCopy}
-													onCut={onCut}
-													onPaste={onPaste}
-													onInsertRowAbove={() => onInsertRow(row)}
-													onInsertRowBelow={() => onInsertRow(row + 1)}
-													onDeleteRow={() => onDeleteRow(row)}
-													onInsertColumnLeft={() =>
-														onInsertColumn(virtualCol.index)
-													}
-													onInsertColumnRight={() =>
-														onInsertColumn(virtualCol.index + 1)
-													}
-													onDeleteColumn={() =>
-														onDeleteColumn(virtualCol.index)
-													}
-													onClearCell={() => onClearCell(cellId)}
-													onShowShortcuts={onShowShortcuts}
-													isMac={isMac}
 												/>
 											</div>
 										);
@@ -1189,6 +1134,83 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 						error={saveError}
 						onManualSave={forceSave}
 					/>
+				)}
+
+				{contextMenu && (
+					<div
+						className="fixed z-[100]"
+						style={{ left: contextMenu.x, top: contextMenu.y }}
+					>
+						<CellContextMenu
+							onCopy={() => {
+								onCopy();
+								closeContextMenu();
+							}}
+							onCut={() => {
+								onCut();
+								closeContextMenu();
+							}}
+							onPaste={() => {
+								onPaste();
+								closeContextMenu();
+							}}
+							onInsertRowAbove={() => {
+								const row = parseInt(
+									contextMenu.cellId.match(/\d+/)?.[0] || "1",
+								);
+								onInsertRow(row);
+								closeContextMenu();
+							}}
+							onInsertRowBelow={() => {
+								const row = parseInt(
+									contextMenu.cellId.match(/\d+/)?.[0] || "1",
+								);
+								onInsertRow(row + 1);
+								closeContextMenu();
+							}}
+							onDeleteRow={() => {
+								const row = parseInt(
+									contextMenu.cellId.match(/\d+/)?.[0] || "1",
+								);
+								onDeleteRow(row);
+								closeContextMenu();
+							}}
+							onInsertColumnLeft={() => {
+								const col = contextMenu.cellId.match(/[A-Z]+/)?.[0] || "A";
+								onInsertColumn(colLabelToNumber(col));
+								closeContextMenu();
+							}}
+							onInsertColumnRight={() => {
+								const col = contextMenu.cellId.match(/[A-Z]+/)?.[0] || "A";
+								onInsertColumn(colLabelToNumber(col) + 1);
+								closeContextMenu();
+							}}
+							onDeleteColumn={() => {
+								const col = contextMenu.cellId.match(/[A-Z]+/)?.[0] || "A";
+								onDeleteColumn(colLabelToNumber(col));
+								closeContextMenu();
+							}}
+							onClearCell={() => {
+								onClearCell(contextMenu.cellId);
+								closeContextMenu();
+							}}
+							onShowShortcuts={() => {
+								onShowShortcuts?.();
+								closeContextMenu();
+							}}
+						>
+							<div className="w-0 h-0 invisible" />
+						</CellContextMenu>
+						{/* Overlay to handle closing on click outside */}
+						<div
+							className="fixed inset-0 z-[-1]"
+							onClick={closeContextMenu}
+							onContextMenu={(e) => {
+								e.preventDefault();
+								closeContextMenu();
+							}}
+						/>
+					</div>
 				)}
 			</div>
 		);

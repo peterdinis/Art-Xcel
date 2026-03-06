@@ -273,21 +273,6 @@ function EditorContent() {
 		password: null,
 	});
 
-	// Detect platform for showing correct shortcut hints
-	const [isMac, setIsMac] = useState(false);
-
-	// Apply format painter when selection changes to a different cell
-	useEffect(() => {
-		if (!formatPainter) return;
-		const targetCells = selectionRange && selectionRange.length > 1 ? selectionRange : (selectedCell ? [selectedCell] : []);
-		if (targetCells.length === 0 || (targetCells.length === 1 && targetCells[0] === formatPainter.sourceCellId)) return;
-		targetCells.forEach((cellId) => {
-			updateCellStyle(cellId, formatPainter.style as Parameters<typeof updateCellStyle>[1]);
-		});
-		toast.success("Format applied");
-		setFormatPainter(null);
-	}, [selectedCell, selectionRange, formatPainter, updateCellStyle]);
-
 	// Load data from localStorage
 	useEffect(() => {
 		const loadData = async () => {
@@ -1336,33 +1321,6 @@ function EditorContent() {
 				onShortcuts={() => setShowShortcutsDialog(true)}
 				onAbout={() => toast.info("Art-Xcel Spreadsheet – Premium Edition")}
 				onToggleGrid={() => setShowGrid(!showGrid)}
-				onNumberFormatChange={(format) => {
-					if (selectedCell) {
-						updateCellStyle(selectedCell, { numberFormat: format });
-						toast.success("Number format applied", { duration: 1000 });
-					}
-				}}
-				onInsertComment={() => setShowNoteDialog(true)}
-				onFontColorPick={(color) => {
-					if (selectedCell) {
-						updateCellStyle(selectedCell, { color });
-						toast.success("Font color applied", { duration: 1000 });
-					}
-				}}
-				onBackgroundColorPick={(color) => {
-					if (selectedCell) {
-						updateCellStyle(selectedCell, { backgroundColor: color });
-						toast.success("Background color applied", { duration: 1000 });
-					}
-				}}
-				onFormatPainter={() => {
-					if (selectedCell && data[selectedCell]?.style) {
-						setFormatPainter({ style: data[selectedCell].style!, sourceCellId: selectedCell });
-						toast.success("Style copied – select cells to apply");
-					}
-				}}
-				// Pass platform info for showing correct shortcut hints
-				isMac={isMac}
 			/>
 
 			{/* Formula Bar */}
@@ -1432,8 +1390,6 @@ function EditorContent() {
 					onUpdateShape={updateShape}
 					onUpdateIcon={updateIcon}
 					onShowShortcuts={() => setShowShortcutsDialog(true)}
-					// Pass platform info for context menu shortcuts
-					isMac={isMac}
 				/>
 			</div>
 
@@ -1470,7 +1426,34 @@ function EditorContent() {
 				onUndo={handleUndo}
 				onRedo={handleRedo}
 				onHelp={() => setShowShortcutsDialog(true)}
-				onSettings={() => router.push("/settings")}
+				onSettings={() =>
+					toast.info("Settings", { description: "Editor settings coming soon" })
+				}
+				onExport={() => setShowExportDialog(true)}
+				onImport={() => setShowImportDialog(true)}
+				onNew={() => {
+					toast.info("Creating new spreadsheet...", {
+						description: "Your current work is auto-saved.",
+					});
+					setTimeout(() => window.location.reload(), 1000);
+				}}
+				onDelete={() => setShowDeleteDialog(true)}
+				onPrint={handlePrint}
+				onShare={() => {
+					toast.info("Share functionality", {
+						description: "Opening share settings...",
+					});
+					// If there's a share dialog, toggle it here
+				}}
+				onCopy={handleCopy}
+				onCut={handleCut}
+				onPaste={handlePaste}
+				onZoomIn={handleZoomIn}
+				onZoomOut={handleZoomOut}
+				onToggleGrid={() => setShowGrid(!showGrid)}
+				onSelectAll={handleSelectAll}
+				onDashboard={() => router.push("/")}
+				showExtraOptions={true}
 			/>
 
 			<EditorDialogs
@@ -1547,8 +1530,6 @@ function EditorContent() {
 				handleInsertIcon={handleInsertIcon}
 				showShortcutsDialog={showShortcutsDialog}
 				setShowShortcutsDialog={setShowShortcutsDialog}
-				// Pass platform info for showing correct shortcut hints in dialogs
-				isMac={isMac}
 			/>
 		</div>
 	);
