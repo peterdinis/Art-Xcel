@@ -1,4 +1,4 @@
-import { evaluateFormula } from "./src/lib/formula-evaluator";
+import { evaluateFormula } from "./formula-evaluator";
 
 const mockData = {
     "A1": { value: "10", formula: "" },
