@@ -54,6 +54,22 @@ describe("formula-evaluator", () => {
         it("should evaluate =MAX(A1:A2, B1) to 20", () => {
             expect(evaluateFormula("=MAX(A1:A2, B1)", mockData)).toBe("20");
         });
+
+        it("should evaluate =MIN(A1:A2, B1) to 5", () => {
+            expect(evaluateFormula("=MIN(A1:A2, B1)", mockData)).toBe("5");
+        });
+
+        it("should evaluate =COUNT(A1:A2, B1) to 3", () => {
+            expect(evaluateFormula("=COUNT(A1:A2, B1)", mockData)).toBe("3");
+        });
+
+        it("should evaluate =MEDIAN(10, 20, 5) to 10", () => {
+            expect(evaluateFormula("=MEDIAN(10, 20, 5)", mockData)).toBe("10");
+        });
+
+        it("should evaluate =ROUND(1.56, 1) to 1.6", () => {
+            expect(evaluateFormula("=ROUND(1.56, 1)", mockData)).toBe("1.6");
+        });
     });
 
     describe("Custom Functions", () => {
@@ -71,6 +87,50 @@ describe("formula-evaluator", () => {
 
         it("should evaluate =UPPER(C1) to HELLO", () => {
             expect(evaluateFormula("=UPPER(C1)", mockData)).toBe("HELLO");
+        });
+
+        it("should evaluate =LEFT(C1, 2) to He", () => {
+            expect(evaluateFormula("=LEFT(C1, 2)", mockData)).toBe("He");
+        });
+
+        it("should evaluate =RIGHT(C1, 2) to lo", () => {
+            expect(evaluateFormula("=RIGHT(C1, 2)", mockData)).toBe("lo");
+        });
+
+        it("should evaluate =AND(1, 1) to true", () => {
+            expect(evaluateFormula("=AND(1, 1)", mockData)).toBe("true");
+        });
+
+        it("should evaluate =OR(1, 0) to true", () => {
+            expect(evaluateFormula("=OR(1, 0)", mockData)).toBe("true");
+        });
+
+        it("should evaluate =ISNUMBER(10) to true", () => {
+            expect(evaluateFormula("=ISNUMBER(10)", mockData)).toBe("true");
+        });
+
+        it("should evaluate =ISTEXT(C1) to true", () => {
+            expect(evaluateFormula("=ISTEXT(C1)", mockData)).toBe("true");
+        });
+
+        it("should evaluate =TODAY()", () => {
+            // Just verify it doesn't throw and returns a string
+            const res = evaluateFormula("=TODAY()", mockData);
+            expect(typeof res).toBe("string");
+            expect(res.length).toBeGreaterThan(0);
+        });
+
+        it("should evaluate =PMT(0.05, 12, 1000) correctly", () => {
+            const res = evaluateFormula("=PMT(0.05, 12, 1000)", mockData);
+            expect(Number(res)).toBeCloseTo(85.61, 2);
+        });
+
+        it("should evaluate =SUMIF(A1:A2, 10) to 10", () => {
+            expect(evaluateFormula("=SUMIF(A1:A2, 10)", mockData)).toBe("10");
+        });
+
+        it("should evaluate =COUNTIF(A1:A2, 20) to 1", () => {
+            expect(evaluateFormula("=COUNTIF(A1:A2, 20)", mockData)).toBe("1");
         });
     });
 

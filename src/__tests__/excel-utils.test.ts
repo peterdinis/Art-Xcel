@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { colLetterToIndex, indexToColLetter, parseCellId, getRangeCells } from "../lib/excel-utils";
+import { colLetterToIndex, indexToColLetter, parseCellId, getRangeCells, formatNumber } from "../lib/excel-utils";
 
 describe("excel-utils", () => {
     describe("colLetterToIndex", () => {
@@ -67,6 +67,34 @@ describe("excel-utils", () => {
 
         it("should expand A1:B2 correctly", () => {
             expect(getRangeCells("A1:B2")).toEqual(["A1", "B1", "A2", "B2"]);
+        });
+    });
+
+    describe("formatNumber", () => {
+
+        it("should format currency correctly", () => {
+            const formatted = formatNumber(1234.56, "currency");
+            expect(formatted).toContain("1 234,56");
+            expect(formatted).toContain("€");
+        });
+
+        it("should format percentage correctly", () => {
+            const formatted = formatNumber(75.5, "percentage");
+            expect(formatted).toContain("75,50");
+            expect(formatted).toContain("%");
+        });
+
+        it("should format number correctly", () => {
+            const formatted = formatNumber(1234.56, "number");
+            expect(formatted).toContain("1 234,56");
+        });
+
+        it("should fallback to string representation for unknown formats", () => {
+            expect(formatNumber(1234.56, "unknown")).toBe("1234.56");
+        });
+
+        it("should fallback to string representation for non-numbers", () => {
+            expect(formatNumber("Hello", "currency")).toBe("Hello");
         });
     });
 });

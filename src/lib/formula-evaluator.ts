@@ -13,11 +13,46 @@ export type SheetData = Record<string, {
 
 let customFunctionsRegistered = false;
 
+const flattenArgs = (args: unknown[]): unknown[] => {
+    let result: unknown[] = [];
+    for (const arg of args) {
+        if (arg && typeof arg === "object" && "toArray" in arg && typeof (arg as any).toArray === "function") {
+            result = result.concat(flattenArgs((arg as any).toArray()));
+        } else if (Array.isArray(arg)) {
+            result = result.concat(flattenArgs(arg));
+        } else {
+            result.push(arg);
+        }
+    }
+    return result;
+};
+
 export const registerCustomFunctions = () => {
     if (customFunctionsRegistered) return;
     try {
         math.import(
             {
+                sum: (...args: unknown[]) => {
+                    const flat = flattenArgs(args).map(Number).filter((n) => !isNaN(n));
+                    return flat.reduce((a, b) => a + b, 0);
+                },
+                max: (...args: unknown[]) => {
+                    const flat = flattenArgs(args).map(Number).filter((n) => !isNaN(n));
+                    return flat.length ? Math.max(...flat) : 0;
+                },
+                min: (...args: unknown[]) => {
+                    const flat = flattenArgs(args).map(Number).filter((n) => !isNaN(n));
+                    return flat.length ? Math.min(...flat) : 0;
+                },
+                mean: (...args: unknown[]) => {
+                    const flat = flattenArgs(args).map(Number).filter((n) => !isNaN(n));
+                    if (flat.length === 0) return 0;
+                    return flat.reduce((a, b) => a + b, 0) / flat.length;
+                },
+                count: (...args: unknown[]) => {
+                    const flat = flattenArgs(args).filter((v) => v !== "" && v !== null && v !== undefined);
+                    return flat.length;
+                },
                 if: (condition: unknown, trueVal: unknown, falseVal: unknown) =>
                     condition ? trueVal : falseVal,
                 sumif: (
@@ -25,9 +60,10 @@ export const registerCustomFunctions = () => {
                     criteria: unknown,
                     sumRange?: unknown[],
                 ) => {
-                    const targetRange = (sumRange || range) as (number | string)[];
+                    const flatRange = flattenArgs([range]);
+                    const targetRange = flattenArgs([sumRange || range]);
                     let sum = 0;
-                    range.forEach((val, idx) => {
+                    flatRange.forEach((val, idx) => {
                         if (val == criteria) {
                             sum += Number(targetRange[idx]) || 0;
                         }
@@ -35,7 +71,8 @@ export const registerCustomFunctions = () => {
                     return sum;
                 },
                 countif: (range: unknown[], criteria: unknown) => {
-                    return range.filter((val) => val == criteria).length;
+                    const flatRange = flattenArgs([range]);
+                    return flatRange.filter((val) => val == criteria).length;
                 },
                 vlookup: (
                     lookupValue: unknown,
@@ -97,7 +134,7 @@ export const registerCustomFunctions = () => {
                     return isFinite(pv) ? pv : 0;
                 },
                 stdev: (...args: number[]) => {
-                    const nums = args.map(Number).filter((n) => !isNaN(n));
+                    const nums = flattenArgs(args).map(Number).filter((n) => !isNaN(n));
                     if (nums.length === 0) return 0;
                     const avg = nums.reduce((a, b) => a + b, 0) / nums.length;
                     const std = Math.sqrt(
@@ -107,7 +144,7 @@ export const registerCustomFunctions = () => {
                     return isFinite(std) ? std : 0;
                 },
                 var: (...args: number[]) => {
-                    const nums = args.map(Number).filter((n) => !isNaN(n));
+                    const nums = flattenArgs(args).map(Number).filter((n) => !isNaN(n));
                     if (nums.length === 0) return 0;
                     const avg = nums.reduce((a, b) => a + b, 0) / nums.length;
                     const v =
@@ -116,7 +153,7 @@ export const registerCustomFunctions = () => {
                     return isFinite(v) ? v : 0;
                 },
                 median: (...args: number[]) => {
-                    const nums = args.map(Number).filter((n) => !isNaN(n));
+                    const nums = flattenArgs(args).map(Number).filter((n) => !isNaN(n));
                     if (nums.length === 0) return 0;
                     const sorted = [...nums].sort((a, b) => a - b);
                     const mid = Math.floor(sorted.length / 2);

@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ExcelUpload } from './ExcelUpload';
+import { ExcelUpload } from '../components/dashboard/ExcelUpload';
+import '@testing-library/jest-dom/vitest';
 import { parseExcelAction } from '@/app/editor/[id]/actions';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -36,7 +37,7 @@ vi.mock('react-filepond', () => ({
             const mockError = vi.fn();
             const mockProgress = vi.fn();
             const mockAbort = vi.fn();
-            
+
             // Call the process function with the file
             server.process(
               'fieldName',
@@ -78,17 +79,17 @@ describe('ExcelUpload', () => {
   const mockRouter = {
     push: vi.fn(),
   };
-  
+
   const mockOnUploadComplete = vi.fn();
-  const mockFile = new File(['test content'], 'test.xlsx', { 
-    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+  const mockFile = new File(['test content'], 'test.xlsx', {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
   });
 
   beforeEach(() => {
     vi.clearAllMocks();
     localStorageMock.clear();
     vi.mocked(useRouter).mockReturnValue(mockRouter as any);
-    
+
     // Default successful response
     vi.mocked(parseExcelAction).mockResolvedValue({
       name: 'Parsed Sheet',
@@ -109,15 +110,15 @@ describe('ExcelUpload', () => {
 
   it('renders the FilePond component', () => {
     render(<ExcelUpload onUploadComplete={mockOnUploadComplete} />);
-    
+
     expect(screen.getByTestId('mock-filepond')).toBeInTheDocument();
   });
 
   it('handles successful file upload and parsing', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-    
+
     render(<ExcelUpload onUploadComplete={mockOnUploadComplete} />);
-    
+
     const fileInput = screen.getByTestId('file-input');
     await user.upload(fileInput, mockFile);
 
@@ -178,9 +179,9 @@ describe('ExcelUpload', () => {
     });
 
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-    
+
     render(<ExcelUpload onUploadComplete={mockOnUploadComplete} />);
-    
+
     const fileInput = screen.getByTestId('file-input');
     await user.upload(fileInput, mockFile);
 
@@ -202,23 +203,23 @@ describe('ExcelUpload', () => {
   });
 
   it('handles file upload without filename (Blob only)', async () => {
-    const blobFile = new Blob(['test content'], { 
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+    const blobFile = new Blob(['test content'], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     });
 
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-    
+
     render(<ExcelUpload onUploadComplete={mockOnUploadComplete} />);
-    
+
     const fileInput = screen.getByTestId('file-input');
-    
+
     // Create a FileList-like object
     Object.defineProperty(blobFile, 'name', {
       value: undefined,
       configurable: true,
     });
 
-    await user.upload(fileInput, blobFile);
+    await user.upload(fileInput, blobFile as unknown as File);
 
     await waitFor(() => {
       expect(localStorageMock.setItem).toHaveBeenCalledWith(
@@ -250,9 +251,9 @@ describe('ExcelUpload', () => {
     localStorageMock.getItem.mockReturnValueOnce(JSON.stringify(existingFiles));
 
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-    
+
     render(<ExcelUpload onUploadComplete={mockOnUploadComplete} />);
-    
+
     const fileInput = screen.getByTestId('file-input');
     await user.upload(fileInput, mockFile);
 
@@ -281,9 +282,9 @@ describe('ExcelUpload', () => {
     vi.mocked(parseExcelAction).mockRejectedValue(error);
 
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-    
+
     render(<ExcelUpload onUploadComplete={mockOnUploadComplete} />);
-    
+
     const fileInput = screen.getByTestId('file-input');
     await user.upload(fileInput, mockFile);
 
@@ -305,9 +306,9 @@ describe('ExcelUpload', () => {
     vi.mocked(parseExcelAction).mockRejectedValue(error);
 
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-    
+
     render(<ExcelUpload onUploadComplete={mockOnUploadComplete} />);
-    
+
     const fileInput = screen.getByTestId('file-input');
     await user.upload(fileInput, mockFile);
 
@@ -321,16 +322,16 @@ describe('ExcelUpload', () => {
 
   it('handles invalid file object from FilePond', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-    
+
     // Override the mock to simulate invalid file
     vi.mocked(parseExcelAction).mockImplementation(async () => {
       throw new Error('Invalid file object');
     });
 
     render(<ExcelUpload onUploadComplete={mockOnUploadComplete} />);
-    
+
     const fileInput = screen.getByTestId('file-input');
-    
+
     // Upload with invalid file object (null)
     await user.upload(fileInput, null as any);
 
@@ -344,13 +345,13 @@ describe('ExcelUpload', () => {
 
   it('clears files state after successful upload', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-    
+
     // We need to spy on the setFiles function
     // This is a bit tricky with the current mock setup
     // For now, we'll just verify the success path
-    
+
     render(<ExcelUpload onUploadComplete={mockOnUploadComplete} />);
-    
+
     const fileInput = screen.getByTestId('file-input');
     await user.upload(fileInput, mockFile);
 
@@ -364,9 +365,9 @@ describe('ExcelUpload', () => {
     vi.mocked(parseExcelAction).mockRejectedValue(new Error('Network error'));
 
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-    
+
     render(<ExcelUpload onUploadComplete={mockOnUploadComplete} />);
-    
+
     const fileInput = screen.getByTestId('file-input');
     await user.upload(fileInput, mockFile);
 
@@ -384,9 +385,9 @@ describe('ExcelUpload', () => {
     });
 
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-    
+
     render(<ExcelUpload onUploadComplete={mockOnUploadComplete} />);
-    
+
     const fileInput = screen.getByTestId('file-input');
     await user.upload(fileInput, fileWithExtension);
 
@@ -407,26 +408,26 @@ describe('ExcelUpload', () => {
 
   it('handles multiple file upload attempts', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-    
+
     render(<ExcelUpload onUploadComplete={mockOnUploadComplete} />);
-    
+
     const fileInput = screen.getByTestId('file-input');
-    
+
     // First upload
     await user.upload(fileInput, mockFile);
-    
+
     await waitFor(() => {
       expect(parseExcelAction).toHaveBeenCalledTimes(1);
     });
 
     // Clear mocks
     vi.clearAllMocks();
-    
+
     // Second upload with different file
     const secondFile = new File(['different content'], 'another.xlsx', {
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     });
-    
+
     vi.mocked(parseExcelAction).mockResolvedValue({
       name: 'Another Sheet',
       data: {
