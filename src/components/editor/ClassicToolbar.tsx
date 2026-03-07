@@ -85,6 +85,7 @@ interface ClassicToolbarProps {
 		align?: "left" | "center" | "right" | "justify";
 		color?: string;
 		backgroundColor?: string;
+		verticalAlign?: "top" | "middle" | "bottom";
 	}) => void;
 	onSave: () => void;
 	onUndo: () => void;
@@ -108,6 +109,7 @@ interface ClassicToolbarProps {
 	onInsertShape?: (type: "rectangle" | "circle" | "line") => void;
 	onInsertIcon?: () => void;
 	onInsertFunction?: (formula: string) => void;
+	onOpenInsertFunctionDialog?: () => void;
 	onScrollToTop?: () => void;
 	onNew?: () => void;
 	onOpen?: () => void;
@@ -128,7 +130,12 @@ interface ClassicToolbarProps {
 	onShortcuts?: () => void;
 	onAbout?: () => void;
 	onToggleGrid?: () => void;
-	// Pridaná prop pre detekciu platformy
+	onNumberFormatChange?: (format: "general" | "number" | "currency" | "percentage" | "date" | "time") => void;
+	onInsertComment?: () => void;
+	onFontColorPick?: (color: string) => void;
+	onBackgroundColorPick?: (color: string) => void;
+	onFormatPainter?: () => void;
+	// Platform detection for shortcut labels
 	isMac?: boolean;
 }
 
@@ -187,6 +194,7 @@ export const ClassicToolbar = ({
 	onInsertShape,
 	onInsertIcon,
 	onInsertFunction,
+	onOpenInsertFunctionDialog,
 	onScrollToTop,
 	onNew,
 	onOpen,
@@ -207,7 +215,12 @@ export const ClassicToolbar = ({
 	onShortcuts,
 	onAbout,
 	onToggleGrid,
-	isMac = false, // Default hodnota pre prípad, že prop nie je poskytnutá
+	onNumberFormatChange,
+	onInsertComment,
+	onFontColorPick,
+	onBackgroundColorPick,
+	onFormatPainter,
+	isMac = false, // Default value when prop is not provided
 }: ClassicToolbarProps) => {
 	const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
 		const file = event.target.files?.[0];
@@ -216,7 +229,7 @@ export const ClassicToolbar = ({
 		}
 	};
 
-	// Funkcia na získanie textu skratky podľa platformy
+	// Get shortcut label by platform
 	const getShortcutText = (shortcut: string): string => {
 		if (isMac) {
 			return shortcut
@@ -377,7 +390,7 @@ export const ClassicToolbar = ({
 							Column Before
 						</DropdownMenuItem>
 						<DropdownMenuSeparator />
-						<DropdownMenuItem onClick={() => onInsertFunction?.("SUM")}>
+						<DropdownMenuItem onClick={onOpenInsertFunctionDialog ?? (() => onInsertFunction?.("SUM"))}>
 							Function...
 						</DropdownMenuItem>
 					</DropdownMenuContent>
@@ -406,6 +419,29 @@ export const ClassicToolbar = ({
 						<DropdownMenuItem onClick={onConditionalFormatting}>
 							Conditional Formatting...
 						</DropdownMenuItem>
+						<DropdownMenuSub>
+							<DropdownMenuSubTrigger>Number format</DropdownMenuSubTrigger>
+							<DropdownMenuSubContent>
+								<DropdownMenuItem onClick={() => onNumberFormatChange?.("general")}>
+									General
+								</DropdownMenuItem>
+								<DropdownMenuItem onClick={() => onNumberFormatChange?.("number")}>
+									Number
+								</DropdownMenuItem>
+								<DropdownMenuItem onClick={() => onNumberFormatChange?.("currency")}>
+									Currency
+								</DropdownMenuItem>
+								<DropdownMenuItem onClick={() => onNumberFormatChange?.("percentage")}>
+									Percentage
+								</DropdownMenuItem>
+								<DropdownMenuItem onClick={() => onNumberFormatChange?.("date")}>
+									Date
+								</DropdownMenuItem>
+								<DropdownMenuItem onClick={() => onNumberFormatChange?.("time")}>
+									Time
+								</DropdownMenuItem>
+							</DropdownMenuSubContent>
+						</DropdownMenuSub>
 					</DropdownMenuContent>
 				</DropdownMenu>
 
@@ -544,11 +580,7 @@ export const ClassicToolbar = ({
 				<ToolbarButton
 					icon={Brush}
 					tooltip="Format Painter"
-					onClick={() =>
-						toast.info("Format Painter", {
-							description: "Format painter logic coming soon",
-						})
-					}
+					onClick={() => onFormatPainter?.()}
 				/>
 				<Separator orientation="vertical" className="h-5 mx-0.5" />
 				<ToolbarButton
@@ -570,11 +602,7 @@ export const ClassicToolbar = ({
 				<ToolbarButton
 					icon={CheckCircle2}
 					tooltip="Spelling"
-					onClick={() =>
-						toast.info("Spelling", {
-							description: "Spell checker integration coming soon",
-						})
-					}
+					onClick={() => toast.info("Spelling")}
 				/>
 				<ToolbarButton
 					icon={Grid3X3}
@@ -599,38 +627,22 @@ export const ClassicToolbar = ({
 				<ToolbarButton
 					icon={Type}
 					tooltip="Insert Text Box"
-					onClick={() =>
-						toast.info("Insert Text Box", {
-							description: "Text box insertion coming soon",
-						})
-					}
+					onClick={() => toast.info("Text box")}
 				/>
 				<ToolbarButton
 					icon={AtSign}
 					tooltip="Special Character"
-					onClick={() =>
-						toast.info("Special Character", {
-							description: "Special character picker coming soon",
-						})
-					}
+					onClick={() => toast.info("Special character")}
 				/>
 				<ToolbarButton
 					icon={LinkIcon}
 					tooltip="Insert Hyperlink"
-					onClick={() =>
-						toast.info("Insert Hyperlink", {
-							description: "Hyperlink dialog coming soon",
-						})
-					}
+					onClick={() => toast.info("Hyperlink")}
 				/>
 				<ToolbarButton
 					icon={MessageSquare}
 					tooltip="Insert Comment"
-					onClick={() =>
-						toast.info("Insert Comment", {
-							description: "Cell commenting coming soon",
-						})
-					}
+					onClick={() => onInsertComment?.()}
 				/>
 				<Separator orientation="vertical" className="h-5 mx-0.5" />
 				<ToolbarButton
@@ -683,20 +695,24 @@ export const ClassicToolbar = ({
 				<ToolbarButton
 					icon={Pipette}
 					tooltip="Font Color"
-					onClick={() =>
-						toast.info("Font Color", {
-							description: "Font color picker coming soon",
-						})
-					}
+					onClick={() => {
+						const hex = document.createElement("input");
+						hex.type = "color";
+						hex.value = "#000000";
+						hex.onchange = () => onFontColorPick?.(hex.value);
+						hex.click();
+					}}
 				/>
 				<ToolbarButton
 					icon={PaintBucket}
 					tooltip="Background Color"
-					onClick={() =>
-						toast.info("Background Color", {
-							description: "Background color picker coming soon",
-						})
-					}
+					onClick={() => {
+						const hex = document.createElement("input");
+						hex.type = "color";
+						hex.value = "#ffffff";
+						hex.onchange = () => onBackgroundColorPick?.(hex.value);
+						hex.click();
+					}}
 				/>
 				<Separator orientation="vertical" className="h-5 mx-0.5" />
 				<ToolbarButton
@@ -723,29 +739,17 @@ export const ClassicToolbar = ({
 				<ToolbarButton
 					icon={AlignStartVertical}
 					tooltip="Align Top"
-					onClick={() =>
-						toast.info("Align Top", {
-							description: "Vertical alignment coming soon",
-						})
-					}
+					onClick={() => onStyleChange({ verticalAlign: "top" })}
 				/>
 				<ToolbarButton
 					icon={AlignCenterVertical}
 					tooltip="Center Vertically"
-					onClick={() =>
-						toast.info("Center Vertically", {
-							description: "Vertical alignment coming soon",
-						})
-					}
+					onClick={() => onStyleChange({ verticalAlign: "middle" })}
 				/>
 				<ToolbarButton
 					icon={AlignEndVertical}
 					tooltip="Align Bottom"
-					onClick={() =>
-						toast.info("Align Bottom", {
-							description: "Vertical alignment coming soon",
-						})
-					}
+					onClick={() => onStyleChange({ verticalAlign: "bottom" })}
 				/>
 				<Separator orientation="vertical" className="h-5 mx-0.5" />
 				<div className="flex items-center gap-0">
@@ -757,76 +761,66 @@ export const ClassicToolbar = ({
 				<ToolbarButton
 					icon={Square}
 					tooltip="Fill Color"
-					onClick={() =>
-						toast.info("Fill Color", {
-							description: "Cell fill options coming soon",
-						})
-					}
+					onClick={() => {
+						const hex = document.createElement("input");
+						hex.type = "color";
+						hex.value = "#ffffff";
+						hex.onchange = () => onBackgroundColorPick?.(hex.value);
+						hex.click();
+					}}
 				/>
 				<ToolbarButton
 					icon={Square}
 					tooltip="Merge Cells"
-					onClick={() =>
-						toast.info("Merge Cells", {
-							description: "Merge cells functionality coming soon",
-						})
-					}
+					onClick={() => toast.info("Merge cells")}
 				/>
 				<Separator orientation="vertical" className="h-5 mx-0.5" />
+				<Select
+					defaultValue="general"
+					onValueChange={(v) => onNumberFormatChange?.(v as "general" | "number" | "currency" | "percentage" | "date" | "time")}
+				>
+					<SelectTrigger className="h-7 w-[100px] text-xs bg-white dark:bg-zinc-950">
+						<SelectValue placeholder="Format" />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value="general">General</SelectItem>
+						<SelectItem value="number">Number</SelectItem>
+						<SelectItem value="currency">Currency</SelectItem>
+						<SelectItem value="percentage">Percentage</SelectItem>
+						<SelectItem value="date">Date</SelectItem>
+						<SelectItem value="time">Time</SelectItem>
+					</SelectContent>
+				</Select>
 				<ToolbarButton
 					icon={DollarSign}
 					tooltip="Currency"
-					onClick={() =>
-						toast.info("Currency", {
-							description: "Currency formatting coming soon",
-						})
-					}
+					onClick={() => onNumberFormatChange?.("currency")}
 				/>
 				<ToolbarButton
 					icon={Percent}
 					tooltip="Percent"
-					onClick={() =>
-						toast.info("Percent", {
-							description: "Percent formatting coming soon",
-						})
-					}
+					onClick={() => onNumberFormatChange?.("percentage")}
 				/>
 				<ToolbarButton
 					icon={Plus}
 					tooltip="Add Decimal Place"
-					onClick={() =>
-						toast.info("Add Decimal Place", {
-							description: "Decimal adjustment coming soon",
-						})
-					}
+					onClick={() => onNumberFormatChange?.("number")}
 				/>
 				<ToolbarButton
 					icon={Minus}
 					tooltip="Delete Decimal Place"
-					onClick={() =>
-						toast.info("Delete Decimal Place", {
-							description: "Decimal adjustment coming soon",
-						})
-					}
+					onClick={() => onNumberFormatChange?.("general")}
 				/>
 				<Separator orientation="vertical" className="h-5 mx-0.5" />
 				<ToolbarButton
 					icon={ArrowLeftToLine}
 					tooltip="Decrease Indent"
-					onClick={() =>
-						toast.info("Decrease Indent", {
-							description: "Indent adjustment coming soon",
-						})
-					}
+					onClick={() => toast.info("Decrease indent")}
 				/>
 				<ToolbarButton
 					icon={ArrowRightToLine}
 					tooltip="Increase Indent"
-					onClick={() =>
-						toast.info("Increase Indent", {
-							description: "Indent adjustment coming soon",
-						})
-					}
+					onClick={() => toast.info("Increase indent")}
 				/>
 				<Separator orientation="vertical" className="h-5 mx-0.5" />
 				<ToolbarButton

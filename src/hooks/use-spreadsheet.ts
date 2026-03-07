@@ -385,26 +385,26 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				const evaluated = evaluateFormula(input, prev, cellId);
 
 				newData[cellId] = {
-					...newData[cellId],
+					...(prev[cellId] || { value: "", formula: "" }),
 					value: evaluated,
 					formula: input,
 				};
 
 				// Track formula cells
 				if (input.startsWith("=")) {
-					setFormulaCells((prev) => {
-						const next = new Set(prev);
+					setFormulaCells((prevSet) => {
+						const next = new Set(prevSet);
 						next.add(cellId);
 						return next;
 					});
 				} else {
-					setFormulaCells((prev) => {
-						if (prev.has(cellId)) {
-							const next = new Set(prev);
+					setFormulaCells((prevSet) => {
+						if (prevSet.has(cellId)) {
+							const next = new Set(prevSet);
 							next.delete(cellId);
 							return next;
 						}
-						return prev;
+						return prevSet;
 					});
 				}
 
@@ -422,7 +422,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				return newData;
 			});
 		},
-		[evaluateFormula, formulaCells, saveToUndo],
+		[evaluateFormula, formulaCells, saveToUndo, setData],
 	);
 
 	// Update multiple cells
@@ -436,7 +436,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				Object.entries(updates).forEach(([cellId, input]) => {
 					const evaluated = evaluateFormula(input, newData, cellId);
 					newData[cellId] = {
-						...newData[cellId],
+						...(prev[cellId] || { value: "", formula: "" }),
 						value: evaluated,
 						formula: input,
 					};
@@ -456,7 +456,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				return newData;
 			});
 		},
-		[evaluateFormula, saveToUndo],
+		[evaluateFormula, saveToUndo, setData],
 	);
 
 	// Update cell style
@@ -475,7 +475,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				},
 			}));
 		},
-		[saveToUndo],
+		[saveToUndo, setData],
 	);
 
 	// Copy cells
@@ -555,7 +555,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				setClipboard(null);
 			}
 		},
-		[clipboard, saveToUndo],
+		[clipboard, saveToUndo, setData],
 	);
 
 	// Undo
@@ -566,7 +566,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 		setRedoStack((prev) => [...prev, data]);
 		setData(previous);
 		setUndoStack((prev) => prev.slice(0, -1));
-	}, [undoStack, data]);
+	}, [undoStack, data, setData]);
 
 	// Redo
 	const redo = useCallback(() => {
@@ -576,7 +576,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 		setUndoStack((prev) => [...prev, data]);
 		setData(next);
 		setRedoStack((prev) => prev.slice(0, -1));
-	}, [redoStack, data]);
+	}, [redoStack, data, setData]);
 
 	// Insert row
 	const insertRow = useCallback(
@@ -602,7 +602,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				return newData;
 			});
 		},
-		[saveToUndo],
+		[saveToUndo, setData],
 	);
 
 	// Delete row
@@ -630,7 +630,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				return newData;
 			});
 		},
-		[saveToUndo],
+		[saveToUndo, setData],
 	);
 
 	// Insert column
@@ -658,7 +658,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				return newData;
 			});
 		},
-		[saveToUndo],
+		[saveToUndo, setData],
 	);
 
 	// Delete column
@@ -687,7 +687,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				return newData;
 			});
 		},
-		[saveToUndo],
+		[saveToUndo, setData],
 	);
 
 	// Sort range
@@ -744,7 +744,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				return newData;
 			});
 		},
-		[data, saveToUndo, getRange],
+		[data, saveToUndo, getRange, setData],
 	);
 
 	// Filter range
@@ -782,7 +782,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 
 			return { visibleRows: matches };
 		},
-		[data, getRange],
+		[data, getRange, setHiddenRows],
 	);
 
 	// Add note to cell
@@ -794,7 +794,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				note,
 			},
 		}));
-	}, []);
+	}, [setData]);
 
 	// Add data validation
 	const addValidation = useCallback(
@@ -807,7 +807,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				},
 			}));
 		},
-		[],
+		[setData],
 	);
 
 	// Validate cell value
@@ -843,7 +843,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 	// Create named range
 	const createNamedRange = useCallback((name: string, range: string) => {
 		setNamedRanges((prev) => ({ ...prev, [name]: range }));
-	}, []);
+	}, [setNamedRanges]);
 
 	// Delete named range
 	const deleteNamedRange = useCallback((name: string) => {
@@ -851,7 +851,8 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 			const { [name]: _, ...rest } = prev;
 			return rest;
 		});
-	}, []);
+	}, [setNamedRanges]);
+
 	// Remove duplicates from a range based on a column
 	const removeDuplicates = useCallback(
 		(range: string, column: number) => {
@@ -887,7 +888,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				return newData;
 			});
 		},
-		[data, getRange, saveToUndo],
+		[data, getRange, saveToUndo, setData],
 	);
 
 	// Text to columns (split by delimiter)
@@ -919,7 +920,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				return newData;
 			});
 		},
-		[getRange, saveToUndo],
+		[getRange, saveToUndo, setData],
 	);
 
 	// Find and replace
@@ -974,7 +975,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				return newData;
 			});
 		},
-		[saveToUndo],
+		[saveToUndo, setData],
 	);
 
 	// Clear sheet
@@ -983,7 +984,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 		setData({});
 		setSelectedCell("A1");
 		setSelectionRange(null);
-	}, [saveToUndo]);
+	}, [saveToUndo, setData, setSelectedCell, setSelectionRange]);
 
 	// Add new sheet
 	const addSheet = useCallback((name: string) => {
@@ -1027,65 +1028,65 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 	const addChart = useCallback((chart: Omit<ChartData, "id">) => {
 		const newChart = { ...chart, id: `chart-${Date.now()}` };
 		setCharts((prev) => [...prev, newChart]);
-	}, []);
+	}, [setCharts]);
 
 	const removeChart = useCallback((id: string) => {
 		setCharts((prev) => prev.filter((c) => c.id !== id));
-	}, []);
+	}, [setCharts]);
 
 	const updateChart = useCallback((id: string, updates: Partial<ChartData>) => {
 		setCharts((prev) =>
 			prev.map((c) => (c.id === id ? { ...c, ...updates } : c)),
 		);
-	}, []);
+	}, [setCharts]);
 
 	// Image operations
 	const addImage = useCallback((image: Omit<ImageData, "id">) => {
 		const newImage = { ...image, id: `image-${Date.now()}` };
 		setImages((prev) => [...prev, newImage]);
-	}, []);
+	}, [setImages]);
 
 	const removeImage = useCallback((id: string) => {
 		setImages((prev) => prev.filter((i) => i.id !== id));
-	}, []);
+	}, [setImages]);
 
 	const updateImage = useCallback((id: string, updates: Partial<ImageData>) => {
 		setImages((prev) =>
 			prev.map((i) => (i.id === id ? { ...i, ...updates } : i)),
 		);
-	}, []);
+	}, [setImages]);
 
 	// Shape operations
 	const addShape = useCallback((shape: Omit<ShapeData, "id">) => {
 		const newShape = { ...shape, id: `shape-${Date.now()}` };
 		setShapes((prev) => [...prev, newShape]);
-	}, []);
+	}, [setShapes]);
 
 	const removeShape = useCallback((id: string) => {
 		setShapes((prev) => prev.filter((s) => s.id !== id));
-	}, []);
+	}, [setShapes]);
 
 	const updateShape = useCallback((id: string, updates: Partial<ShapeData>) => {
 		setShapes((prev) =>
 			prev.map((s) => (s.id === id ? { ...s, ...updates } : s)),
 		);
-	}, []);
+	}, [setShapes]);
 
 	// Icon operations
 	const addIcon = useCallback((icon: Omit<IconData, "id">) => {
 		const newIcon = { ...icon, id: `icon-${Date.now()}` };
 		setIcons((prev) => [...prev, newIcon]);
-	}, []);
+	}, [setIcons]);
 
 	const removeIcon = useCallback((id: string) => {
 		setIcons((prev) => prev.filter((i) => i.id !== id));
-	}, []);
+	}, [setIcons]);
 
 	const updateIcon = useCallback((id: string, updates: Partial<IconData>) => {
 		setIcons((prev) =>
 			prev.map((i) => (i.id === id ? { ...i, ...updates } : i)),
 		);
-	}, []);
+	}, [setIcons]);
 
 	// Get cell formula
 	const getCellFormula = useCallback(
@@ -1106,7 +1107,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 	// Select cell
 	const selectCell = useCallback((cellId: string) => {
 		setSelectedCell(cellId);
-	}, []);
+	}, [setSelectedCell]);
 
 	// Select range
 	const selectRange = useCallback((range: string) => {
@@ -1115,7 +1116,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 		if (cells.length > 0) {
 			setSelectedCell(cells[0]);
 		}
-	}, []);
+	}, [getRange, setSelectionRange, setSelectedCell]);
 
 	// Update sheet name (placeholder - actual name is in EditorPage)
 	const updateSheetName = useCallback((name: string) => {
