@@ -130,7 +130,9 @@ interface ClassicToolbarProps {
 	onShortcuts?: () => void;
 	onAbout?: () => void;
 	onToggleGrid?: () => void;
-	onNumberFormatChange?: (format: "general" | "number" | "currency" | "percentage" | "date" | "time") => void;
+	onNumberFormatChange?: (
+		format: "general" | "number" | "currency" | "percentage" | "date" | "time",
+	) => void;
 	onInsertComment?: () => void;
 	onFontColorPick?: (color: string) => void;
 	onBackgroundColorPick?: (color: string) => void;
@@ -390,7 +392,11 @@ export const ClassicToolbar = ({
 							Column Before
 						</DropdownMenuItem>
 						<DropdownMenuSeparator />
-						<DropdownMenuItem onClick={onOpenInsertFunctionDialog ?? (() => onInsertFunction?.("SUM"))}>
+						<DropdownMenuItem
+							onClick={
+								onOpenInsertFunctionDialog ?? (() => onInsertFunction?.("SUM"))
+							}
+						>
 							Function...
 						</DropdownMenuItem>
 					</DropdownMenuContent>
@@ -422,22 +428,34 @@ export const ClassicToolbar = ({
 						<DropdownMenuSub>
 							<DropdownMenuSubTrigger>Number format</DropdownMenuSubTrigger>
 							<DropdownMenuSubContent>
-								<DropdownMenuItem onClick={() => onNumberFormatChange?.("general")}>
+								<DropdownMenuItem
+									onClick={() => onNumberFormatChange?.("general")}
+								>
 									General
 								</DropdownMenuItem>
-								<DropdownMenuItem onClick={() => onNumberFormatChange?.("number")}>
+								<DropdownMenuItem
+									onClick={() => onNumberFormatChange?.("number")}
+								>
 									Number
 								</DropdownMenuItem>
-								<DropdownMenuItem onClick={() => onNumberFormatChange?.("currency")}>
+								<DropdownMenuItem
+									onClick={() => onNumberFormatChange?.("currency")}
+								>
 									Currency
 								</DropdownMenuItem>
-								<DropdownMenuItem onClick={() => onNumberFormatChange?.("percentage")}>
+								<DropdownMenuItem
+									onClick={() => onNumberFormatChange?.("percentage")}
+								>
 									Percentage
 								</DropdownMenuItem>
-								<DropdownMenuItem onClick={() => onNumberFormatChange?.("date")}>
+								<DropdownMenuItem
+									onClick={() => onNumberFormatChange?.("date")}
+								>
 									Date
 								</DropdownMenuItem>
-								<DropdownMenuItem onClick={() => onNumberFormatChange?.("time")}>
+								<DropdownMenuItem
+									onClick={() => onNumberFormatChange?.("time")}
+								>
 									Time
 								</DropdownMenuItem>
 							</DropdownMenuSubContent>
@@ -777,7 +795,17 @@ export const ClassicToolbar = ({
 				<Separator orientation="vertical" className="h-5 mx-0.5" />
 				<Select
 					defaultValue="general"
-					onValueChange={(v) => onNumberFormatChange?.(v as "general" | "number" | "currency" | "percentage" | "date" | "time")}
+					onValueChange={(v) =>
+						onNumberFormatChange?.(
+							v as
+								| "general"
+								| "number"
+								| "currency"
+								| "percentage"
+								| "date"
+								| "time",
+						)
+					}
 				>
 					<SelectTrigger className="h-7 w-[100px] text-xs bg-white dark:bg-zinc-950">
 						<SelectValue placeholder="Format" />

@@ -54,7 +54,7 @@ export const StatusBar = ({
 		<div
 			className={cn(
 				"h-6 border-t bg-muted/30 dark:bg-zinc-900/50 px-4 flex items-center justify-between text-[11px] text-muted-foreground select-none",
-				className
+				className,
 			)}
 		>
 			<div className="flex items-center gap-4">
@@ -81,7 +81,9 @@ export const StatusBar = ({
 						</div>
 						<div className="flex items-center gap-1">
 							<span>Count:</span>
-							<span className="font-semibold text-foreground">{stats.count}</span>
+							<span className="font-semibold text-foreground">
+								{stats.count}
+							</span>
 						</div>
 						<div className="flex items-center gap-1">
 							<span>Sum:</span>

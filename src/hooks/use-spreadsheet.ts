@@ -1,5 +1,11 @@
 import { useState, useCallback } from "react";
-import { colLetterToIndex, indexToColLetter, parseCellId, getRangeCells, formatNumber } from "@/lib/excel-utils";
+import {
+	colLetterToIndex,
+	indexToColLetter,
+	parseCellId,
+	getRangeCells,
+	formatNumber,
+} from "@/lib/excel-utils";
 import { evaluateFormula as libEvaluateFormula } from "@/lib/formula-evaluator";
 
 export interface CellData {
@@ -19,12 +25,12 @@ export interface CellData {
 		borderLeft?: string;
 		borderRight?: string;
 		numberFormat?:
-		| "general"
-		| "number"
-		| "currency"
-		| "percentage"
-		| "date"
-		| "time";
+			| "general"
+			| "number"
+			| "currency"
+			| "percentage"
+			| "date"
+			| "time";
 	};
 	note?: string;
 	validation?: {
@@ -53,7 +59,6 @@ export interface SpreadsheetState {
 	formulas: Record<string, string>;
 	namedRanges: Record<string, string>;
 }
-
 
 export interface ChartData {
 	id: string;
@@ -162,10 +167,10 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				prev.map((sheet, i) =>
 					i === currentSheetIndex
 						? {
-							...sheet,
-							data:
-								typeof newData === "function" ? newData(sheet.data) : newData,
-						}
+								...sheet,
+								data:
+									typeof newData === "function" ? newData(sheet.data) : newData,
+							}
 						: sheet,
 				),
 			);
@@ -189,12 +194,12 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				prev.map((sheet, i) =>
 					i === currentSheetIndex
 						? {
-							...sheet,
-							charts:
-								typeof newCharts === "function"
-									? newCharts(sheet.charts)
-									: newCharts,
-						}
+								...sheet,
+								charts:
+									typeof newCharts === "function"
+										? newCharts(sheet.charts)
+										: newCharts,
+							}
 						: sheet,
 				),
 			);
@@ -208,12 +213,12 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				prev.map((sheet, i) =>
 					i === currentSheetIndex
 						? {
-							...sheet,
-							images:
-								typeof newImages === "function"
-									? newImages(sheet.images)
-									: newImages,
-						}
+								...sheet,
+								images:
+									typeof newImages === "function"
+										? newImages(sheet.images)
+										: newImages,
+							}
 						: sheet,
 				),
 			);
@@ -227,12 +232,12 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				prev.map((sheet, i) =>
 					i === currentSheetIndex
 						? {
-							...sheet,
-							shapes:
-								typeof newShapes === "function"
-									? newShapes(sheet.shapes)
-									: newShapes,
-						}
+								...sheet,
+								shapes:
+									typeof newShapes === "function"
+										? newShapes(sheet.shapes)
+										: newShapes,
+							}
 						: sheet,
 				),
 			);
@@ -246,12 +251,12 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				prev.map((sheet, i) =>
 					i === currentSheetIndex
 						? {
-							...sheet,
-							icons:
-								typeof newIcons === "function"
-									? newIcons(sheet.icons)
-									: newIcons,
-						}
+								...sheet,
+								icons:
+									typeof newIcons === "function"
+										? newIcons(sheet.icons)
+										: newIcons,
+							}
 						: sheet,
 				),
 			);
@@ -269,12 +274,12 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				prev.map((sheet, i) =>
 					i === currentSheetIndex
 						? {
-							...sheet,
-							namedRanges:
-								typeof newNamedRanges === "function"
-									? newNamedRanges(sheet.namedRanges)
-									: newNamedRanges,
-						}
+								...sheet,
+								namedRanges:
+									typeof newNamedRanges === "function"
+										? newNamedRanges(sheet.namedRanges)
+										: newNamedRanges,
+							}
 						: sheet,
 				),
 			);
@@ -288,12 +293,12 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				prev.map((sheet, i) =>
 					i === currentSheetIndex
 						? {
-							...sheet,
-							hiddenRows:
-								typeof newHiddenRows === "function"
-									? newHiddenRows(sheet.hiddenRows)
-									: newHiddenRows,
-						}
+								...sheet,
+								hiddenRows:
+									typeof newHiddenRows === "function"
+										? newHiddenRows(sheet.hiddenRows)
+										: newHiddenRows,
+							}
 						: sheet,
 				),
 			);
@@ -332,7 +337,11 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 
 		const grid: unknown[][] = [];
 
-		for (let r = Math.min(startRow, endRow); r <= Math.max(startRow, endRow); r++) {
+		for (
+			let r = Math.min(startRow, endRow);
+			r <= Math.max(startRow, endRow);
+			r++
+		) {
 			const row: unknown[] = [];
 			for (
 				let c = Math.min(startCol, endCol);
@@ -786,15 +795,18 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 	);
 
 	// Add note to cell
-	const addNote = useCallback((cellId: string, note: string) => {
-		setData((prev) => ({
-			...prev,
-			[cellId]: {
-				...(prev[cellId] || { value: "", formula: "" }),
-				note,
-			},
-		}));
-	}, [setData]);
+	const addNote = useCallback(
+		(cellId: string, note: string) => {
+			setData((prev) => ({
+				...prev,
+				[cellId]: {
+					...(prev[cellId] || { value: "", formula: "" }),
+					note,
+				},
+			}));
+		},
+		[setData],
+	);
 
 	// Add data validation
 	const addValidation = useCallback(
@@ -841,17 +853,23 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 	);
 
 	// Create named range
-	const createNamedRange = useCallback((name: string, range: string) => {
-		setNamedRanges((prev) => ({ ...prev, [name]: range }));
-	}, [setNamedRanges]);
+	const createNamedRange = useCallback(
+		(name: string, range: string) => {
+			setNamedRanges((prev) => ({ ...prev, [name]: range }));
+		},
+		[setNamedRanges],
+	);
 
 	// Delete named range
-	const deleteNamedRange = useCallback((name: string) => {
-		setNamedRanges((prev) => {
-			const { [name]: _, ...rest } = prev;
-			return rest;
-		});
-	}, [setNamedRanges]);
+	const deleteNamedRange = useCallback(
+		(name: string) => {
+			setNamedRanges((prev) => {
+				const { [name]: _, ...rest } = prev;
+				return rest;
+			});
+		},
+		[setNamedRanges],
+	);
 
 	// Remove duplicates from a range based on a column
 	const removeDuplicates = useCallback(
@@ -1025,68 +1043,104 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 	}, []);
 
 	// Chart operations
-	const addChart = useCallback((chart: Omit<ChartData, "id">) => {
-		const newChart = { ...chart, id: `chart-${Date.now()}` };
-		setCharts((prev) => [...prev, newChart]);
-	}, [setCharts]);
+	const addChart = useCallback(
+		(chart: Omit<ChartData, "id">) => {
+			const newChart = { ...chart, id: `chart-${Date.now()}` };
+			setCharts((prev) => [...prev, newChart]);
+		},
+		[setCharts],
+	);
 
-	const removeChart = useCallback((id: string) => {
-		setCharts((prev) => prev.filter((c) => c.id !== id));
-	}, [setCharts]);
+	const removeChart = useCallback(
+		(id: string) => {
+			setCharts((prev) => prev.filter((c) => c.id !== id));
+		},
+		[setCharts],
+	);
 
-	const updateChart = useCallback((id: string, updates: Partial<ChartData>) => {
-		setCharts((prev) =>
-			prev.map((c) => (c.id === id ? { ...c, ...updates } : c)),
-		);
-	}, [setCharts]);
+	const updateChart = useCallback(
+		(id: string, updates: Partial<ChartData>) => {
+			setCharts((prev) =>
+				prev.map((c) => (c.id === id ? { ...c, ...updates } : c)),
+			);
+		},
+		[setCharts],
+	);
 
 	// Image operations
-	const addImage = useCallback((image: Omit<ImageData, "id">) => {
-		const newImage = { ...image, id: `image-${Date.now()}` };
-		setImages((prev) => [...prev, newImage]);
-	}, [setImages]);
+	const addImage = useCallback(
+		(image: Omit<ImageData, "id">) => {
+			const newImage = { ...image, id: `image-${Date.now()}` };
+			setImages((prev) => [...prev, newImage]);
+		},
+		[setImages],
+	);
 
-	const removeImage = useCallback((id: string) => {
-		setImages((prev) => prev.filter((i) => i.id !== id));
-	}, [setImages]);
+	const removeImage = useCallback(
+		(id: string) => {
+			setImages((prev) => prev.filter((i) => i.id !== id));
+		},
+		[setImages],
+	);
 
-	const updateImage = useCallback((id: string, updates: Partial<ImageData>) => {
-		setImages((prev) =>
-			prev.map((i) => (i.id === id ? { ...i, ...updates } : i)),
-		);
-	}, [setImages]);
+	const updateImage = useCallback(
+		(id: string, updates: Partial<ImageData>) => {
+			setImages((prev) =>
+				prev.map((i) => (i.id === id ? { ...i, ...updates } : i)),
+			);
+		},
+		[setImages],
+	);
 
 	// Shape operations
-	const addShape = useCallback((shape: Omit<ShapeData, "id">) => {
-		const newShape = { ...shape, id: `shape-${Date.now()}` };
-		setShapes((prev) => [...prev, newShape]);
-	}, [setShapes]);
+	const addShape = useCallback(
+		(shape: Omit<ShapeData, "id">) => {
+			const newShape = { ...shape, id: `shape-${Date.now()}` };
+			setShapes((prev) => [...prev, newShape]);
+		},
+		[setShapes],
+	);
 
-	const removeShape = useCallback((id: string) => {
-		setShapes((prev) => prev.filter((s) => s.id !== id));
-	}, [setShapes]);
+	const removeShape = useCallback(
+		(id: string) => {
+			setShapes((prev) => prev.filter((s) => s.id !== id));
+		},
+		[setShapes],
+	);
 
-	const updateShape = useCallback((id: string, updates: Partial<ShapeData>) => {
-		setShapes((prev) =>
-			prev.map((s) => (s.id === id ? { ...s, ...updates } : s)),
-		);
-	}, [setShapes]);
+	const updateShape = useCallback(
+		(id: string, updates: Partial<ShapeData>) => {
+			setShapes((prev) =>
+				prev.map((s) => (s.id === id ? { ...s, ...updates } : s)),
+			);
+		},
+		[setShapes],
+	);
 
 	// Icon operations
-	const addIcon = useCallback((icon: Omit<IconData, "id">) => {
-		const newIcon = { ...icon, id: `icon-${Date.now()}` };
-		setIcons((prev) => [...prev, newIcon]);
-	}, [setIcons]);
+	const addIcon = useCallback(
+		(icon: Omit<IconData, "id">) => {
+			const newIcon = { ...icon, id: `icon-${Date.now()}` };
+			setIcons((prev) => [...prev, newIcon]);
+		},
+		[setIcons],
+	);
 
-	const removeIcon = useCallback((id: string) => {
-		setIcons((prev) => prev.filter((i) => i.id !== id));
-	}, [setIcons]);
+	const removeIcon = useCallback(
+		(id: string) => {
+			setIcons((prev) => prev.filter((i) => i.id !== id));
+		},
+		[setIcons],
+	);
 
-	const updateIcon = useCallback((id: string, updates: Partial<IconData>) => {
-		setIcons((prev) =>
-			prev.map((i) => (i.id === id ? { ...i, ...updates } : i)),
-		);
-	}, [setIcons]);
+	const updateIcon = useCallback(
+		(id: string, updates: Partial<IconData>) => {
+			setIcons((prev) =>
+				prev.map((i) => (i.id === id ? { ...i, ...updates } : i)),
+			);
+		},
+		[setIcons],
+	);
 
 	// Get cell formula
 	const getCellFormula = useCallback(
@@ -1105,18 +1159,24 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 	);
 
 	// Select cell
-	const selectCell = useCallback((cellId: string) => {
-		setSelectedCell(cellId);
-	}, [setSelectedCell]);
+	const selectCell = useCallback(
+		(cellId: string) => {
+			setSelectedCell(cellId);
+		},
+		[setSelectedCell],
+	);
 
 	// Select range
-	const selectRange = useCallback((range: string) => {
-		const cells = getRange(range);
-		setSelectionRange(cells);
-		if (cells.length > 0) {
-			setSelectedCell(cells[0]);
-		}
-	}, [getRange, setSelectionRange, setSelectedCell]);
+	const selectRange = useCallback(
+		(range: string) => {
+			const cells = getRange(range);
+			setSelectionRange(cells);
+			if (cells.length > 0) {
+				setSelectedCell(cells[0]);
+			}
+		},
+		[getRange, setSelectionRange, setSelectedCell],
+	);
 
 	// Update sheet name (placeholder - actual name is in EditorPage)
 	const updateSheetName = useCallback((name: string) => {

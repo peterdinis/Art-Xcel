@@ -52,7 +52,9 @@ export const FormulaBar = ({
 		(inputRef.current || textareaRef.current)?.blur();
 	};
 
-	const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+	const handleKeyDown = (
+		e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>,
+	) => {
 		if (e.key === "Enter" && !e.shiftKey) {
 			e.preventDefault();
 			handleConfirm();
@@ -82,7 +84,7 @@ export const FormulaBar = ({
 		<div
 			className={cn(
 				"border-b border-border flex items-stretch bg-muted/30 dark:bg-zinc-900/80",
-				className
+				className,
 			)}
 		>
 			{/* Cell reference */}
@@ -102,7 +104,9 @@ export const FormulaBar = ({
 						<FunctionSquare className="h-4 w-4" />
 					</Button>
 				) : (
-					<span className="font-serif italic text-muted-foreground px-2 text-sm">fx</span>
+					<span className="font-serif italic text-muted-foreground px-2 text-sm">
+						fx
+					</span>
 				)}
 			</div>
 			{/* Formula input area */}
@@ -132,7 +136,10 @@ export const FormulaBar = ({
 				)}
 				{/* Preview line when formula and we have a result */}
 				{isFormula && previewValue !== undefined && previewValue !== "" && (
-					<div className="px-3 pb-1 text-xs text-muted-foreground truncate" title={previewValue}>
+					<div
+						className="px-3 pb-1 text-xs text-muted-foreground truncate"
+						title={previewValue}
+					>
 						Result: {previewValue}
 					</div>
 				)}
@@ -166,7 +173,11 @@ export const FormulaBar = ({
 				onClick={() => setExpanded(!expanded)}
 				title={expanded ? "Collapse formula bar" : "Expand formula bar"}
 			>
-				{expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+				{expanded ? (
+					<ChevronUp className="h-4 w-4" />
+				) : (
+					<ChevronDown className="h-4 w-4" />
+				)}
 			</Button>
 		</div>
 	);

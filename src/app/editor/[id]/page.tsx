@@ -209,10 +209,14 @@ function EditorContent() {
 	const [showNamedRangeDialog, setShowNamedRangeDialog] = useState(false);
 	const [showValidationDialog, setShowValidationDialog] = useState(false);
 	const [showNoteDialog, setShowNoteDialog] = useState(false);
-	const [showInsertFunctionDialog, setShowInsertFunctionDialog] = useState(false);
+	const [showInsertFunctionDialog, setShowInsertFunctionDialog] =
+		useState(false);
 	const [showFormulaBar, setShowFormulaBar] = useState(true);
 	const [showStatusBar, setShowStatusBar] = useState(true);
-	const [formatPainter, setFormatPainter] = useState<{ style: Record<string, unknown>; sourceCellId: string } | null>(null);
+	const [formatPainter, setFormatPainter] = useState<{
+		style: Record<string, unknown>;
+		sourceCellId: string;
+	} | null>(null);
 	const [findText, setFindText] = useState("");
 	const [replaceText, setReplaceText] = useState("");
 	const [matchCase, setMatchCase] = useState(false);
