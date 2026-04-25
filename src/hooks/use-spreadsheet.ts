@@ -24,6 +24,7 @@ export interface CellData {
 		borderBottom?: string;
 		borderLeft?: string;
 		borderRight?: string;
+		paddingLeft?: number;
 		numberFormat?:
 		| "general"
 		| "number"

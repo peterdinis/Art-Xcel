@@ -138,6 +138,13 @@ interface ClassicToolbarProps {
 	onFontColorPick?: (color: string) => void;
 	onBackgroundColorPick?: (color: string) => void;
 	onFormatPainter?: () => void;
+	onFontFamilyChange?: (font: string) => void;
+	onFontSizeChange?: (size: number) => void;
+	onInsertSpecialChar?: () => void;
+	onInsertHyperlink?: () => void;
+	onSpelling?: () => void;
+	onDecreaseIndent?: () => void;
+	onIncreaseIndent?: () => void;
 	// Platform detection for shortcut labels
 	isMac?: boolean;
 }
@@ -224,7 +231,14 @@ export const ClassicToolbar = ({
 	onFontColorPick,
 	onBackgroundColorPick,
 	onFormatPainter,
-	isMac = false, // Default value when prop is not provided
+	onFontFamilyChange,
+	onFontSizeChange,
+	onInsertSpecialChar,
+	onInsertHyperlink,
+	onSpelling,
+	onDecreaseIndent,
+	onIncreaseIndent,
+	isMac = false,
 }: ClassicToolbarProps) => {
 	const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
 		const file = event.target.files?.[0];
@@ -625,7 +639,7 @@ export const ClassicToolbar = ({
 				<ToolbarButton
 					icon={CheckCircle2}
 					tooltip="Spelling"
-					onClick={() => toast.info("Spelling")}
+					onClick={onSpelling}
 				/>
 				<ToolbarButton
 					icon={Grid3X3}
@@ -655,12 +669,12 @@ export const ClassicToolbar = ({
 				<ToolbarButton
 					icon={AtSign}
 					tooltip="Special Character"
-					onClick={() => toast.info("Special character")}
+					onClick={onInsertSpecialChar}
 				/>
 				<ToolbarButton
 					icon={LinkIcon}
 					tooltip="Insert Hyperlink"
-					onClick={() => toast.info("Hyperlink")}
+					onClick={onInsertHyperlink}
 				/>
 				<ToolbarButton
 					icon={MessageSquare}
@@ -677,7 +691,7 @@ export const ClassicToolbar = ({
 
 			{/* Row 3: Formatting Toolbar */}
 			<div className="flex items-center px-1 h-10 gap-0.5 overflow-x-auto">
-				<Select defaultValue="inter">
+				<Select defaultValue="inter" onValueChange={onFontFamilyChange}>
 					<SelectTrigger className="h-7 w-37.5 text-xs bg-white dark:bg-zinc-950">
 						<SelectValue placeholder="Font" />
 					</SelectTrigger>
@@ -685,9 +699,11 @@ export const ClassicToolbar = ({
 						<SelectItem value="inter">Inter</SelectItem>
 						<SelectItem value="arial">Arial</SelectItem>
 						<SelectItem value="times">Times New Roman</SelectItem>
+						<SelectItem value="roboto">Roboto</SelectItem>
+						<SelectItem value="monospace">Monospace</SelectItem>
 					</SelectContent>
 				</Select>
-				<Select defaultValue="10">
+				<Select defaultValue="10" onValueChange={(v) => onFontSizeChange?.(parseInt(v))}>
 					<SelectTrigger className="h-7 w-15 text-xs bg-white dark:bg-zinc-950">
 						<SelectValue placeholder="Size" />
 					</SelectTrigger>
@@ -848,12 +864,12 @@ export const ClassicToolbar = ({
 				<ToolbarButton
 					icon={ArrowLeftToLine}
 					tooltip="Decrease Indent"
-					onClick={() => toast.info("Decrease indent")}
+					onClick={onDecreaseIndent}
 				/>
 				<ToolbarButton
 					icon={ArrowRightToLine}
 					tooltip="Increase Indent"
-					onClick={() => toast.info("Increase indent")}
+					onClick={onIncreaseIndent}
 				/>
 				<Separator orientation="vertical" className="h-5 mx-0.5" />
 				<ToolbarButton

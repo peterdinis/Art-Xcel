@@ -142,6 +142,20 @@ interface EditorDialogsProps {
 	showUserGuideDialog: boolean;
 	setShowUserGuideDialog: (open: boolean) => void;
 
+	// Additional Features
+	showSpecialCharDialog: boolean;
+	setShowSpecialCharDialog: (open: boolean) => void;
+	showHyperlinkDialog: boolean;
+	setShowHyperlinkDialog: (open: boolean) => void;
+	showCommentDialog: boolean;
+	setShowCommentDialog: (open: boolean) => void;
+	showConditionalFormattingDialog: boolean;
+	setShowConditionalFormattingDialog: (open: boolean) => void;
+	handleInsertSpecialChar: (char: string) => void;
+	handleInsertHyperlink: (url: string, text: string) => void;
+	handleInsertComment: (comment: string) => void;
+	handleApplyConditionalFormatting: (rule: { type: string; value: string; color: string }) => void;
+
 	// Platform detection
 	isMac?: boolean;
 }
@@ -223,8 +237,35 @@ export const EditorDialogs: React.FC<EditorDialogsProps> = (props) => {
 		setShowShortcutsDialog,
 		showUserGuideDialog,
 		setShowUserGuideDialog,
+		showSpecialCharDialog,
+		setShowSpecialCharDialog,
+		showHyperlinkDialog,
+		setShowHyperlinkDialog,
+		showCommentDialog,
+		setShowCommentDialog,
+		showConditionalFormattingDialog,
+		setShowConditionalFormattingDialog,
+		handleInsertSpecialChar,
+		handleInsertHyperlink,
+		handleInsertComment,
+		handleApplyConditionalFormatting,
 		isMac = false,
 	} = props;
+
+	const [hyperlinkUrl, setHyperlinkUrl] = useState("");
+	const [hyperlinkText, setHyperlinkText] = useState("");
+	const [commentText, setCommentText] = useState("");
+	const [cfType, setCfType] = useState("greaterThan");
+	const [cfValue, setCfValue] = useState("");
+	const [cfColor, setCfColor] = useState("#fef08a"); // Default yellow
+
+	const specialChars = [
+		"©", "®", "™", "§", "¶", "†", "‡", "•", "–", "—",
+		"€", "£", "¥", "¢", "¤", "±", "×", "÷", "≈", "≠",
+		"≤", "≥", "∞", "√", "∑", "∆", "∏", "µ", "π", "Ω",
+		"α", "β", "γ", "δ", "ε", "θ", "λ", "ω", "ø", "←",
+		"↑", "→", "↓", "↔", "♠", "♣", "♥", "♦", "♩", "♪"
+	];
 
 	// Helper function to format shortcuts based on platform
 	const getShortcutText = (shortcut: string): string => {
@@ -993,6 +1034,162 @@ export const EditorDialogs: React.FC<EditorDialogsProps> = (props) => {
 					<DialogFooter>
 						<Button onClick={() => setShowUserGuideDialog(false)}>
 							Close Guide
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			{/* Special Character Dialog */}
+			<Dialog open={showSpecialCharDialog} onOpenChange={setShowSpecialCharDialog}>
+				<DialogContent className="max-w-md">
+					<DialogHeader>
+						<DialogTitle>Special Characters</DialogTitle>
+						<DialogDescription>
+							Click a character to insert it into the selected cell.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="grid grid-cols-10 gap-2 py-4">
+						{specialChars.map((char) => (
+							<Button
+								key={char}
+								variant="outline"
+								className="h-8 w-8 p-0 text-lg"
+								onClick={() => {
+									handleInsertSpecialChar(char);
+									setShowSpecialCharDialog(false);
+								}}
+							>
+								{char}
+							</Button>
+						))}
+					</div>
+				</DialogContent>
+			</Dialog>
+
+			{/* Hyperlink Dialog */}
+			<Dialog open={showHyperlinkDialog} onOpenChange={setShowHyperlinkDialog}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Insert Hyperlink</DialogTitle>
+					</DialogHeader>
+					<div className="space-y-4 py-4">
+						<div className="space-y-2">
+							<Label>Text to display</Label>
+							<Input
+								placeholder="e.g. My Website"
+								value={hyperlinkText}
+								onChange={(e) => setHyperlinkText(e.target.value)}
+							/>
+						</div>
+						<div className="space-y-2">
+							<Label>URL</Label>
+							<Input
+								placeholder="https://example.com"
+								value={hyperlinkUrl}
+								onChange={(e) => setHyperlinkUrl(e.target.value)}
+							/>
+						</div>
+					</div>
+					<DialogFooter>
+						<Button
+							onClick={() => {
+								handleInsertHyperlink(hyperlinkUrl, hyperlinkText);
+								setShowHyperlinkDialog(false);
+								setHyperlinkUrl("");
+								setHyperlinkText("");
+							}}
+						>
+							Insert
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			{/* Comment Dialog */}
+			<Dialog open={showCommentDialog} onOpenChange={setShowCommentDialog}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Insert Comment</DialogTitle>
+					</DialogHeader>
+					<div className="space-y-4 py-4">
+						<Label>Comment</Label>
+						<textarea
+							className="w-full h-32 p-2 rounded-md border bg-background text-sm"
+							placeholder="Write your comment here..."
+							value={commentText}
+							onChange={(e) => setCommentText(e.target.value)}
+						/>
+					</div>
+					<DialogFooter>
+						<Button
+							onClick={() => {
+								handleInsertComment(commentText);
+								setShowCommentDialog(false);
+								setCommentText("");
+							}}
+						>
+							Post Comment
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+			{/* Conditional Formatting Dialog */}
+			<Dialog open={showConditionalFormattingDialog} onOpenChange={setShowConditionalFormattingDialog}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Conditional Formatting</DialogTitle>
+						<DialogDescription>
+							Apply formatting if cell content matches criteria.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="space-y-4 py-4">
+						<div className="space-y-2">
+							<Label>Condition</Label>
+							<Select value={cfType} onValueChange={setCfType}>
+								<SelectTrigger>
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="greaterThan">Is Greater Than</SelectItem>
+									<SelectItem value="lessThan">Is Less Than</SelectItem>
+									<SelectItem value="equalTo">Is Equal To</SelectItem>
+									<SelectItem value="contains">Text Contains</SelectItem>
+								</SelectContent>
+							</Select>
+						</div>
+						<div className="space-y-2">
+							<Label>Value</Label>
+							<Input 
+								placeholder="Enter value" 
+								value={cfValue}
+								onChange={(e) => setCfValue(e.target.value)}
+							/>
+						</div>
+						<div className="space-y-2">
+							<Label>Fill Color</Label>
+							<div className="flex gap-2">
+								<Input 
+									type="color" 
+									className="w-12 h-8 p-1" 
+									value={cfColor}
+									onChange={(e) => setCfColor(e.target.value)}
+								/>
+								<Input 
+									value={cfColor}
+									onChange={(e) => setCfColor(e.target.value)}
+									placeholder="#RRGGBB"
+								/>
+							</div>
+						</div>
+					</div>
+					<DialogFooter>
+						<Button
+							onClick={() => {
+								handleApplyConditionalFormatting({ type: cfType, value: cfValue, color: cfColor });
+								setShowConditionalFormattingDialog(false);
+							}}
+						>
+							Apply Rule
 						</Button>
 					</DialogFooter>
 				</DialogContent>
