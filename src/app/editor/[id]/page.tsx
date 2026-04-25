@@ -45,6 +45,8 @@ import {
 	Eye,
 	Cloud,
 	Sparkles,
+	Brush,
+	CheckCircle2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
