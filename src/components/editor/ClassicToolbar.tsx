@@ -130,6 +130,7 @@ interface ClassicToolbarProps {
 	onShortcuts?: () => void;
 	onAbout?: () => void;
 	onToggleGrid?: () => void;
+	onToggleHeaders?: () => void;
 	onNumberFormatChange?: (
 		format: "general" | "number" | "currency" | "percentage" | "date" | "time",
 	) => void;
@@ -217,6 +218,7 @@ export const ClassicToolbar = ({
 	onShortcuts,
 	onAbout,
 	onToggleGrid,
+	onToggleHeaders,
 	onNumberFormatChange,
 	onInsertComment,
 	onFontColorPick,
@@ -344,6 +346,9 @@ export const ClassicToolbar = ({
 						<DropdownMenuSeparator />
 						<DropdownMenuItem onClick={onToggleGrid}>
 							Toggle Grid
+						</DropdownMenuItem>
+						<DropdownMenuItem onClick={onToggleHeaders}>
+							Toggle Headers
 						</DropdownMenuItem>
 						<DropdownMenuItem onClick={onToggleFreezePanes}>
 							Freeze Panes

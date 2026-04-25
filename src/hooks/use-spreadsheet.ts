@@ -470,21 +470,37 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 
 	// Update cell style
 	const updateCellStyle = useCallback(
-		(cellId: string, style: Partial<NonNullable<CellData["style"]>>) => {
+		(
+			cellIds: string | string[],
+			style: Partial<NonNullable<CellData["style"]>>,
+		) => {
 			saveToUndo();
+			const ids = Array.isArray(cellIds) ? cellIds : [cellIds];
 
-			setData((prev) => ({
-				...prev,
-				[cellId]: {
-					...(prev[cellId] || { value: "", formula: "" }),
-					style: {
-						...prev[cellId]?.style,
-						...style,
-					},
-				},
-			}));
+			setData((prev) => {
+				const newData = { ...prev };
+				ids.forEach((id) => {
+					newData[id] = {
+						...(prev[id] || { value: "", formula: "" }),
+						style: {
+							...prev[id]?.style,
+							...style,
+						},
+					};
+				});
+				return newData;
+			});
 		},
 		[saveToUndo, setData],
+	);
+
+	// Apply style to range
+	const applyStyleToRange = useCallback(
+		(range: string, style: Partial<NonNullable<CellData["style"]>>) => {
+			const cells = getRangeCells(range);
+			updateCellStyle(cells, style);
+		},
+		[updateCellStyle],
 	);
 
 	// Copy cells
@@ -1197,6 +1213,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 		updateCell,
 		updateCells,
 		updateCellStyle,
+		applyStyleToRange,
 		getCellValue,
 		getCellFormula,
 		selectCell,
