@@ -224,6 +224,7 @@ function EditorContent() {
 	const [formatPainter, setFormatPainter] = useState<{
 		style: Record<string, unknown>;
 		sourceCellId: string;
+		isActive: boolean;
 	} | null>(null);
 	const [findText, setFindText] = useState("");
 	const [replaceText, setReplaceText] = useState("");
@@ -1210,8 +1211,8 @@ function EditorContent() {
 		[selectedCell, addNote],
 	);	const handleSelectCell = useCallback(
 		(cellId: string) => {
-			if (formatPainter.isActive) {
-				updateCellStyle(cellId, formatPainter.style);
+			if (formatPainter!.isActive) {
+				updateCellStyle(cellId, formatPainter!.style);
 				setFormatPainter({ style: {}, isActive: false });
 				toast.success("Format applied", {
 					icon: <Brush className="h-4 w-4" />,
