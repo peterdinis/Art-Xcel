@@ -211,6 +211,8 @@ function EditorContent() {
 	const [showNoteDialog, setShowNoteDialog] = useState(false);
 	const [showInsertFunctionDialog, setShowInsertFunctionDialog] =
 		useState(false);
+	const [showUserGuideDialog, setShowUserGuideDialog] = useState(false);
+	const [showShortcutsDialog, setShowShortcutsDialog] = useState(false);
 	const [showFormulaBar, setShowFormulaBar] = useState(true);
 	const [showStatusBar, setShowStatusBar] = useState(true);
 	const [formatPainter, setFormatPainter] = useState<{
@@ -266,7 +268,6 @@ function EditorContent() {
 	);
 	const [chartType, setChartType] = useState<"bar" | "line" | "pie">("bar");
 	const [chartTitle, setChartTitle] = useState("New Chart");
-	const [showShortcutsDialog, setShowShortcutsDialog] = useState(false);
 
 	// Share state
 	const [shareSettings, setShareSettings] = useState<ShareSettings>({
@@ -1323,7 +1324,7 @@ function EditorContent() {
 				onFormatSpacing={() => toast.info("Spacing")}
 				onFormatAlignment={() => toast.info("Alignment")}
 				onConditionalFormatting={handleConditionalFormatting}
-				onUserGuides={() => toast.info("User guide")}
+				onUserGuides={() => setShowUserGuideDialog(true)}
 				onShortcuts={() => setShowShortcutsDialog(true)}
 				onAbout={() => toast.info("Art-Xcel Spreadsheet – Premium Edition")}
 				onToggleGrid={() => setShowGrid(!showGrid)}
@@ -1431,7 +1432,7 @@ function EditorContent() {
 				onSave={handleSave}
 				onUndo={handleUndo}
 				onRedo={handleRedo}
-				onHelp={() => setShowShortcutsDialog(true)}
+				onHelp={() => setShowUserGuideDialog(true)}
 				onSettings={() =>
 					toast.info("Settings", { description: "Editor settings coming soon" })
 				}
@@ -1536,6 +1537,9 @@ function EditorContent() {
 				handleInsertIcon={handleInsertIcon}
 				showShortcutsDialog={showShortcutsDialog}
 				setShowShortcutsDialog={setShowShortcutsDialog}
+				showUserGuideDialog={showUserGuideDialog}
+				setShowUserGuideDialog={setShowUserGuideDialog}
+				isMac={typeof window !== "undefined" && /Mac/.test(navigator.platform)}
 			/>
 		</div>
 	);
