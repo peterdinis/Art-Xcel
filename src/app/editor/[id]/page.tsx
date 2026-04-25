@@ -447,17 +447,19 @@ function EditorContent() {
 
 	const handleStyleChange = useCallback(
 		(style: any) => {
-			if (selectedCell) {
-				const currentStyle = data[selectedCell]?.style || {};
-				const newStyle = { ...currentStyle, ...style };
-				updateCellStyle(selectedCell, newStyle);
-
+			if (selectionRange && selectionRange.length > 0) {
+				updateCellStyle(selectionRange, style);
+				toast.success("Style applied to selection", {
+					duration: 1000,
+				});
+			} else if (selectedCell) {
+				updateCellStyle(selectedCell, style);
 				toast.success("Style applied", {
 					duration: 1000,
 				});
 			}
 		},
-		[selectedCell, data, updateCellStyle],
+		[selectedCell, selectionRange, updateCellStyle],
 	);
 
 	const handleSave = useCallback(async () => {
@@ -1325,6 +1327,7 @@ function EditorContent() {
 				onShortcuts={() => setShowShortcutsDialog(true)}
 				onAbout={() => toast.info("Art-Xcel Spreadsheet – Premium Edition")}
 				onToggleGrid={() => setShowGrid(!showGrid)}
+				onToggleHeaders={() => setShowHeaders(!showHeaders)}
 			/>
 
 			{/* Formula Bar */}
@@ -1356,10 +1359,7 @@ function EditorContent() {
 			/>
 
 			{/* Main Grid Area */}
-			<div
-				className="flex-1 overflow-hidden relative"
-				style={{ zoom: `${zoom}%` }}
-			>
+			<div className="flex-1 overflow-hidden relative">
 				<Grid
 					ref={gridRef}
 					data={data}
@@ -1371,6 +1371,7 @@ function EditorContent() {
 					showGrid={showGrid}
 					showHeaders={showHeaders}
 					freezePanes={freezePanes}
+					zoom={zoom}
 					// Context Menu Actions
 					onCopy={handleCopy}
 					onCut={handleCut}
@@ -1422,6 +1423,7 @@ function EditorContent() {
 					selectedCell={selectedCell}
 					selectionRange={selectionRange}
 					zoom={zoom}
+					onZoomChange={setZoom}
 				/>
 			)}
 
