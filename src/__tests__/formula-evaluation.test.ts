@@ -85,11 +85,86 @@ describe("formula-evaluator", () => {
 		});
 	});
 
+	describe("Statistical Functions", () => {
+		it("should evaluate =MEDIAN(1, 2, 3, 4, 5) to 3", () => {
+			expect(evaluateFormula("=MEDIAN(1, 2, 3, 4, 5)", {})).toBe("3");
+		});
+
+		it("should evaluate =MEDIAN(1, 2, 3, 4) to 2.5", () => {
+			expect(evaluateFormula("=MEDIAN(1, 2, 3, 4)", {})).toBe("2.5");
+		});
+
+		it("should evaluate =STDEV(10, 20, 30) to ~8.16", () => {
+			const result = Number(evaluateFormula("=STDEV(10, 20, 30)", {}));
+			expect(result).toBeGreaterThan(8.16);
+			expect(result).toBeLessThan(8.17);
+		});
+	});
+
+	describe("Financial Functions", () => {
+		it("should evaluate PMT(0.05, 12, 1000) correctly", () => {
+			const result = Number(evaluateFormula("=PMT(0.05, 12, 1000)", {}));
+			expect(result).toBeGreaterThan(85.6);
+			expect(result).toBeLessThan(85.7);
+		});
+	});
+
+	describe("Date Functions", () => {
+		it("should extract year, month, day from date string", () => {
+			const data = { A1: { value: "2024-12-25", formula: "" } };
+			expect(evaluateFormula("=YEAR(A1)", data)).toBe("2024");
+			expect(evaluateFormula("=MONTH(A1)", data)).toBe("12");
+			expect(evaluateFormula("=DAY(A1)", data)).toBe("25");
+		});
+	});
+
+	describe("Logical & Info Functions", () => {
+		it("should evaluate AND, OR, NOT", () => {
+			expect(evaluateFormula("=AND(1>0, 2>1)", {})).toBe("true");
+			expect(evaluateFormula("=OR(1>0, 0>1)", {})).toBe("true");
+			expect(evaluateFormula("=NOT(1>0)", {})).toBe("false");
+		});
+
+		it("should evaluate ISNUMBER, ISTEXT, ISBLANK", () => {
+			const data = {
+				A1: { value: "100", formula: "" },
+				A2: { value: "Hello", formula: "" },
+				A3: { value: "", formula: "" },
+			};
+			expect(evaluateFormula("=ISNUMBER(A1)", data)).toBe("true");
+			expect(evaluateFormula("=ISTEXT(A2)", data)).toBe("true");
+			expect(evaluateFormula("=ISBLANK(A3)", data)).toBe("true");
+		});
+	});
+
+	describe("VLOOKUP & Conditional Stats", () => {
+		const tableData: SheetData = {
+			A1: { value: "Apple", formula: "" },
+			B1: { value: "10", formula: "" },
+			A2: { value: "Banana", formula: "" },
+			B2: { value: "20", formula: "" },
+			A3: { value: "Apple", formula: "" },
+			B3: { value: "30", formula: "" },
+		};
+
+		it("should evaluate VLOOKUP correctly", () => {
+			expect(evaluateFormula('=VLOOKUP("Banana", A1:B2, 2, true)', tableData)).toBe("20");
+			expect(evaluateFormula('=VLOOKUP("Cherry", A1:B2, 2, true)', tableData)).toBe("#N/A");
+		});
+
+		it("should evaluate SUMIF correctly", () => {
+			expect(evaluateFormula('=SUMIF(A1:A3, "Apple", B1:B3)', tableData)).toBe("40");
+		});
+
+		it("should evaluate COUNTIF correctly", () => {
+			expect(evaluateFormula('=COUNTIF(A1:A3, "Apple")', tableData)).toBe("2");
+		});
+	});
+
 	describe("Formatting", () => {
 		it("should respect number format for target cell", () => {
 			// Assuming targetCellId is D1 which has currency format
 			const result = evaluateFormula("=2*50", mockData, { targetCellId: "D1" });
-			// sk-SK currency format for 100 EUR usually is "100,00 €" or similar
 			expect(result).toMatch(/100/);
 			expect(result).toMatch(/€/);
 		});

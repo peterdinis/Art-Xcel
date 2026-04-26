@@ -4,6 +4,7 @@ import {
 	indexToColLetter,
 	parseCellId,
 	getRangeCells,
+	formatNumber,
 } from "../lib/excel-utils";
 
 describe("excel-utils", () => {
@@ -72,6 +73,28 @@ describe("excel-utils", () => {
 
 		it("should expand A1:B2 correctly", () => {
 			expect(getRangeCells("A1:B2")).toEqual(["A1", "B1", "A2", "B2"]);
+		});
+	});
+
+	describe("formatNumber", () => {
+		it("should format currency in sk-SK", () => {
+			const result = formatNumber(100, "currency");
+			expect(result).toMatch(/100/);
+			expect(result).toMatch(/€/);
+		});
+
+		it("should format percentage in sk-SK", () => {
+			const result = formatNumber(50, "percentage");
+			expect(result).toMatch(/50/);
+			expect(result).toMatch(/%/);
+		});
+
+		it("should format date in sk-SK", () => {
+			const date = new Date("2024-12-25").getTime();
+			const result = formatNumber(date, "date");
+			expect(result).toMatch(/25/);
+			expect(result).toMatch(/12/);
+			expect(result).toMatch(/2024/);
 		});
 	});
 });
