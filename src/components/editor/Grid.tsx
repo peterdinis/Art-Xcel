@@ -62,6 +62,7 @@ interface GridProps {
 	onAutoSave?: (data: SheetData) => Promise<void>;
 	autoSaveInterval?: number;
 	showAutoSaveStatus?: boolean;
+	zoom?: number;
 }
 
 export interface GridHandle {
@@ -255,15 +256,15 @@ interface AutoSaveStatusProps {
 const AutoSaveStatus = memo(
 	({ isSaving, lastSaved, error, onManualSave }: AutoSaveStatusProps) => {
 		const getStatusText = () => {
-			if (isSaving) return "Ukladám...";
-			if (error) return "Chyba pri ukladaní";
+			if (isSaving) return "Saving...";
+			if (error) return "Error saving";
 			if (lastSaved) {
 				const now = new Date();
 				const diff = Math.floor((now.getTime() - lastSaved.getTime()) / 1000);
-				if (diff < 60) return `Uložené pred ${diff} s`;
-				return `Uložené o ${lastSaved.toLocaleTimeString()}`;
+				if (diff < 60) return `Saved ${diff} s ago`;
+				return `Saved at ${lastSaved.toLocaleTimeString()}`;
 			}
-			return "Neuložené";
+			return "Not saved";
 		};
 
 		return (
@@ -272,10 +273,10 @@ const AutoSaveStatus = memo(
 					onClick={onManualSave}
 					className="flex items-center gap-1 hover:text-primary transition-colors"
 					disabled={isSaving}
-					title="Manuálne uložiť"
+					title="Save manually"
 				>
 					<Save className="h-3 w-3" />
-					<span>Uložiť</span>
+					<span>Save</span>
 				</button>
 				<div className="w-px h-3 bg-border" />
 				<div className="flex items-center gap-1 text-muted-foreground">
@@ -333,6 +334,7 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 			onAutoSave,
 			autoSaveInterval = 30000,
 			showAutoSaveStatus = true,
+			zoom = 100,
 		},
 		ref,
 	) => {
@@ -414,8 +416,8 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 					setSaveError(null);
 
 					if (force) {
-						toast.success("Spreadsheet uložený", {
-							description: `"${spreadsheetName || "Bez názvu"}" bol úspešne uložený.`,
+						toast.success("Spreadsheet saved", {
+							description: `"${spreadsheetName || "Untitled"}" has been successfully saved.`,
 							icon: <Cloud className="h-4 w-4" />,
 							duration: 3000,
 						});
@@ -423,12 +425,12 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 				} catch (error) {
 					console.error("Autosave failed:", error);
 					setSaveError(
-						error instanceof Error ? error.message : "Neznáma chyba",
+						error instanceof Error ? error.message : "Unknown error",
 					);
 
 					if (force) {
-						toast.error("Ukladanie zlyhalo", {
-							description: "Skúste to prosím neskôr.",
+						toast.error("Save failed", {
+							description: "Please try again later.",
 							duration: 5000,
 						});
 					}
@@ -504,7 +506,7 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 
 					e.preventDefault();
 					e.returnValue =
-						"Máte neuložené zmeny. Naozaj chcete opustiť stránku?";
+						"You have unsaved changes. Are you sure you want to leave?";
 				}
 			};
 
@@ -865,7 +867,15 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 		const virtualCols = colVirtualizer.getVirtualItems();
 
 		return (
-			<div className="relative w-full h-full overflow-hidden bg-background">
+			<div 
+				className="relative w-full h-full overflow-hidden bg-background"
+				style={{ 
+					transform: `scale(${zoom / 100})`, 
+					transformOrigin: "top left",
+					width: `${10000 / zoom}%`,
+					height: `${10000 / zoom}%`
+				}}
+			>
 				{/* Fixed corner */}
 				{showHeaders && (
 					<div

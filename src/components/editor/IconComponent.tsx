@@ -23,7 +23,6 @@ export const IconComponent = ({
 	onRemove,
 	onUpdatePosition,
 }: IconComponentProps) => {
-	// Safe access to Lucide icons with type assertion
 	const Icon = (LucideIcons as any)[iconName] || LucideIcons.HelpCircle;
 
 	const dragState = useRef<{
