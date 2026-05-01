@@ -11,7 +11,10 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ShareDialog, type ShareSettings } from "@/components/shared/share-dialog";
+import {
+	ShareDialog,
+	type ShareSettings,
+} from "@/components/shared/share-dialog";
 import {
 	Select,
 	SelectContent,
@@ -21,12 +24,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import {
-	Tabs,
-	TabsContent,
-	TabsList,
-	TabsTrigger,
-} from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
 	Upload,
 	Keyboard,
@@ -175,7 +173,11 @@ interface EditorDialogsProps {
 	handleInsertSpecialChar: (char: string) => void;
 	handleInsertHyperlink: (url: string, text: string) => void;
 	handleInsertComment: (comment: string) => void;
-	handleApplyConditionalFormatting: (rule: { type: string; value: string; color: string }) => void;
+	handleApplyConditionalFormatting: (rule: {
+		type: string;
+		value: string;
+		color: string;
+	}) => void;
 
 	// Platform detection
 	isMac?: boolean;
@@ -285,11 +287,56 @@ export const EditorDialogs: React.FC<EditorDialogsProps> = (props) => {
 	const [cfColor, setCfColor] = useState("#fef08a"); // Default yellow
 
 	const specialChars = [
-		"©", "®", "™", "§", "¶", "†", "‡", "•", "–", "—",
-		"€", "£", "¥", "¢", "¤", "±", "×", "÷", "≈", "≠",
-		"≤", "≥", "∞", "√", "∑", "∆", "∏", "µ", "π", "Ω",
-		"α", "β", "γ", "δ", "ε", "θ", "λ", "ω", "ø", "←",
-		"↑", "→", "↓", "↔", "♠", "♣", "♥", "♦", "♩", "♪"
+		"©",
+		"®",
+		"™",
+		"§",
+		"¶",
+		"†",
+		"‡",
+		"•",
+		"–",
+		"—",
+		"€",
+		"£",
+		"¥",
+		"¢",
+		"¤",
+		"±",
+		"×",
+		"÷",
+		"≈",
+		"≠",
+		"≤",
+		"≥",
+		"∞",
+		"√",
+		"∑",
+		"∆",
+		"∏",
+		"µ",
+		"π",
+		"Ω",
+		"α",
+		"β",
+		"γ",
+		"δ",
+		"ε",
+		"θ",
+		"λ",
+		"ω",
+		"ø",
+		"←",
+		"↑",
+		"→",
+		"↓",
+		"↔",
+		"♠",
+		"♣",
+		"♥",
+		"♦",
+		"♩",
+		"♪",
 	];
 
 	// Helper function to format shortcuts based on platform
@@ -965,7 +1012,9 @@ export const EditorDialogs: React.FC<EditorDialogsProps> = (props) => {
 								</div>
 								<div className="flex justify-between text-xs">
 									<span>Start of Row</span>
-									<kbd className="bg-muted px-1.5 rounded text-[10px]">Home</kbd>
+									<kbd className="bg-muted px-1.5 rounded text-[10px]">
+										Home
+									</kbd>
 								</div>
 								<div className="flex justify-between text-xs">
 									<span>End of Sheet</span>
@@ -1003,7 +1052,10 @@ export const EditorDialogs: React.FC<EditorDialogsProps> = (props) => {
 						</DialogDescription>
 					</DialogHeader>
 
-					<Tabs defaultValue="formulas" className="flex-1 overflow-hidden flex flex-col">
+					<Tabs
+						defaultValue="formulas"
+						className="flex-1 overflow-hidden flex flex-col"
+					>
 						<TabsList className="grid grid-cols-3 w-full">
 							<TabsTrigger value="formulas" className="flex items-center gap-2">
 								<FunctionSquare className="h-4 w-4" /> Formulas
@@ -1019,54 +1071,106 @@ export const EditorDialogs: React.FC<EditorDialogsProps> = (props) => {
 						<div className="flex-1 overflow-y-auto py-4 pr-2">
 							<TabsContent value="formulas" className="space-y-4 mt-0">
 								<div>
-									<h4 className="font-semibold text-sm mb-2">Basic Arithmetic</h4>
+									<h4 className="font-semibold text-sm mb-2">
+										Basic Arithmetic
+									</h4>
 									<p className="text-xs text-muted-foreground mb-2">
-										Start with an equals sign <code className="bg-muted px-1 rounded">=</code> followed by your expression.
+										Start with an equals sign{" "}
+										<code className="bg-muted px-1 rounded">=</code> followed by
+										your expression.
 									</p>
 									<ul className="list-disc list-inside text-xs space-y-1 text-muted-foreground">
-										<li><code className="bg-muted px-1 rounded">=A1 + B1</code> (Addition)</li>
-										<li><code className="bg-muted px-1 rounded">=SUM(A1:A10)</code> (Range Sum)</li>
-										<li><code className="bg-muted px-1 rounded">=AVERAGE(B1:B20)</code> (Average)</li>
+										<li>
+											<code className="bg-muted px-1 rounded">=A1 + B1</code>{" "}
+											(Addition)
+										</li>
+										<li>
+											<code className="bg-muted px-1 rounded">
+												=SUM(A1:A10)
+											</code>{" "}
+											(Range Sum)
+										</li>
+										<li>
+											<code className="bg-muted px-1 rounded">
+												=AVERAGE(B1:B20)
+											</code>{" "}
+											(Average)
+										</li>
 									</ul>
 								</div>
 								<div>
-									<h4 className="font-semibold text-sm mb-2">Advanced Functions</h4>
+									<h4 className="font-semibold text-sm mb-2">
+										Advanced Functions
+									</h4>
 									<ul className="list-disc list-inside text-xs space-y-1 text-muted-foreground">
-										<li><code className="bg-muted px-1 rounded">=VLOOKUP(value, range, col, [match])</code> - Search in ranges</li>
-										<li><code className="bg-muted px-1 rounded">=IF(condition, true, false)</code> - Logical operations</li>
-										<li><code className="bg-muted px-1 rounded">=PMT(rate, nper, pv)</code> - Financial calculations</li>
+										<li>
+											<code className="bg-muted px-1 rounded">
+												=VLOOKUP(value, range, col, [match])
+											</code>{" "}
+											- Search in ranges
+										</li>
+										<li>
+											<code className="bg-muted px-1 rounded">
+												=IF(condition, true, false)
+											</code>{" "}
+											- Logical operations
+										</li>
+										<li>
+											<code className="bg-muted px-1 rounded">
+												=PMT(rate, nper, pv)
+											</code>{" "}
+											- Financial calculations
+										</li>
 									</ul>
 								</div>
 							</TabsContent>
 
 							<TabsContent value="data" className="space-y-4 mt-0">
 								<div>
-									<h4 className="font-semibold text-sm mb-2">Data Operations</h4>
+									<h4 className="font-semibold text-sm mb-2">
+										Data Operations
+									</h4>
 									<div className="grid grid-cols-2 gap-4">
 										<div className="space-y-1">
 											<p className="text-xs font-medium">Sorting</p>
-											<p className="text-[11px] text-muted-foreground">Select a range and use Data {">"} Sort to organize your rows alphabetically or numerically.</p>
+											<p className="text-[11px] text-muted-foreground">
+												Select a range and use Data {">"} Sort to organize your
+												rows alphabetically or numerically.
+											</p>
 										</div>
 										<div className="space-y-1">
 											<p className="text-xs font-medium">Filtering</p>
-											<p className="text-[11px] text-muted-foreground">Enable AutoFilter to quickly find specific values in large data sets.</p>
+											<p className="text-[11px] text-muted-foreground">
+												Enable AutoFilter to quickly find specific values in
+												large data sets.
+											</p>
 										</div>
 									</div>
 								</div>
 								<div>
 									<h4 className="font-semibold text-sm mb-2">Validation</h4>
-									<p className="text-xs text-muted-foreground">Restrict cell input to specific types (numbers, dates, lists) via the Data Validation dialog.</p>
+									<p className="text-xs text-muted-foreground">
+										Restrict cell input to specific types (numbers, dates,
+										lists) via the Data Validation dialog.
+									</p>
 								</div>
 							</TabsContent>
 
 							<TabsContent value="visuals" className="space-y-4 mt-0">
 								<div>
 									<h4 className="font-semibold text-sm mb-2">Charts</h4>
-									<p className="text-xs text-muted-foreground">Select data including headers and click Insert {">"} Chart. Supports Bar, Line, and Pie charts.</p>
+									<p className="text-xs text-muted-foreground">
+										Select data including headers and click Insert {">"} Chart.
+										Supports Bar, Line, and Pie charts.
+									</p>
 								</div>
 								<div>
 									<h4 className="font-semibold text-sm mb-2">Graphics</h4>
-									<p className="text-xs text-muted-foreground">Insert shapes, icons, and images to enhance your spreadsheet's visual appeal. All objects are draggable and resizable.</p>
+									<p className="text-xs text-muted-foreground">
+										Insert shapes, icons, and images to enhance your
+										spreadsheet's visual appeal. All objects are draggable and
+										resizable.
+									</p>
 								</div>
 							</TabsContent>
 						</div>
@@ -1081,7 +1185,10 @@ export const EditorDialogs: React.FC<EditorDialogsProps> = (props) => {
 			</Dialog>
 
 			{/* Special Character Dialog */}
-			<Dialog open={showSpecialCharDialog} onOpenChange={setShowSpecialCharDialog}>
+			<Dialog
+				open={showSpecialCharDialog}
+				onOpenChange={setShowSpecialCharDialog}
+			>
 				<DialogContent className="max-w-md">
 					<DialogHeader>
 						<DialogTitle>Special Characters</DialogTitle>
@@ -1175,7 +1282,10 @@ export const EditorDialogs: React.FC<EditorDialogsProps> = (props) => {
 				</DialogContent>
 			</Dialog>
 			{/* Conditional Formatting Dialog */}
-			<Dialog open={showConditionalFormattingDialog} onOpenChange={setShowConditionalFormattingDialog}>
+			<Dialog
+				open={showConditionalFormattingDialog}
+				onOpenChange={setShowConditionalFormattingDialog}
+			>
 				<DialogContent>
 					<DialogHeader>
 						<DialogTitle>Conditional Formatting</DialogTitle>
@@ -1200,8 +1310,8 @@ export const EditorDialogs: React.FC<EditorDialogsProps> = (props) => {
 						</div>
 						<div className="space-y-2">
 							<Label>Value</Label>
-							<Input 
-								placeholder="Enter value" 
+							<Input
+								placeholder="Enter value"
 								value={cfValue}
 								onChange={(e) => setCfValue(e.target.value)}
 							/>
@@ -1209,13 +1319,13 @@ export const EditorDialogs: React.FC<EditorDialogsProps> = (props) => {
 						<div className="space-y-2">
 							<Label>Fill Color</Label>
 							<div className="flex gap-2">
-								<Input 
-									type="color" 
-									className="w-12 h-8 p-1" 
+								<Input
+									type="color"
+									className="w-12 h-8 p-1"
 									value={cfColor}
 									onChange={(e) => setCfColor(e.target.value)}
 								/>
-								<Input 
+								<Input
 									value={cfColor}
 									onChange={(e) => setCfColor(e.target.value)}
 									placeholder="#RRGGBB"
@@ -1226,7 +1336,11 @@ export const EditorDialogs: React.FC<EditorDialogsProps> = (props) => {
 					<DialogFooter>
 						<Button
 							onClick={() => {
-								handleApplyConditionalFormatting({ type: cfType, value: cfValue, color: cfColor });
+								handleApplyConditionalFormatting({
+									type: cfType,
+									value: cfValue,
+									color: cfColor,
+								});
 								setShowConditionalFormattingDialog(false);
 							}}
 						>
@@ -1256,14 +1370,15 @@ export const EditorDialogs: React.FC<EditorDialogsProps> = (props) => {
 						</div>
 					</div>
 					<DialogFooter>
-						<Button onClick={() => setShowAboutDialog?.(false)}>
-							Close
-						</Button>
+						<Button onClick={() => setShowAboutDialog?.(false)}>Close</Button>
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
 			{/* Save Dialog */}
-			<Dialog open={props.showSaveDialog} onOpenChange={props.setShowSaveDialog}>
+			<Dialog
+				open={props.showSaveDialog}
+				onOpenChange={props.setShowSaveDialog}
+			>
 				<DialogContent className="max-w-md">
 					<DialogHeader>
 						<DialogTitle>Save Spreadsheet</DialogTitle>
@@ -1283,7 +1398,10 @@ export const EditorDialogs: React.FC<EditorDialogsProps> = (props) => {
 						</div>
 					</div>
 					<DialogFooter>
-						<Button variant="outline" onClick={() => props.setShowSaveDialog?.(false)}>
+						<Button
+							variant="outline"
+							onClick={() => props.setShowSaveDialog?.(false)}
+						>
 							Cancel
 						</Button>
 						<Button

@@ -88,10 +88,18 @@ export function useEditorState(): UseEditorStateReturn {
 		try {
 			const g = localStorage.getItem("excel-editor-showGrid");
 			if (g !== null)
-				dispatchEditor({ type: "SET_FIELD", field: "showGrid", value: g === "true" });
+				dispatchEditor({
+					type: "SET_FIELD",
+					field: "showGrid",
+					value: g === "true",
+				});
 			const h = localStorage.getItem("excel-editor-showHeaders");
 			if (h !== null)
-				dispatchEditor({ type: "SET_FIELD", field: "showHeaders", value: h === "true" });
+				dispatchEditor({
+					type: "SET_FIELD",
+					field: "showHeaders",
+					value: h === "true",
+				});
 			const z = localStorage.getItem("excel-editor-defaultZoom");
 			if (z !== null) {
 				const n = parseInt(z, 10);
@@ -104,88 +112,198 @@ export function useEditorState(): UseEditorStateReturn {
 	}, []);
 
 	// ── Dialog helpers ─────────────────────────────────────────────────────────
-	const openDialog = useCallback((dialog: DialogName) =>
-		dispatchDialogs({ type: "OPEN", dialog }), []);
-	
-	const closeDialog = useCallback((dialog: DialogName) =>
-		dispatchDialogs({ type: "CLOSE", dialog }), []);
-	
-	const toggleDialog = useCallback((dialog: DialogName) =>
-		dispatchDialogs({ type: "TOGGLE", dialog }), []);
+	const openDialog = useCallback(
+		(dialog: DialogName) => dispatchDialogs({ type: "OPEN", dialog }),
+		[],
+	);
 
-	const mkDialog = useCallback((d: DialogName) => (open: boolean) =>
-		open ? openDialog(d) : closeDialog(d), [openDialog, closeDialog]);
+	const closeDialog = useCallback(
+		(dialog: DialogName) => dispatchDialogs({ type: "CLOSE", dialog }),
+		[],
+	);
+
+	const toggleDialog = useCallback(
+		(dialog: DialogName) => dispatchDialogs({ type: "TOGGLE", dialog }),
+		[],
+	);
+
+	const mkDialog = useCallback(
+		(d: DialogName) => (open: boolean) =>
+			open ? openDialog(d) : closeDialog(d),
+		[openDialog, closeDialog],
+	);
 
 	// ── Editor field helper ───────────────────────────────────────────────────
-	const setField = useCallback(<K extends keyof EditorState>(
-		field: K,
-		value: EditorState[K],
-	) => dispatchEditor({ type: "SET_FIELD", field, value }), []);
+	const setField = useCallback(
+		<K extends keyof EditorState>(field: K, value: EditorState[K]) =>
+			dispatchEditor({ type: "SET_FIELD", field, value }),
+		[],
+	);
 
-	const setZoom = useCallback((v: number | ((prev: number) => number)) =>
-		dispatchEditor({
-			type: "SET_ZOOM",
-			value: typeof v === "function" ? v(editorState.zoom) : v,
-		}), [editorState.zoom]);
+	const setZoom = useCallback(
+		(v: number | ((prev: number) => number)) =>
+			dispatchEditor({
+				type: "SET_ZOOM",
+				value: typeof v === "function" ? v(editorState.zoom) : v,
+			}),
+		[editorState.zoom],
+	);
 
-	const mkToggle = useCallback((field: keyof EditorState) =>
-		(v: boolean | ((p: boolean) => boolean)) =>
+	const mkToggle = useCallback(
+		(field: keyof EditorState) => (v: boolean | ((p: boolean) => boolean)) =>
 			typeof v === "function"
 				? dispatchEditor({ type: "TOGGLE_FIELD", field })
-				: setField(field, v as boolean), [setField]);
+				: setField(field, v as boolean),
+		[setField],
+	);
 
 	// Memoize all dialog setters
 	const setShowFindDialog = useCallback(mkDialog("findDialog"), [mkDialog]);
 	const setShowPrintDialog = useCallback(mkDialog("printDialog"), [mkDialog]);
-	const setShowPageSetupDialog = useCallback(mkDialog("pageSetupDialog"), [mkDialog]);
+	const setShowPageSetupDialog = useCallback(mkDialog("pageSetupDialog"), [
+		mkDialog,
+	]);
 	const setShowExportDialog = useCallback(mkDialog("exportDialog"), [mkDialog]);
 	const setShowImportDialog = useCallback(mkDialog("importDialog"), [mkDialog]);
 	const setShowDeleteDialog = useCallback(mkDialog("deleteDialog"), [mkDialog]);
-	const setShowNewSheetDialog = useCallback(mkDialog("newSheetDialog"), [mkDialog]);
-	const setShowNamedRangeDialog = useCallback(mkDialog("namedRangeDialog"), [mkDialog]);
-	const setShowValidationDialog = useCallback(mkDialog("validationDialog"), [mkDialog]);
+	const setShowNewSheetDialog = useCallback(mkDialog("newSheetDialog"), [
+		mkDialog,
+	]);
+	const setShowNamedRangeDialog = useCallback(mkDialog("namedRangeDialog"), [
+		mkDialog,
+	]);
+	const setShowValidationDialog = useCallback(mkDialog("validationDialog"), [
+		mkDialog,
+	]);
 	const setShowNoteDialog = useCallback(mkDialog("noteDialog"), [mkDialog]);
-	const setShowInsertFunctionDialog = useCallback(mkDialog("insertFunctionDialog"), [mkDialog]);
-	const setShowUserGuideDialog = useCallback(mkDialog("userGuideDialog"), [mkDialog]);
-	const setShowShortcutsDialog = useCallback(mkDialog("shortcutsDialog"), [mkDialog]);
-	const setShowSpecialCharDialog = useCallback(mkDialog("specialCharDialog"), [mkDialog]);
-	const setShowHyperlinkDialog = useCallback(mkDialog("hyperlinkDialog"), [mkDialog]);
-	const setShowCommentDialog = useCallback(mkDialog("commentDialog"), [mkDialog]);
-	const setShowConditionalFormattingDialog = useCallback(mkDialog("conditionalFormattingDialog"), [mkDialog]);
+	const setShowInsertFunctionDialog = useCallback(
+		mkDialog("insertFunctionDialog"),
+		[mkDialog],
+	);
+	const setShowUserGuideDialog = useCallback(mkDialog("userGuideDialog"), [
+		mkDialog,
+	]);
+	const setShowShortcutsDialog = useCallback(mkDialog("shortcutsDialog"), [
+		mkDialog,
+	]);
+	const setShowSpecialCharDialog = useCallback(mkDialog("specialCharDialog"), [
+		mkDialog,
+	]);
+	const setShowHyperlinkDialog = useCallback(mkDialog("hyperlinkDialog"), [
+		mkDialog,
+	]);
+	const setShowCommentDialog = useCallback(mkDialog("commentDialog"), [
+		mkDialog,
+	]);
+	const setShowConditionalFormattingDialog = useCallback(
+		mkDialog("conditionalFormattingDialog"),
+		[mkDialog],
+	);
 	const setShowChartDialog = useCallback(mkDialog("chartDialog"), [mkDialog]);
 	const setShowIconDialog = useCallback(mkDialog("iconDialog"), [mkDialog]);
 	const setShowSaveDialog = useCallback(mkDialog("saveDialog"), [mkDialog]);
 	const setShowShareDialog = useCallback(mkDialog("shareDialog"), [mkDialog]);
 
 	// Memoize editor field setters
-	const setSheetName = useCallback((v: string) => setField("sheetName", v), [setField]);
-	const setShowGrid = useCallback((v: boolean) => setField("showGrid", v), [setField]);
-	const setShowHeaders = useCallback((v: boolean) => setField("showHeaders", v), [setField]);
-	const setIsLoading = useCallback((v: boolean) => setField("isLoading", v), [setField]);
-	const setFormatPainter = useCallback((v: EditorState["formatPainter"]) => setField("formatPainter", v), [setField]);
-	const setFindText = useCallback((v: string) => setField("findText", v), [setField]);
-	const setReplaceText = useCallback((v: string) => setField("replaceText", v), [setField]);
-	const setMatchCase = useCallback((v: boolean) => setField("matchCase", v), [setField]);
-	const setWholeCell = useCallback((v: boolean) => setField("wholeCell", v), [setField]);
-	const setNewSheetName = useCallback((v: string) => setField("newSheetName", v), [setField]);
-	const setNewRangeName = useCallback((v: string) => setField("newRangeName", v), [setField]);
-	const setNewRangeRef = useCallback((v: string) => setField("newRangeRef", v), [setField]);
-	const setCellNote = useCallback((v: string) => setField("cellNote", v), [setField]);
-	const setValidationType = useCallback((v: EditorState["validationType"]) => setField("validationType", v), [setField]);
-	const setValidationMin = useCallback((v: number) => setField("validationMin", v), [setField]);
-	const setValidationMax = useCallback((v: number) => setField("validationMax", v), [setField]);
-	const setValidationList = useCallback((v: string) => setField("validationList", v), [setField]);
-	const setValidationRequired = useCallback((v: boolean) => setField("validationRequired", v), [setField]);
-	const setIconName = useCallback((v: string) => setField("iconName", v), [setField]);
-	const setChartType = useCallback((v: EditorState["chartType"]) => setField("chartType", v), [setField]);
-	const setChartTitle = useCallback((v: string) => setField("chartTitle", v), [setField]);
-	const setChartRange = useCallback((v: string) => setField("chartRange", v), [setField]);
-	const setShareSettings = useCallback((v: ShareSettings) => setField("shareSettings", v), [setField]);
+	const setSheetName = useCallback(
+		(v: string) => setField("sheetName", v),
+		[setField],
+	);
+	const setShowGrid = useCallback(
+		(v: boolean) => setField("showGrid", v),
+		[setField],
+	);
+	const setShowHeaders = useCallback(
+		(v: boolean) => setField("showHeaders", v),
+		[setField],
+	);
+	const setIsLoading = useCallback(
+		(v: boolean) => setField("isLoading", v),
+		[setField],
+	);
+	const setFormatPainter = useCallback(
+		(v: EditorState["formatPainter"]) => setField("formatPainter", v),
+		[setField],
+	);
+	const setFindText = useCallback(
+		(v: string) => setField("findText", v),
+		[setField],
+	);
+	const setReplaceText = useCallback(
+		(v: string) => setField("replaceText", v),
+		[setField],
+	);
+	const setMatchCase = useCallback(
+		(v: boolean) => setField("matchCase", v),
+		[setField],
+	);
+	const setWholeCell = useCallback(
+		(v: boolean) => setField("wholeCell", v),
+		[setField],
+	);
+	const setNewSheetName = useCallback(
+		(v: string) => setField("newSheetName", v),
+		[setField],
+	);
+	const setNewRangeName = useCallback(
+		(v: string) => setField("newRangeName", v),
+		[setField],
+	);
+	const setNewRangeRef = useCallback(
+		(v: string) => setField("newRangeRef", v),
+		[setField],
+	);
+	const setCellNote = useCallback(
+		(v: string) => setField("cellNote", v),
+		[setField],
+	);
+	const setValidationType = useCallback(
+		(v: EditorState["validationType"]) => setField("validationType", v),
+		[setField],
+	);
+	const setValidationMin = useCallback(
+		(v: number) => setField("validationMin", v),
+		[setField],
+	);
+	const setValidationMax = useCallback(
+		(v: number) => setField("validationMax", v),
+		[setField],
+	);
+	const setValidationList = useCallback(
+		(v: string) => setField("validationList", v),
+		[setField],
+	);
+	const setValidationRequired = useCallback(
+		(v: boolean) => setField("validationRequired", v),
+		[setField],
+	);
+	const setIconName = useCallback(
+		(v: string) => setField("iconName", v),
+		[setField],
+	);
+	const setChartType = useCallback(
+		(v: EditorState["chartType"]) => setField("chartType", v),
+		[setField],
+	);
+	const setChartTitle = useCallback(
+		(v: string) => setField("chartTitle", v),
+		[setField],
+	);
+	const setChartRange = useCallback(
+		(v: string) => setField("chartRange", v),
+		[setField],
+	);
+	const setShareSettings = useCallback(
+		(v: ShareSettings) => setField("shareSettings", v),
+		[setField],
+	);
 
 	const setShowFormulaBar = useCallback(mkToggle("showFormulaBar"), [mkToggle]);
 	const setShowStatusBar = useCallback(mkToggle("showStatusBar"), [mkToggle]);
 	const setFreezePanes = useCallback(mkToggle("freezePanes"), [mkToggle]);
-	const setShowCommentsSidebar = useCallback(mkToggle("showCommentsSidebar"), [mkToggle]);
+	const setShowCommentsSidebar = useCallback(mkToggle("showCommentsSidebar"), [
+		mkToggle,
+	]);
 
 	return {
 		// Dialogs state

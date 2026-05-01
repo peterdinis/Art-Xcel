@@ -103,7 +103,7 @@ export const StatusBar = ({
 				)}
 				<div className="border-l border-border pl-4">NUM</div>
 				<div className="border-l border-border pl-4 flex items-center gap-2">
-					<button 
+					<button
 						onClick={() => onZoomChange?.(Math.max(50, zoom - 10))}
 						className="hover:text-foreground px-1"
 						title="Zoom Out"
@@ -111,7 +111,7 @@ export const StatusBar = ({
 						-
 					</button>
 					<span className="min-w-[40px] text-center">{zoom}%</span>
-					<button 
+					<button
 						onClick={() => onZoomChange?.(Math.min(200, zoom + 10))}
 						className="hover:text-foreground px-1"
 						title="Zoom In"

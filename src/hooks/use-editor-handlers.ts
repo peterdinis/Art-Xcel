@@ -277,29 +277,59 @@ export function useEditorHandlers({
 			updateCell(selectedCell, "");
 			toast.success("Deleted", { description: `Cell ${selectedCell} cleared` });
 		}
-	}, [selectedCell, selectionRange, updateCell, updateCells, setShowDeleteDialog]);
+	}, [
+		selectedCell,
+		selectionRange,
+		updateCell,
+		updateCells,
+		setShowDeleteDialog,
+	]);
 
 	const handleClearAll = useCallback(() => {
 		clearSheet();
 		setShowDeleteDialog(false);
-		toast.success("Sheet cleared", { description: "All data has been removed" });
+		toast.success("Sheet cleared", {
+			description: "All data has been removed",
+		});
 	}, [clearSheet, setShowDeleteDialog]);
 
 	// ── Find & Replace ───────────────────────────────────────────────────────
 
 	const handleFind = useCallback(() => {
-		if (!findText) { toast.error("Please enter text to find"); return; }
+		if (!findText) {
+			toast.error("Please enter text to find");
+			return;
+		}
 		findAndReplace(findText, replaceText, { matchCase, wholeCell });
-		toast.success("Find and Replace", { description: `Replaced "${findText}" with "${replaceText}"` });
+		toast.success("Find and Replace", {
+			description: `Replaced "${findText}" with "${replaceText}"`,
+		});
 		setShowFindDialog(false);
-	}, [findText, replaceText, matchCase, wholeCell, findAndReplace, setShowFindDialog]);
+	}, [
+		findText,
+		replaceText,
+		matchCase,
+		wholeCell,
+		findAndReplace,
+		setShowFindDialog,
+	]);
 
 	const handleReplace = useCallback(() => {
-		if (!findText) { toast.error("Please enter text to find"); return; }
+		if (!findText) {
+			toast.error("Please enter text to find");
+			return;
+		}
 		findAndReplace(findText, replaceText, { matchCase, wholeCell });
 		toast.success("Replace done");
 		setShowFindDialog(false);
-	}, [findText, replaceText, matchCase, wholeCell, findAndReplace, setShowFindDialog]);
+	}, [
+		findText,
+		replaceText,
+		matchCase,
+		wholeCell,
+		findAndReplace,
+		setShowFindDialog,
+	]);
 
 	// ── Export / Import ──────────────────────────────────────────────────────
 
@@ -326,7 +356,8 @@ export function useEditorHandlers({
 		async (file: File) => {
 			try {
 				toast.loading("Importing...", { id: "import-toast" });
-				const { data: importedData, name: importedName } = await importFromFile(file);
+				const { data: importedData, name: importedName } =
+					await importFromFile(file);
 				setData(importedData);
 				setSheetName(importedName);
 				toast.success("Import Successful", { id: "import-toast" });
@@ -341,7 +372,10 @@ export function useEditorHandlers({
 
 	const handlePrint = useCallback(() => {
 		toast.loading("Preparing...", { id: "print-toast" });
-		setTimeout(() => toast.success("Ready to print", { id: "print-toast" }), 1500);
+		setTimeout(
+			() => toast.success("Ready to print", { id: "print-toast" }),
+			1500,
+		);
 	}, []);
 
 	const handlePageSetup = useCallback(() => {
@@ -394,21 +428,34 @@ export function useEditorHandlers({
 
 	// ── Sort / Filter / Data ─────────────────────────────────────────────────
 
-	const handleSort = useCallback((direction: "asc" | "desc" = "asc") => {
-		if (!selectionRange || selectionRange.length === 0) {
-			toast.error("No range selected");
-			return;
-		}
-		sortRange(`${selectionRange[0]}:${selectionRange[selectionRange.length - 1]}`, 0, direction === "asc");
-		toast.success("Sort", { description: `Range sorted ${direction === "asc" ? "ascending" : "descending"}` });
-	}, [selectionRange, sortRange]);
+	const handleSort = useCallback(
+		(direction: "asc" | "desc" = "asc") => {
+			if (!selectionRange || selectionRange.length === 0) {
+				toast.error("No range selected");
+				return;
+			}
+			sortRange(
+				`${selectionRange[0]}:${selectionRange[selectionRange.length - 1]}`,
+				0,
+				direction === "asc",
+			);
+			toast.success("Sort", {
+				description: `Range sorted ${direction === "asc" ? "ascending" : "descending"}`,
+			});
+		},
+		[selectionRange, sortRange],
+	);
 
 	const handleFilter = useCallback(() => {
 		if (!selectionRange || selectionRange.length === 0) {
 			toast.error("No range selected");
 			return;
 		}
-		filterRange(`${selectionRange[0]}:${selectionRange[selectionRange.length - 1]}`, 0, (v) => v !== "");
+		filterRange(
+			`${selectionRange[0]}:${selectionRange[selectionRange.length - 1]}`,
+			0,
+			(v) => v !== "",
+		);
 		toast.success("Filter applied");
 	}, [selectionRange, filterRange]);
 
@@ -417,7 +464,10 @@ export function useEditorHandlers({
 			toast.error("No range selected");
 			return;
 		}
-		removeDuplicates(`${selectionRange[0]}:${selectionRange[selectionRange.length - 1]}`, 0);
+		removeDuplicates(
+			`${selectionRange[0]}:${selectionRange[selectionRange.length - 1]}`,
+			0,
+		);
 		toast.success("Remove Duplicates done");
 	}, [selectionRange, removeDuplicates]);
 
@@ -426,7 +476,10 @@ export function useEditorHandlers({
 			toast.error("No range selected");
 			return;
 		}
-		textToColumns(`${selectionRange[0]}:${selectionRange[selectionRange.length - 1]}`, ",");
+		textToColumns(
+			`${selectionRange[0]}:${selectionRange[selectionRange.length - 1]}`,
+			",",
+		);
 		toast.success("Text to Columns done");
 	}, [selectionRange, textToColumns]);
 
@@ -442,7 +495,10 @@ export function useEditorHandlers({
 
 	const handleNumberFormat = useCallback(
 		(format: string) => {
-			if (!selectedCell) { toast.error("No cell selected"); return; }
+			if (!selectedCell) {
+				toast.error("No cell selected");
+				return;
+			}
 			updateCellStyle(selectedCell, { numberFormat: format as any });
 			toast.success(`Applied ${format} format`);
 		},
@@ -451,8 +507,12 @@ export function useEditorHandlers({
 
 	const handleAlignment = useCallback(
 		(align: string) => {
-			if (!selectedCell) { toast.error("No cell selected"); return; }
-			const alignValue = align === "Left" ? "left" : align === "Center" ? "center" : "right";
+			if (!selectedCell) {
+				toast.error("No cell selected");
+				return;
+			}
+			const alignValue =
+				align === "Left" ? "left" : align === "Center" ? "center" : "right";
 			updateCellStyle(selectedCell, { align: alignValue as any });
 			toast.success(`Alignment: ${align}`);
 		},
@@ -463,19 +523,25 @@ export function useEditorHandlers({
 		setShowConditionalFormattingDialog(true);
 	}, [setShowConditionalFormattingDialog]);
 
-	const handleFontFamily = useCallback((font: string) => {
-		if (selectedCell) {
-			updateCellStyle(selectedCell, { fontFamily: font } as any);
-			toast.success(`Font: ${font}`);
-		}
-	}, [selectedCell, updateCellStyle]);
+	const handleFontFamily = useCallback(
+		(font: string) => {
+			if (selectedCell) {
+				updateCellStyle(selectedCell, { fontFamily: font } as any);
+				toast.success(`Font: ${font}`);
+			}
+		},
+		[selectedCell, updateCellStyle],
+	);
 
-	const handleFontSize = useCallback((size: number) => {
-		if (selectedCell) {
-			updateCellStyle(selectedCell, { fontSize: size } as any);
-			toast.success(`Size: ${size}px`);
-		}
-	}, [selectedCell, updateCellStyle]);
+	const handleFontSize = useCallback(
+		(size: number) => {
+			if (selectedCell) {
+				updateCellStyle(selectedCell, { fontSize: size } as any);
+				toast.success(`Size: ${size}px`);
+			}
+		},
+		[selectedCell, updateCellStyle],
+	);
 
 	const handleDecreaseIndent = useCallback(() => {
 		toast.info("Decrease indent");
@@ -507,7 +573,8 @@ export function useEditorHandlers({
 			if (rule.type === "greaterThan") matches = n > t;
 			else if (rule.type === "lessThan") matches = n < t;
 			else if (rule.type === "equalTo") matches = cellValue === rule.value;
-			else if (rule.type === "contains") matches = cellValue.includes(rule.value);
+			else if (rule.type === "contains")
+				matches = cellValue.includes(rule.value);
 			if (matches) {
 				updateCellStyle(selectedCell, { backgroundColor: rule.color } as any);
 				toast.success("Conditional formatting applied");
@@ -548,9 +615,11 @@ export function useEditorHandlers({
 	// ── Charts / Images / Shapes / Icons ─────────────────────────────────────
 
 	const handleInsertChart = useCallback(() => {
-		const finalRange = state.chartRange || (selectionRange && selectionRange.length > 0
-			? `${selectionRange[0]}:${selectionRange[selectionRange.length - 1]}`
-			: null);
+		const finalRange =
+			state.chartRange ||
+			(selectionRange && selectionRange.length > 0
+				? `${selectionRange[0]}:${selectionRange[selectionRange.length - 1]}`
+				: null);
 
 		if (!finalRange) {
 			toast.error("No range specified");
@@ -597,7 +666,11 @@ export function useEditorHandlers({
 				type,
 				position: { x: 200, y: 200 },
 				size: { width: 150, height: 100 },
-				style: { fill: "rgba(59,130,246,0.5)", stroke: "#2563eb", strokeWidth: 2 },
+				style: {
+					fill: "rgba(59,130,246,0.5)",
+					stroke: "#2563eb",
+					strokeWidth: 2,
+				},
 			});
 			toast.success(`${type} inserted`);
 		},
@@ -606,7 +679,12 @@ export function useEditorHandlers({
 
 	const handleInsertIcon = useCallback(
 		(name: string) => {
-			addIcon({ iconName: name, position: { x: 250, y: 250 }, size: 48, color: "#3b82f6" });
+			addIcon({
+				iconName: name,
+				position: { x: 250, y: 250 },
+				size: 48,
+				color: "#3b82f6",
+			});
 			setShowIconDialog(false);
 			toast.success("Icon Inserted");
 		},
@@ -616,7 +694,10 @@ export function useEditorHandlers({
 	// ── Notes / Comments ─────────────────────────────────────────────────────
 
 	const handleAddNote = useCallback(() => {
-		if (!selectedCell) { toast.error("No cell selected"); return; }
+		if (!selectedCell) {
+			toast.error("No cell selected");
+			return;
+		}
 		setCellNote(data[selectedCell]?.note || "");
 		setShowNoteDialog(true);
 	}, [selectedCell, data, setCellNote, setShowNoteDialog]);
@@ -648,7 +729,10 @@ export function useEditorHandlers({
 
 	const handleInsertSpecialChar = useCallback(
 		(char: string) => {
-			if (!selectedCell) { toast.error("No cell selected"); return; }
+			if (!selectedCell) {
+				toast.error("No cell selected");
+				return;
+			}
 			updateCell(selectedCell, (data[selectedCell]?.value || "") + char);
 			toast.success(`Inserted ${char}`);
 		},
@@ -657,7 +741,10 @@ export function useEditorHandlers({
 
 	const handleInsertHyperlink = useCallback(
 		(url: string, text: string) => {
-			if (!selectedCell) { toast.error("No cell selected"); return; }
+			if (!selectedCell) {
+				toast.error("No cell selected");
+				return;
+			}
 			updateCell(selectedCell, text || url);
 			toast.success("Hyperlink inserted");
 		},
@@ -669,7 +756,9 @@ export function useEditorHandlers({
 	const handleAddNamedRange = useCallback(() => {
 		if (selectionRange && selectionRange.length > 0) {
 			setShowNamedRangeDialog(true);
-			setNewRangeRef(`${selectionRange[0]}:${selectionRange[selectionRange.length - 1]}`);
+			setNewRangeRef(
+				`${selectionRange[0]}:${selectionRange[selectionRange.length - 1]}`,
+			);
 		} else if (selectedCell) {
 			setShowNamedRangeDialog(true);
 			setNewRangeRef(selectedCell);
@@ -686,7 +775,14 @@ export function useEditorHandlers({
 			setNewRangeName("");
 			setNewRangeRef("");
 		}
-	}, [newRangeName, newRangeRef, createNamedRange, setShowNamedRangeDialog, setNewRangeName, setNewRangeRef]);
+	}, [
+		newRangeName,
+		newRangeRef,
+		createNamedRange,
+		setShowNamedRangeDialog,
+		setNewRangeName,
+		setNewRangeRef,
+	]);
 
 	// ── Validation ───────────────────────────────────────────────────────────
 
@@ -696,12 +792,24 @@ export function useEditorHandlers({
 			type: validationType,
 			min: validationType === "number" ? validationMin : undefined,
 			max: validationType === "number" ? validationMax : undefined,
-			list: validationType === "list" ? validationList.split(",").map((s) => s.trim()) : undefined,
+			list:
+				validationType === "list"
+					? validationList.split(",").map((s) => s.trim())
+					: undefined,
 			required: validationRequired,
 		});
 		toast.success("Validation added");
 		setShowValidationDialog(false);
-	}, [selectedCell, validationType, validationMin, validationMax, validationList, validationRequired, addValidation, setShowValidationDialog]);
+	}, [
+		selectedCell,
+		validationType,
+		validationMin,
+		validationMax,
+		validationList,
+		validationRequired,
+		addValidation,
+		setShowValidationDialog,
+	]);
 
 	// ── Sheets ───────────────────────────────────────────────────────────────
 
@@ -715,7 +823,13 @@ export function useEditorHandlers({
 		toast.success(`Sheet "${name}" created`);
 		setShowNewSheetDialog(false);
 		setNewSheetName("");
-	}, [newSheetName, sheetNames.length, addSheet, setShowNewSheetDialog, setNewSheetName]);
+	}, [
+		newSheetName,
+		sheetNames.length,
+		addSheet,
+		setShowNewSheetDialog,
+		setNewSheetName,
+	]);
 
 	const handleDeleteCurrentSheet = useCallback(() => {
 		if (sheetNames.length > 1) {
@@ -764,8 +878,10 @@ export function useEditorHandlers({
 
 	const handleSpelling = useCallback(() => {
 		toast.loading("Checking spelling...", { id: "spelling" });
-		setTimeout(() =>
-			toast.success("No spelling errors found", { id: "spelling" }), 1500);
+		setTimeout(
+			() => toast.success("No spelling errors found", { id: "spelling" }),
+			1500,
+		);
 	}, []);
 
 	const handleScrollToTop = useCallback(() => {

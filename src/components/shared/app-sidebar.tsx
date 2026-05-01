@@ -28,7 +28,11 @@ export function AppSidebar() {
 					const Icon = link.icon;
 					const isActive = pathname === link.href;
 					return (
-						<Link key={link.href} href={link.href as unknown as UrlObject} className="block">
+						<Link
+							key={link.href}
+							href={link.href as unknown as UrlObject}
+							className="block"
+						>
 							<Button
 								variant={isActive ? "secondary" : "ghost"}
 								className={cn(

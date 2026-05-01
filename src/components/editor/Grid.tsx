@@ -936,13 +936,13 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 		const virtualCols = colVirtualizer.getVirtualItems();
 
 		return (
-			<div 
+			<div
 				className="relative w-full h-full overflow-hidden bg-background"
-				style={{ 
-					transform: `scale(${zoom / 100})`, 
+				style={{
+					transform: `scale(${zoom / 100})`,
 					transformOrigin: "top left",
 					width: `${10000 / zoom}%`,
-					height: `${10000 / zoom}%`
+					height: `${10000 / zoom}%`,
 				}}
 			>
 				{/* Fixed corner */}

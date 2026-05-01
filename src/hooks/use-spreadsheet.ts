@@ -26,12 +26,12 @@ export interface CellData {
 		borderRight?: string;
 		paddingLeft?: number;
 		numberFormat?:
-		| "general"
-		| "number"
-		| "currency"
-		| "percentage"
-		| "date"
-		| "time";
+			| "general"
+			| "number"
+			| "currency"
+			| "percentage"
+			| "date"
+			| "time";
 	};
 	note?: string;
 	validation?: {
@@ -184,10 +184,10 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				prev.map((sheet, i) =>
 					i === currentSheetIndex
 						? {
-							...sheet,
-							data:
-								typeof newData === "function" ? newData(sheet.data) : newData,
-						}
+								...sheet,
+								data:
+									typeof newData === "function" ? newData(sheet.data) : newData,
+							}
 						: sheet,
 				),
 			);
@@ -211,12 +211,12 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				prev.map((sheet, i) =>
 					i === currentSheetIndex
 						? {
-							...sheet,
-							charts:
-								typeof newCharts === "function"
-									? newCharts(sheet.charts)
-									: newCharts,
-						}
+								...sheet,
+								charts:
+									typeof newCharts === "function"
+										? newCharts(sheet.charts)
+										: newCharts,
+							}
 						: sheet,
 				),
 			);
@@ -230,12 +230,12 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				prev.map((sheet, i) =>
 					i === currentSheetIndex
 						? {
-							...sheet,
-							images:
-								typeof newImages === "function"
-									? newImages(sheet.images)
-									: newImages,
-						}
+								...sheet,
+								images:
+									typeof newImages === "function"
+										? newImages(sheet.images)
+										: newImages,
+							}
 						: sheet,
 				),
 			);
@@ -249,12 +249,12 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				prev.map((sheet, i) =>
 					i === currentSheetIndex
 						? {
-							...sheet,
-							shapes:
-								typeof newShapes === "function"
-									? newShapes(sheet.shapes)
-									: newShapes,
-						}
+								...sheet,
+								shapes:
+									typeof newShapes === "function"
+										? newShapes(sheet.shapes)
+										: newShapes,
+							}
 						: sheet,
 				),
 			);
@@ -268,12 +268,12 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				prev.map((sheet, i) =>
 					i === currentSheetIndex
 						? {
-							...sheet,
-							icons:
-								typeof newIcons === "function"
-									? newIcons(sheet.icons)
-									: newIcons,
-						}
+								...sheet,
+								icons:
+									typeof newIcons === "function"
+										? newIcons(sheet.icons)
+										: newIcons,
+							}
 						: sheet,
 				),
 			);
@@ -287,12 +287,12 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				prev.map((sheet, i) =>
 					i === currentSheetIndex
 						? {
-							...sheet,
-							comments:
-								typeof newComments === "function"
-									? newComments(sheet.comments)
-									: newComments,
-						}
+								...sheet,
+								comments:
+									typeof newComments === "function"
+										? newComments(sheet.comments)
+										: newComments,
+							}
 						: sheet,
 				),
 			);
@@ -310,12 +310,12 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				prev.map((sheet, i) =>
 					i === currentSheetIndex
 						? {
-							...sheet,
-							namedRanges:
-								typeof newNamedRanges === "function"
-									? newNamedRanges(sheet.namedRanges)
-									: newNamedRanges,
-						}
+								...sheet,
+								namedRanges:
+									typeof newNamedRanges === "function"
+										? newNamedRanges(sheet.namedRanges)
+										: newNamedRanges,
+							}
 						: sheet,
 				),
 			);
@@ -329,12 +329,12 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				prev.map((sheet, i) =>
 					i === currentSheetIndex
 						? {
-							...sheet,
-							hiddenRows:
-								typeof newHiddenRows === "function"
-									? newHiddenRows(sheet.hiddenRows)
-									: newHiddenRows,
-						}
+								...sheet,
+								hiddenRows:
+									typeof newHiddenRows === "function"
+										? newHiddenRows(sheet.hiddenRows)
+										: newHiddenRows,
+							}
 						: sheet,
 				),
 			);
@@ -420,10 +420,10 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 			prev.map((sheet, i) =>
 				i === currentSheetIndex
 					? {
-						...sheet,
-						undoStack: [...sheet.undoStack, sheet.data],
-						redoStack: [],
-					}
+							...sheet,
+							undoStack: [...sheet.undoStack, sheet.data],
+							redoStack: [],
+						}
 					: sheet,
 			),
 		);
@@ -601,13 +601,14 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				}
 
 				// Parse target cell
-				const { col: targetColIdx, row: targetRowIdx } = parseCellId(targetCell);
+				const { col: targetColIdx, row: targetRowIdx } =
+					parseCellId(targetCell);
 
 				// Find the top-left cell of the clipboard data to calculate relative offsets
 				const sourceCellIds = Object.keys(clipboard.data);
 				let minCol = Infinity;
 				let minRow = Infinity;
-				sourceCellIds.forEach(id => {
+				sourceCellIds.forEach((id) => {
 					const { col, row } = parseCellId(id);
 					if (col < minCol) minCol = col;
 					if (row < minRow) minRow = row;
@@ -615,13 +616,14 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 
 				// Paste at new location
 				Object.entries(clipboard.data).forEach(([sourceId, cellData]) => {
-					const { col: sourceColIdx, row: sourceRowIdx } = parseCellId(sourceId);
+					const { col: sourceColIdx, row: sourceRowIdx } =
+						parseCellId(sourceId);
 
 					const colOffset = sourceColIdx - minCol;
 					const rowOffset = sourceRowIdx - minRow;
 
 					const newCol = indexToColLetter(targetColIdx + colOffset);
-					const newRow = (targetRowIdx + rowOffset) + 1;
+					const newRow = targetRowIdx + rowOffset + 1;
 					const newCellId = `${newCol}${newRow}`;
 
 					newData[newCellId] = JSON.parse(JSON.stringify(cellData));
@@ -647,11 +649,11 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 			prev.map((s, i) =>
 				i === currentSheetIndex
 					? {
-						...s,
-						data: previous,
-						undoStack: s.undoStack.slice(0, -1),
-						redoStack: [...s.redoStack, s.data],
-					}
+							...s,
+							data: previous,
+							undoStack: s.undoStack.slice(0, -1),
+							redoStack: [...s.redoStack, s.data],
+						}
 					: s,
 			),
 		);
@@ -667,11 +669,11 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 			prev.map((s, i) =>
 				i === currentSheetIndex
 					? {
-						...s,
-						data: next,
-						undoStack: [...s.undoStack, s.data],
-						redoStack: s.redoStack.slice(0, -1),
-					}
+							...s,
+							data: next,
+							undoStack: [...s.undoStack, s.data],
+							redoStack: s.redoStack.slice(0, -1),
+						}
 					: s,
 			),
 		);
@@ -1114,18 +1116,21 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 	}, []);
 
 	// Delete sheet
-	const deleteSheet = useCallback((index: number) => {
-		setSheets((prev) => {
-			if (prev.length <= 1) return prev;
-			const next = prev.filter((_, i) => i !== index);
-			return next;
-		});
-		
-		// Adjust current index if we deleted the current or a preceding sheet
-		if (index <= currentSheetIndex && currentSheetIndex > 0) {
-			setCurrentSheetIndex(prev => prev - 1);
-		}
-	}, [currentSheetIndex]);
+	const deleteSheet = useCallback(
+		(index: number) => {
+			setSheets((prev) => {
+				if (prev.length <= 1) return prev;
+				const next = prev.filter((_, i) => i !== index);
+				return next;
+			});
+
+			// Adjust current index if we deleted the current or a preceding sheet
+			if (index <= currentSheetIndex && currentSheetIndex > 0) {
+				setCurrentSheetIndex((prev) => prev - 1);
+			}
+		},
+		[currentSheetIndex],
+	);
 
 	// Rename sheet
 	const renameSheet = useCallback((index: number, newName: string) => {
@@ -1308,9 +1313,12 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 	);
 
 	// Update sheet name (placeholder - actual name is in EditorPage)
-	const updateSheetName = useCallback((name: string) => {
-		renameSheet(currentSheetIndex, name);
-	}, [currentSheetIndex, renameSheet]);
+	const updateSheetName = useCallback(
+		(name: string) => {
+			renameSheet(currentSheetIndex, name);
+		},
+		[currentSheetIndex, renameSheet],
+	);
 
 	return {
 		// Core data

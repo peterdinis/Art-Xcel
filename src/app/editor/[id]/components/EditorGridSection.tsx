@@ -13,7 +13,12 @@ interface EditorGridSectionProps {
 	spreadsheet: ReturnType<typeof useSpreadsheet>;
 }
 
-export function EditorGridSection({ gridRef, handlers, state, spreadsheet }: EditorGridSectionProps) {
+export function EditorGridSection({
+	gridRef,
+	handlers,
+	state,
+	spreadsheet,
+}: EditorGridSectionProps) {
 	const {
 		data,
 		selectedCell,
@@ -35,7 +40,7 @@ export function EditorGridSection({ gridRef, handlers, state, spreadsheet }: Edi
 		removeShape,
 		removeIcon,
 		updateShape,
-		updateIcon
+		updateIcon,
 	} = spreadsheet;
 	const { showGrid, showHeaders, freezePanes, zoom } = state;
 

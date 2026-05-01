@@ -47,7 +47,12 @@ export function CommentsSidebar({
 					<MessageSquare className="h-4 w-4 text-primary" />
 					<h2 className="font-semibold text-sm">Comments</h2>
 				</div>
-				<Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}>
+				<Button
+					variant="ghost"
+					size="icon"
+					className="h-8 w-8"
+					onClick={onClose}
+				>
 					<X className="h-4 w-4" />
 				</Button>
 			</div>
@@ -57,7 +62,9 @@ export function CommentsSidebar({
 					{filteredComments.length === 0 ? (
 						<div className="text-center py-10 text-muted-foreground space-y-2">
 							<MessageSquare className="h-8 w-8 mx-auto opacity-20" />
-							<p className="text-xs">No comments found {selectedCell ? `for ${selectedCell}` : ""}</p>
+							<p className="text-xs">
+								No comments found {selectedCell ? `for ${selectedCell}` : ""}
+							</p>
 						</div>
 					) : (
 						filteredComments.map((comment) => (
@@ -65,14 +72,18 @@ export function CommentsSidebar({
 								key={comment.id}
 								className={cn(
 									"group space-y-2 p-3 rounded-lg border transition-all",
-									comment.resolved ? "bg-muted/50 border-transparent opacity-60" : "bg-background border-border hover:border-primary/30"
+									comment.resolved
+										? "bg-muted/50 border-transparent opacity-60"
+										: "bg-background border-border hover:border-primary/30",
 								)}
 							>
 								<div className="flex items-start justify-between gap-2">
 									<div className="min-w-0">
 										<p className="text-xs font-bold text-primary flex items-center gap-1">
 											{comment.author}
-											<span className="text-[10px] font-normal text-muted-foreground">• {comment.cellId}</span>
+											<span className="text-[10px] font-normal text-muted-foreground">
+												• {comment.cellId}
+											</span>
 										</p>
 										<p className="text-[10px] text-muted-foreground">
 											{format(comment.timestamp, "MMM d, h:mm a")}
@@ -83,10 +94,18 @@ export function CommentsSidebar({
 											variant="ghost"
 											size="icon"
 											className="h-6 w-6 text-muted-foreground hover:text-primary"
-											onClick={() => onResolveComment(comment.id, !comment.resolved)}
+											onClick={() =>
+												onResolveComment(comment.id, !comment.resolved)
+											}
 											title={comment.resolved ? "Unresolve" : "Resolve"}
 										>
-											<CheckCircle2 className={cn("h-3 w-3", comment.resolved && "text-green-500 fill-green-500/10")} />
+											<CheckCircle2
+												className={cn(
+													"h-3 w-3",
+													comment.resolved &&
+														"text-green-500 fill-green-500/10",
+												)}
+											/>
 										</Button>
 										<Button
 											variant="ghost"
@@ -119,7 +138,11 @@ export function CommentsSidebar({
 						<Input
 							value={newComment}
 							onChange={(e) => setNewComment(e.target.value)}
-							placeholder={selectedCell ? `Comment on ${selectedCell}...` : "Select a cell to comment..."}
+							placeholder={
+								selectedCell
+									? `Comment on ${selectedCell}...`
+									: "Select a cell to comment..."
+							}
 							className="pr-10 text-sm h-9"
 							disabled={!selectedCell}
 						/>

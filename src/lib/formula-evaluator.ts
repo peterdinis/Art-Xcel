@@ -29,8 +29,14 @@ export const registerCustomFunctions = () => {
 				if: (condition: unknown, trueVal: unknown, falseVal: unknown) =>
 					condition ? trueVal : falseVal,
 				sumif: (range: unknown, criteria: unknown, sumRange?: unknown) => {
-					const r = (range && (range as any).toArray ? (range as any).toArray() : range) as unknown[];
-					const sr = (sumRange && (sumRange as any).toArray ? (sumRange as any).toArray() : r) as (number | string)[];
+					const r = (
+						range && (range as any).toArray ? (range as any).toArray() : range
+					) as unknown[];
+					const sr = (
+						sumRange && (sumRange as any).toArray
+							? (sumRange as any).toArray()
+							: r
+					) as (number | string)[];
 					let sum = 0;
 					if (!Array.isArray(r)) return 0;
 					r.forEach((val, idx) => {
@@ -41,7 +47,9 @@ export const registerCustomFunctions = () => {
 					return sum;
 				},
 				countif: (range: unknown, criteria: unknown) => {
-					const r = (range && (range as any).toArray ? (range as any).toArray() : range) as unknown[];
+					const r = (
+						range && (range as any).toArray ? (range as any).toArray() : range
+					) as unknown[];
 					if (!Array.isArray(r)) return 0;
 					return r.filter((val) => val == criteria).length;
 				},
@@ -51,10 +59,16 @@ export const registerCustomFunctions = () => {
 					colIndex: number,
 					exactMatch: boolean = true,
 				) => {
-					const t = (table && (table as any).toArray ? (table as any).toArray() : table) as unknown[][];
+					const t = (
+						table && (table as any).toArray ? (table as any).toArray() : table
+					) as unknown[][];
 					if (!Array.isArray(t) || t.length === 0) return "#N/A";
 					for (const row of t) {
-						const r = Array.isArray(row) ? row : (row && (row as any).toArray ? (row as any).toArray() : [row]);
+						const r = Array.isArray(row)
+							? row
+							: row && (row as any).toArray
+								? (row as any).toArray()
+								: [row];
 						if (!Array.isArray(r)) continue;
 						const firstCell = r[0];
 						let match = false;
@@ -139,20 +153,46 @@ export const registerCustomFunctions = () => {
 				isblank: (val: unknown) =>
 					val === undefined || val === null || val === "",
 				sum: (...args: unknown[]) => {
-					const nums = args.flatMap(arg => (arg && (arg as any).toArray ? (arg as any).toArray() : arg)).flat(Infinity).map(Number).filter(n => !isNaN(n));
+					const nums = args
+						.flatMap((arg) =>
+							arg && (arg as any).toArray ? (arg as any).toArray() : arg,
+						)
+						.flat(Infinity)
+						.map(Number)
+						.filter((n) => !isNaN(n));
 					return nums.reduce((a, b) => a + b, 0);
 				},
 				max: (...args: unknown[]) => {
-					const nums = args.flatMap(arg => (arg && (arg as any).toArray ? (arg as any).toArray() : arg)).flat(Infinity).map(Number).filter(n => !isNaN(n));
+					const nums = args
+						.flatMap((arg) =>
+							arg && (arg as any).toArray ? (arg as any).toArray() : arg,
+						)
+						.flat(Infinity)
+						.map(Number)
+						.filter((n) => !isNaN(n));
 					return nums.length > 0 ? Math.max(...nums) : 0;
 				},
 				min: (...args: unknown[]) => {
-					const nums = args.flatMap(arg => (arg && (arg as any).toArray ? (arg as any).toArray() : arg)).flat(Infinity).map(Number).filter(n => !isNaN(n));
+					const nums = args
+						.flatMap((arg) =>
+							arg && (arg as any).toArray ? (arg as any).toArray() : arg,
+						)
+						.flat(Infinity)
+						.map(Number)
+						.filter((n) => !isNaN(n));
 					return nums.length > 0 ? Math.min(...nums) : 0;
 				},
 				mean: (...args: unknown[]) => {
-					const nums = args.flatMap(arg => (arg && (arg as any).toArray ? (arg as any).toArray() : arg)).flat(Infinity).map(Number).filter(n => !isNaN(n));
-					return nums.length > 0 ? nums.reduce((a, b) => a + b, 0) / nums.length : 0;
+					const nums = args
+						.flatMap((arg) =>
+							arg && (arg as any).toArray ? (arg as any).toArray() : arg,
+						)
+						.flat(Infinity)
+						.map(Number)
+						.filter((n) => !isNaN(n));
+					return nums.length > 0
+						? nums.reduce((a, b) => a + b, 0) / nums.length
+						: 0;
 				},
 			},
 			{ override: true },

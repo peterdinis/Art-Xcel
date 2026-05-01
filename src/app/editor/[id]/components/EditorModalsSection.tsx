@@ -11,7 +11,11 @@ interface EditorModalsSectionProps {
 	spreadsheet: ReturnType<typeof useSpreadsheet>;
 }
 
-export function EditorModalsSection({ handlers, state, spreadsheet }: EditorModalsSectionProps) {
+export function EditorModalsSection({
+	handlers,
+	state,
+	spreadsheet,
+}: EditorModalsSectionProps) {
 	const { sheetNames, selectedCell } = spreadsheet;
 
 	return (
@@ -108,7 +112,11 @@ export function EditorModalsSection({ handlers, state, spreadsheet }: EditorModa
 			showUserGuideDialog={state.userGuideDialog}
 			setShowUserGuideDialog={state.setShowUserGuideDialog}
 			showAboutDialog={state.aboutDialog}
-			setShowAboutDialog={(open) => open ? state.openDialog("aboutDialog") : state.closeDialog("aboutDialog")}
+			setShowAboutDialog={(open) =>
+				open
+					? state.openDialog("aboutDialog")
+					: state.closeDialog("aboutDialog")
+			}
 			showSaveDialog={state.saveDialog}
 			setShowSaveDialog={state.setShowSaveDialog}
 			handleSave={handlers.handleConfirmSave}
@@ -122,11 +130,15 @@ export function EditorModalsSection({ handlers, state, spreadsheet }: EditorModa
 			showCommentDialog={state.commentDialog}
 			setShowCommentDialog={state.setShowCommentDialog}
 			showConditionalFormattingDialog={state.conditionalFormattingDialog}
-			setShowConditionalFormattingDialog={state.setShowConditionalFormattingDialog}
+			setShowConditionalFormattingDialog={
+				state.setShowConditionalFormattingDialog
+			}
 			handleInsertSpecialChar={handlers.handleInsertSpecialChar}
 			handleInsertHyperlink={handlers.handleInsertHyperlink}
 			handleInsertComment={handlers.handleInsertComment}
-			handleApplyConditionalFormatting={handlers.handleApplyConditionalFormatting}
+			handleApplyConditionalFormatting={
+				handlers.handleApplyConditionalFormatting
+			}
 			// Share
 			showShareDialog={state.shareDialog}
 			setShowShareDialog={state.setShowShareDialog}

@@ -148,12 +148,18 @@ describe("formula-evaluator", () => {
 		};
 
 		it("should evaluate VLOOKUP correctly", () => {
-			expect(evaluateFormula('=VLOOKUP("Banana", A1:B2, 2, true)', tableData)).toBe("20");
-			expect(evaluateFormula('=VLOOKUP("Cherry", A1:B2, 2, true)', tableData)).toBe("#N/A");
+			expect(
+				evaluateFormula('=VLOOKUP("Banana", A1:B2, 2, true)', tableData),
+			).toBe("20");
+			expect(
+				evaluateFormula('=VLOOKUP("Cherry", A1:B2, 2, true)', tableData),
+			).toBe("#N/A");
 		});
 
 		it("should evaluate SUMIF correctly", () => {
-			expect(evaluateFormula('=SUMIF(A1:A3, "Apple", B1:B3)', tableData)).toBe("40");
+			expect(evaluateFormula('=SUMIF(A1:A3, "Apple", B1:B3)', tableData)).toBe(
+				"40",
+			);
 		});
 
 		it("should evaluate COUNTIF correctly", () => {

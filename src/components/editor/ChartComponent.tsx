@@ -83,7 +83,11 @@ export const ChartComponent = ({
 			const result = [];
 			const isSingleColumn = startCol === endCol;
 
-			for (let r = Math.min(startRow, endRow); r <= Math.max(startRow, endRow); r++) {
+			for (
+				let r = Math.min(startRow, endRow);
+				r <= Math.max(startRow, endRow);
+				r++
+			) {
 				let label = "";
 				let value = 0;
 
