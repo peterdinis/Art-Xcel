@@ -62,6 +62,7 @@ export type EditorStateActions = {
 	setIconName: (v: string) => void;
 	setChartType: (v: EditorState["chartType"]) => void;
 	setChartTitle: (v: string) => void;
+	setChartRange: (v: string) => void;
 	setShareSettings: (v: ShareSettings) => void;
 };
 
@@ -173,6 +174,7 @@ export function useEditorState(): UseEditorStateReturn {
 	const setIconName = useCallback((v: string) => setField("iconName", v), [setField]);
 	const setChartType = useCallback((v: EditorState["chartType"]) => setField("chartType", v), [setField]);
 	const setChartTitle = useCallback((v: string) => setField("chartTitle", v), [setField]);
+	const setChartRange = useCallback((v: string) => setField("chartRange", v), [setField]);
 	const setShareSettings = useCallback((v: ShareSettings) => setField("shareSettings", v), [setField]);
 
 	const setShowFormulaBar = useCallback(mkToggle("showFormulaBar"), [mkToggle]);
@@ -233,6 +235,7 @@ export function useEditorState(): UseEditorStateReturn {
 		setIconName,
 		setChartType,
 		setChartTitle,
+		setChartRange,
 		setShareSettings,
 	};
 }

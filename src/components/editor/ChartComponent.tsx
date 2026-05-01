@@ -2,6 +2,7 @@
 
 import React, { useRef, useCallback, useMemo } from "react";
 import { SheetData } from "@/hooks/use-spreadsheet";
+import { parseCellId, indexToColLetter } from "@/lib/excel-utils";
 import { X, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -74,19 +75,36 @@ export const ChartComponent = ({
 
 	const chartData = useMemo(() => {
 		try {
+			if (!range || !range.includes(":")) return [];
 			const [start, end] = range.split(":");
-			const startCol = start.match(/[A-Z]+/)?.[0] || "";
-			const startRow = parseInt(start.match(/[0-9]+/)?.[0] || "1");
-			const endRow = parseInt(end.match(/[0-9]+/)?.[0] || "1");
-			const valCol = String.fromCharCode(startCol.charCodeAt(0) + 1);
+			const { col: startCol, row: startRow } = parseCellId(start);
+			const { col: endCol, row: endRow } = parseCellId(end);
+
 			const result = [];
-			for (let r = startRow; r <= endRow; r++) {
-				const label = data[`${startCol}${r}`]?.value || `R${r}`;
-				const value = parseFloat(String(data[`${valCol}${r}`]?.value || "0"));
+			const isSingleColumn = startCol === endCol;
+
+			for (let r = Math.min(startRow, endRow); r <= Math.max(startRow, endRow); r++) {
+				let label = "";
+				let value = 0;
+
+				if (isSingleColumn) {
+					// Use row number as label, current column as value
+					label = `Row ${r + 1}`;
+					const cellId = `${indexToColLetter(startCol)}${r + 1}`;
+					value = parseFloat(String(data[cellId]?.value || "0"));
+				} else {
+					// Use first column as label, second column as value
+					const labelCellId = `${indexToColLetter(startCol)}${r + 1}`;
+					const valueCellId = `${indexToColLetter(startCol + 1)}${r + 1}`;
+					label = data[labelCellId]?.value || `R${r + 1}`;
+					value = parseFloat(String(data[valueCellId]?.value || "0"));
+				}
+
 				result.push({ name: label, value: isNaN(value) ? 0 : value });
 			}
 			return result;
-		} catch {
+		} catch (e) {
+			console.error("Chart data error:", e);
 			return [];
 		}
 	}, [range, data]);

@@ -21,7 +21,8 @@ export type DialogName =
 	| "chartDialog"
 	| "imageDialog"
 	| "shapeDialog"
-	| "iconDialog";
+	| "iconDialog"
+	| "aboutDialog";
 
 export type DialogsState = Record<DialogName, boolean>;
 
@@ -52,6 +53,7 @@ export const initialDialogsState: DialogsState = {
 	imageDialog: false,
 	shapeDialog: false,
 	iconDialog: false,
+	aboutDialog: false,
 };
 
 export function dialogsReducer(
@@ -103,6 +105,7 @@ export type EditorState = {
 	shapeType: "rectangle" | "circle" | "line";
 	chartType: "bar" | "line" | "pie";
 	chartTitle: string;
+	chartRange: string;
 	shareSettings: ShareSettings;
 };
 
@@ -138,6 +141,7 @@ export const initialEditorState: EditorState = {
 	shapeType: "rectangle",
 	chartType: "bar",
 	chartTitle: "New Chart",
+	chartRange: "",
 	shareSettings: {
 		accessLevel: "private",
 		linkPermission: "view",

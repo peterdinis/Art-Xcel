@@ -1,7 +1,7 @@
 // use-spreadsheet-db.ts
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, useMemo } from 'react'
 import { createCollection, useLiveQuery } from '@tanstack/react-db'
 import { localStorageCollectionOptions } from '@tanstack/db'
 import type { SheetData } from '@/hooks/use-spreadsheet'
@@ -117,12 +117,22 @@ export function useSpreadsheetDB () {
     spreadsheetsCollection.delete(id)
   }, [])
 
-  return {
-    isReady,
-    spreadsheets,
-    saveSpreadsheet,
-    loadSpreadsheet,
-    getAllSpreadsheets,
-    deleteSpreadsheet
-  }
+  return useMemo(
+    () => ({
+      isReady,
+      spreadsheets,
+      saveSpreadsheet,
+      loadSpreadsheet,
+      getAllSpreadsheets,
+      deleteSpreadsheet
+    }),
+    [
+      isReady,
+      spreadsheets,
+      saveSpreadsheet,
+      loadSpreadsheet,
+      getAllSpreadsheets,
+      deleteSpreadsheet
+    ]
+  )
 }

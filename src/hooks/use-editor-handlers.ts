@@ -527,20 +527,30 @@ export function useEditorHandlers({
 	// ── Charts / Images / Shapes / Icons ─────────────────────────────────────
 
 	const handleInsertChart = useCallback(() => {
-		if (!selectionRange || selectionRange.length === 0) {
-			toast.error("No range selected");
+		const finalRange = state.chartRange || (selectionRange && selectionRange.length > 0
+			? `${selectionRange[0]}:${selectionRange[selectionRange.length - 1]}`
+			: null);
+
+		if (!finalRange) {
+			toast.error("No range specified");
 			return;
 		}
+
 		addChart({
-			type: chartType,
-			range: `${selectionRange[0]}:${selectionRange[selectionRange.length - 1]}`,
-			title: chartTitle,
-			position: { x: 100, y: 100 },
-			size: { width: 400, height: 300 },
+			type: state.chartType,
+			range: finalRange,
+			title: state.chartTitle || "New Chart",
+			position: { x: 150, y: 150 },
+			size: { width: 450, height: 350 },
 		});
-		setShowChartDialog(false);
-		toast.success("Chart Inserted");
-	}, [selectionRange, chartType, chartTitle, addChart, setShowChartDialog]);
+
+		state.setShowChartDialog(false);
+		state.setChartRange("");
+		state.setChartTitle("");
+		toast.success("Chart Inserted", {
+			description: `Chart for range ${finalRange} has been added.`,
+		});
+	}, [selectionRange, state, addChart]);
 
 	const handleInsertImage = useCallback(
 		(e: React.ChangeEvent<HTMLInputElement>) => {

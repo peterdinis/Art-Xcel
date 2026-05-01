@@ -125,6 +125,8 @@ interface EditorDialogsProps {
 	setChartTitle: (title: string) => void;
 	chartType: "bar" | "line" | "pie";
 	setChartType: (type: "bar" | "line" | "pie") => void;
+	chartRange?: string;
+	setChartRange?: (range: string) => void;
 	handleInsertChart: () => void;
 
 	// Icon
@@ -231,6 +233,8 @@ export const EditorDialogs: React.FC<EditorDialogsProps> = (props) => {
 		setChartTitle,
 		chartType,
 		setChartType,
+		chartRange,
+		setChartRange,
 		handleInsertChart,
 		showIconDialog,
 		setShowIconDialog,
@@ -755,6 +759,14 @@ export const EditorDialogs: React.FC<EditorDialogsProps> = (props) => {
 								value={chartTitle}
 								onChange={(e) => setChartTitle(e.target.value)}
 								placeholder="Enter chart title..."
+							/>
+						</div>
+						<div className="space-y-2">
+							<Label>Data Range (e.g., A1:B10)</Label>
+							<Input
+								value={props.chartRange}
+								onChange={(e) => props.setChartRange?.(e.target.value)}
+								placeholder="Leave empty to use selection..."
 							/>
 						</div>
 						<div className="space-y-2">

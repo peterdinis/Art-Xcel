@@ -90,6 +90,8 @@ export function EditorModalsSection({ handlers, state, spreadsheet }: EditorModa
 			setShowChartDialog={state.setShowChartDialog}
 			chartTitle={state.chartTitle}
 			setChartTitle={state.setChartTitle}
+			chartRange={state.chartRange}
+			setChartRange={state.setChartRange}
 			chartType={state.chartType}
 			setChartType={state.setChartType}
 			handleInsertChart={handlers.handleInsertChart}
