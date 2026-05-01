@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useReducer } from "react";
+import { useEffect, useReducer, useCallback } from "react";
 import {
 	DialogName,
 	DialogsState,
@@ -100,34 +100,84 @@ export function useEditorState(): UseEditorStateReturn {
 	}, []);
 
 	// ── Dialog helpers ─────────────────────────────────────────────────────────
-	const openDialog = (dialog: DialogName) =>
-		dispatchDialogs({ type: "OPEN", dialog });
-	const closeDialog = (dialog: DialogName) =>
-		dispatchDialogs({ type: "CLOSE", dialog });
-	const toggleDialog = (dialog: DialogName) =>
-		dispatchDialogs({ type: "TOGGLE", dialog });
+	const openDialog = useCallback((dialog: DialogName) =>
+		dispatchDialogs({ type: "OPEN", dialog }), []);
+	
+	const closeDialog = useCallback((dialog: DialogName) =>
+		dispatchDialogs({ type: "CLOSE", dialog }), []);
+	
+	const toggleDialog = useCallback((dialog: DialogName) =>
+		dispatchDialogs({ type: "TOGGLE", dialog }), []);
 
-	const mkDialog = (d: DialogName) => (open: boolean) =>
-		open ? openDialog(d) : closeDialog(d);
+	const mkDialog = useCallback((d: DialogName) => (open: boolean) =>
+		open ? openDialog(d) : closeDialog(d), [openDialog, closeDialog]);
 
 	// ── Editor field helper ───────────────────────────────────────────────────
-	const setField = <K extends keyof EditorState>(
+	const setField = useCallback(<K extends keyof EditorState>(
 		field: K,
 		value: EditorState[K],
-	) => dispatchEditor({ type: "SET_FIELD", field, value });
+	) => dispatchEditor({ type: "SET_FIELD", field, value }), []);
 
-	const setZoom = (v: number | ((prev: number) => number)) =>
+	const setZoom = useCallback((v: number | ((prev: number) => number)) =>
 		dispatchEditor({
 			type: "SET_ZOOM",
 			value: typeof v === "function" ? v(editorState.zoom) : v,
-		});
+		}), [editorState.zoom]);
 
-	const mkToggle =
-		(field: keyof EditorState) =>
+	const mkToggle = useCallback((field: keyof EditorState) =>
 		(v: boolean | ((p: boolean) => boolean)) =>
 			typeof v === "function"
 				? dispatchEditor({ type: "TOGGLE_FIELD", field })
-				: setField(field, v as boolean);
+				: setField(field, v as boolean), [setField]);
+
+	// Memoize all dialog setters
+	const setShowFindDialog = useCallback(mkDialog("findDialog"), [mkDialog]);
+	const setShowPrintDialog = useCallback(mkDialog("printDialog"), [mkDialog]);
+	const setShowPageSetupDialog = useCallback(mkDialog("pageSetupDialog"), [mkDialog]);
+	const setShowExportDialog = useCallback(mkDialog("exportDialog"), [mkDialog]);
+	const setShowImportDialog = useCallback(mkDialog("importDialog"), [mkDialog]);
+	const setShowDeleteDialog = useCallback(mkDialog("deleteDialog"), [mkDialog]);
+	const setShowNewSheetDialog = useCallback(mkDialog("newSheetDialog"), [mkDialog]);
+	const setShowNamedRangeDialog = useCallback(mkDialog("namedRangeDialog"), [mkDialog]);
+	const setShowValidationDialog = useCallback(mkDialog("validationDialog"), [mkDialog]);
+	const setShowNoteDialog = useCallback(mkDialog("noteDialog"), [mkDialog]);
+	const setShowInsertFunctionDialog = useCallback(mkDialog("insertFunctionDialog"), [mkDialog]);
+	const setShowUserGuideDialog = useCallback(mkDialog("userGuideDialog"), [mkDialog]);
+	const setShowShortcutsDialog = useCallback(mkDialog("shortcutsDialog"), [mkDialog]);
+	const setShowSpecialCharDialog = useCallback(mkDialog("specialCharDialog"), [mkDialog]);
+	const setShowHyperlinkDialog = useCallback(mkDialog("hyperlinkDialog"), [mkDialog]);
+	const setShowCommentDialog = useCallback(mkDialog("commentDialog"), [mkDialog]);
+	const setShowConditionalFormattingDialog = useCallback(mkDialog("conditionalFormattingDialog"), [mkDialog]);
+	const setShowChartDialog = useCallback(mkDialog("chartDialog"), [mkDialog]);
+	const setShowIconDialog = useCallback(mkDialog("iconDialog"), [mkDialog]);
+
+	// Memoize editor field setters
+	const setSheetName = useCallback((v: string) => setField("sheetName", v), [setField]);
+	const setShowGrid = useCallback((v: boolean) => setField("showGrid", v), [setField]);
+	const setShowHeaders = useCallback((v: boolean) => setField("showHeaders", v), [setField]);
+	const setIsLoading = useCallback((v: boolean) => setField("isLoading", v), [setField]);
+	const setFormatPainter = useCallback((v: EditorState["formatPainter"]) => setField("formatPainter", v), [setField]);
+	const setFindText = useCallback((v: string) => setField("findText", v), [setField]);
+	const setReplaceText = useCallback((v: string) => setField("replaceText", v), [setField]);
+	const setMatchCase = useCallback((v: boolean) => setField("matchCase", v), [setField]);
+	const setWholeCell = useCallback((v: boolean) => setField("wholeCell", v), [setField]);
+	const setNewSheetName = useCallback((v: string) => setField("newSheetName", v), [setField]);
+	const setNewRangeName = useCallback((v: string) => setField("newRangeName", v), [setField]);
+	const setNewRangeRef = useCallback((v: string) => setField("newRangeRef", v), [setField]);
+	const setCellNote = useCallback((v: string) => setField("cellNote", v), [setField]);
+	const setValidationType = useCallback((v: EditorState["validationType"]) => setField("validationType", v), [setField]);
+	const setValidationMin = useCallback((v: number) => setField("validationMin", v), [setField]);
+	const setValidationMax = useCallback((v: number) => setField("validationMax", v), [setField]);
+	const setValidationList = useCallback((v: string) => setField("validationList", v), [setField]);
+	const setValidationRequired = useCallback((v: boolean) => setField("validationRequired", v), [setField]);
+	const setIconName = useCallback((v: string) => setField("iconName", v), [setField]);
+	const setChartType = useCallback((v: EditorState["chartType"]) => setField("chartType", v), [setField]);
+	const setChartTitle = useCallback((v: string) => setField("chartTitle", v), [setField]);
+	const setShareSettings = useCallback((v: ShareSettings) => setField("shareSettings", v), [setField]);
+
+	const setShowFormulaBar = useCallback(mkToggle("showFormulaBar"), [mkToggle]);
+	const setShowStatusBar = useCallback(mkToggle("showStatusBar"), [mkToggle]);
+	const setFreezePanes = useCallback(mkToggle("freezePanes"), [mkToggle]);
 
 	return {
 		// Dialogs state
@@ -138,51 +188,51 @@ export function useEditorState(): UseEditorStateReturn {
 		openDialog,
 		closeDialog,
 		toggleDialog,
-		setShowFindDialog: mkDialog("findDialog"),
-		setShowPrintDialog: mkDialog("printDialog"),
-		setShowPageSetupDialog: mkDialog("pageSetupDialog"),
-		setShowExportDialog: mkDialog("exportDialog"),
-		setShowImportDialog: mkDialog("importDialog"),
-		setShowDeleteDialog: mkDialog("deleteDialog"),
-		setShowNewSheetDialog: mkDialog("newSheetDialog"),
-		setShowNamedRangeDialog: mkDialog("namedRangeDialog"),
-		setShowValidationDialog: mkDialog("validationDialog"),
-		setShowNoteDialog: mkDialog("noteDialog"),
-		setShowInsertFunctionDialog: mkDialog("insertFunctionDialog"),
-		setShowUserGuideDialog: mkDialog("userGuideDialog"),
-		setShowShortcutsDialog: mkDialog("shortcutsDialog"),
-		setShowSpecialCharDialog: mkDialog("specialCharDialog"),
-		setShowHyperlinkDialog: mkDialog("hyperlinkDialog"),
-		setShowCommentDialog: mkDialog("commentDialog"),
-		setShowConditionalFormattingDialog: mkDialog("conditionalFormattingDialog"),
-		setShowChartDialog: mkDialog("chartDialog"),
-		setShowIconDialog: mkDialog("iconDialog"),
+		setShowFindDialog,
+		setShowPrintDialog,
+		setShowPageSetupDialog,
+		setShowExportDialog,
+		setShowImportDialog,
+		setShowDeleteDialog,
+		setShowNewSheetDialog,
+		setShowNamedRangeDialog,
+		setShowValidationDialog,
+		setShowNoteDialog,
+		setShowInsertFunctionDialog,
+		setShowUserGuideDialog,
+		setShowShortcutsDialog,
+		setShowSpecialCharDialog,
+		setShowHyperlinkDialog,
+		setShowCommentDialog,
+		setShowConditionalFormattingDialog,
+		setShowChartDialog,
+		setShowIconDialog,
 		// Editor field setters
-		setSheetName: (v) => setField("sheetName", v),
+		setSheetName,
 		setZoom,
-		setShowFormulaBar: mkToggle("showFormulaBar"),
-		setShowStatusBar: mkToggle("showStatusBar"),
-		setShowGrid: (v) => setField("showGrid", v),
-		setShowHeaders: (v) => setField("showHeaders", v),
-		setFreezePanes: mkToggle("freezePanes"),
-		setIsLoading: (v) => setField("isLoading", v),
-		setFormatPainter: (v) => setField("formatPainter", v),
-		setFindText: (v) => setField("findText", v),
-		setReplaceText: (v) => setField("replaceText", v),
-		setMatchCase: (v) => setField("matchCase", v),
-		setWholeCell: (v) => setField("wholeCell", v),
-		setNewSheetName: (v) => setField("newSheetName", v),
-		setNewRangeName: (v) => setField("newRangeName", v),
-		setNewRangeRef: (v) => setField("newRangeRef", v),
-		setCellNote: (v) => setField("cellNote", v),
-		setValidationType: (v) => setField("validationType", v),
-		setValidationMin: (v) => setField("validationMin", v),
-		setValidationMax: (v) => setField("validationMax", v),
-		setValidationList: (v) => setField("validationList", v),
-		setValidationRequired: (v) => setField("validationRequired", v),
-		setIconName: (v) => setField("iconName", v),
-		setChartType: (v) => setField("chartType", v),
-		setChartTitle: (v) => setField("chartTitle", v),
-		setShareSettings: (v) => setField("shareSettings", v),
+		setShowFormulaBar,
+		setShowStatusBar,
+		setShowGrid,
+		setShowHeaders,
+		setFreezePanes,
+		setIsLoading,
+		setFormatPainter,
+		setFindText,
+		setReplaceText,
+		setMatchCase,
+		setWholeCell,
+		setNewSheetName,
+		setNewRangeName,
+		setNewRangeRef,
+		setCellNote,
+		setValidationType,
+		setValidationMin,
+		setValidationMax,
+		setValidationList,
+		setValidationRequired,
+		setIconName,
+		setChartType,
+		setChartTitle,
+		setShareSettings,
 	};
 }
