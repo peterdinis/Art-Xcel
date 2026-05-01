@@ -78,6 +78,13 @@ interface EditorDialogsProps {
 	selectedCell: string | null;
 	handleSaveNote: () => void;
 
+	// Save
+	showSaveDialog?: boolean;
+	setShowSaveDialog?: (v: boolean) => void;
+	handleSave?: () => void;
+	sheetName?: string;
+	setSheetName?: (v: string) => void;
+
 	// Validation
 	showValidationDialog: boolean;
 	setShowValidationDialog: (open: boolean) => void;
@@ -550,6 +557,14 @@ export const EditorDialogs: React.FC<EditorDialogsProps> = (props) => {
 						</DialogDescription>
 					</DialogHeader>
 					<div className="space-y-4 py-4">
+						<div className="space-y-2">
+							<Label>File Name</Label>
+							<Input
+								placeholder="Enter file name..."
+								value={props.sheetName}
+								onChange={(e) => props.setSheetName?.(e.target.value)}
+							/>
+						</div>
 						<div className="space-y-2">
 							<Label>Format</Label>
 							<Select
@@ -1235,6 +1250,42 @@ export const EditorDialogs: React.FC<EditorDialogsProps> = (props) => {
 					<DialogFooter>
 						<Button onClick={() => setShowAboutDialog?.(false)}>
 							Close
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+			{/* Save Dialog */}
+			<Dialog open={props.showSaveDialog} onOpenChange={props.setShowSaveDialog}>
+				<DialogContent className="max-w-md">
+					<DialogHeader>
+						<DialogTitle>Save Spreadsheet</DialogTitle>
+						<DialogDescription>
+							Enter a name for your spreadsheet before saving.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="space-y-4 py-4">
+						<div className="space-y-2">
+							<Label>Spreadsheet Name</Label>
+							<Input
+								placeholder="Enter name..."
+								value={props.sheetName}
+								onChange={(e) => props.setSheetName?.(e.target.value)}
+								autoFocus
+							/>
+						</div>
+					</div>
+					<DialogFooter>
+						<Button variant="outline" onClick={() => props.setShowSaveDialog?.(false)}>
+							Cancel
+						</Button>
+						<Button
+							onClick={() => {
+								props.handleSave?.();
+								props.setShowSaveDialog?.(false);
+							}}
+							disabled={!props.sheetName?.trim()}
+						>
+							Save Now
 						</Button>
 					</DialogFooter>
 				</DialogContent>

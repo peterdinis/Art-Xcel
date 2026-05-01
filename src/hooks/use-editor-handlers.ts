@@ -172,6 +172,10 @@ export function useEditorHandlers({
 	// ── Save / Undo / Redo ───────────────────────────────────────────────────
 
 	const handleSave = useCallback(async () => {
+		state.setShowSaveDialog(true);
+	}, [state]);
+
+	const handleConfirmSave = useCallback(async () => {
 		const result = await saveSpreadsheetAction(id, data);
 		if (result.success) {
 			toast.success("Saved to Cloud", {
@@ -760,6 +764,7 @@ export function useEditorHandlers({
 		handleSelectCell,
 		// Save/Undo/Redo
 		handleSave,
+		handleConfirmSave,
 		handleNew,
 		handleOpen,
 		handleUndo,

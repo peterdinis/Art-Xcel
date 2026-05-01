@@ -107,6 +107,13 @@ export function EditorModalsSection({ handlers, state, spreadsheet }: EditorModa
 			// User Guide
 			showUserGuideDialog={state.userGuideDialog}
 			setShowUserGuideDialog={state.setShowUserGuideDialog}
+			showAboutDialog={state.aboutDialog}
+			setShowAboutDialog={(open) => open ? state.openDialog("aboutDialog") : state.closeDialog("aboutDialog")}
+			showSaveDialog={state.saveDialog}
+			setShowSaveDialog={state.setShowSaveDialog}
+			handleSave={handlers.handleConfirmSave}
+			sheetName={state.sheetName}
+			setSheetName={state.setSheetName}
 			// Additional
 			showSpecialCharDialog={state.specialCharDialog}
 			setShowSpecialCharDialog={state.setShowSpecialCharDialog}
@@ -120,8 +127,6 @@ export function EditorModalsSection({ handlers, state, spreadsheet }: EditorModa
 			handleInsertHyperlink={handlers.handleInsertHyperlink}
 			handleInsertComment={handlers.handleInsertComment}
 			handleApplyConditionalFormatting={handlers.handleApplyConditionalFormatting}
-			showAboutDialog={state.aboutDialog}
-			setShowAboutDialog={(open) => open ? state.openDialog("aboutDialog") : state.closeDialog("aboutDialog")}
 		/>
 	);
 }

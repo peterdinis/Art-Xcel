@@ -22,7 +22,8 @@ export type DialogName =
 	| "imageDialog"
 	| "shapeDialog"
 	| "iconDialog"
-	| "aboutDialog";
+	| "aboutDialog"
+	| "saveDialog";
 
 export type DialogsState = Record<DialogName, boolean>;
 
@@ -54,6 +55,7 @@ export const initialDialogsState: DialogsState = {
 	shapeDialog: false,
 	iconDialog: false,
 	aboutDialog: false,
+	saveDialog: false,
 };
 
 export function dialogsReducer(

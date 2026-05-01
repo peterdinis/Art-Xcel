@@ -158,6 +158,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 	const images = currentSheet.images;
 	const shapes = currentSheet.shapes;
 	const icons = currentSheet.icons;
+	const comments = currentSheet.comments;
 	const namedRanges = currentSheet.namedRanges;
 	const hiddenRows = currentSheet.hiddenRows;
 	const undoStack = currentSheet.undoStack;

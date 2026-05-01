@@ -16,6 +16,7 @@ import { EditorFormulaSection } from "./components/EditorFormulaSection";
 import { EditorGridSection } from "./components/EditorGridSection";
 import { EditorSheetSection } from "./components/EditorSheetSection";
 import { EditorModalsSection } from "./components/EditorModalsSection";
+import { EditorHeader } from "./components/EditorHeader";
 import { CommentsSidebar } from "@/components/editor/CommentsSidebar";
 
 export default function EditorContent() {
@@ -108,6 +109,13 @@ export default function EditorContent() {
 
 	return (
 		<div className="h-screen flex flex-col font-sans overflow-hidden bg-background">
+			<EditorHeader
+				name={state.sheetName}
+				onRename={state.setSheetName}
+				onSave={handlers.handleSave}
+				onShare={() => {}}
+				isSaving={state.isLoading}
+			/>
 			<EditorToolbarSection handlers={handlers} state={state} />
 			<div className="flex-1 flex overflow-hidden">
 				<div className="flex-1 flex flex-col overflow-hidden">
