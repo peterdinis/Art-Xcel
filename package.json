@@ -27,6 +27,7 @@
 		"@tanstack/react-virtual": "^3.13.24",
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
+		"date-fns": "^4.1.0",
 		"exceljs": "^4.4.0",
 		"filepond": "^4.32.12",
 		"filepond-plugin-file-validate-type": "^1.2.9",

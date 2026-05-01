@@ -81,6 +81,7 @@ export type EditorState = {
 	showStatusBar: boolean;
 	showGrid: boolean;
 	showHeaders: boolean;
+	showCommentsSidebar: boolean;
 	freezePanes: boolean;
 	isLoading: boolean;
 	formatPainter: {
@@ -121,6 +122,7 @@ export const initialEditorState: EditorState = {
 	showStatusBar: true,
 	showGrid: true,
 	showHeaders: true,
+	showCommentsSidebar: false,
 	freezePanes: false,
 	isLoading: true,
 	formatPainter: null,

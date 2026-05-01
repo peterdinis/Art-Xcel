@@ -43,6 +43,7 @@ export type EditorStateActions = {
 	setShowStatusBar: (v: boolean | ((p: boolean) => boolean)) => void;
 	setShowGrid: (v: boolean) => void;
 	setShowHeaders: (v: boolean) => void;
+	setShowCommentsSidebar: (v: boolean | ((p: boolean) => boolean)) => void;
 	setFreezePanes: (v: boolean | ((p: boolean) => boolean)) => void;
 	setIsLoading: (v: boolean) => void;
 	setFormatPainter: (v: EditorState["formatPainter"]) => void;
@@ -180,6 +181,7 @@ export function useEditorState(): UseEditorStateReturn {
 	const setShowFormulaBar = useCallback(mkToggle("showFormulaBar"), [mkToggle]);
 	const setShowStatusBar = useCallback(mkToggle("showStatusBar"), [mkToggle]);
 	const setFreezePanes = useCallback(mkToggle("freezePanes"), [mkToggle]);
+	const setShowCommentsSidebar = useCallback(mkToggle("showCommentsSidebar"), [mkToggle]);
 
 	return {
 		// Dialogs state
@@ -216,6 +218,7 @@ export function useEditorState(): UseEditorStateReturn {
 		setShowStatusBar,
 		setShowGrid,
 		setShowHeaders,
+		setShowCommentsSidebar,
 		setFreezePanes,
 		setIsLoading,
 		setFormatPainter,

@@ -611,13 +611,18 @@ export function useEditorHandlers({
 	const handleInsertComment = useCallback(
 		(comment: string) => {
 			if (selectedCell) {
-				addNote(selectedCell, comment);
+				addComment({
+					cellId: selectedCell,
+					author: "You",
+					text: comment,
+				});
+				state.setShowCommentsSidebar(true);
 				toast.success("Comment added");
 			} else {
 				toast.error("No cell selected");
 			}
 		},
-		[selectedCell, addNote],
+		[selectedCell, addComment, state],
 	);
 
 	const handleInsertSpecialChar = useCallback(

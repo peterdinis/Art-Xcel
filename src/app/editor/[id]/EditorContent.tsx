@@ -16,6 +16,7 @@ import { EditorFormulaSection } from "./components/EditorFormulaSection";
 import { EditorGridSection } from "./components/EditorGridSection";
 import { EditorSheetSection } from "./components/EditorSheetSection";
 import { EditorModalsSection } from "./components/EditorModalsSection";
+import { CommentsSidebar } from "@/components/editor/CommentsSidebar";
 
 export default function EditorContent() {
 	const { id } = useParams();
@@ -56,6 +57,7 @@ export default function EditorContent() {
 				if (record) {
 					setSheetName(record.name);
 					if (record.data) setData(record.data);
+					if (record.comments) spreadsheet.setComments(record.comments);
 					if (record.shareSettings) setShareSettings(record.shareSettings);
 
 					toast.success(`Welcome back to "${record.name}"`, {
@@ -88,6 +90,7 @@ export default function EditorContent() {
 					id: id as string,
 					name: state.sheetName,
 					data: spreadsheet.data,
+					comments: spreadsheet.comments,
 					shareSettings: state.shareSettings,
 					lastModified: Date.now(),
 				});
@@ -97,7 +100,7 @@ export default function EditorContent() {
 		}, 1000);
 
 		return () => clearTimeout(timer);
-	}, [spreadsheet.data, state.sheetName, state.shareSettings, state.isLoading, id, db.isReady, db.saveSpreadsheet]);
+	}, [spreadsheet.data, spreadsheet.comments, state.sheetName, state.shareSettings, state.isLoading, id, db.isReady, db.saveSpreadsheet]);
 
 	if (state.isLoading) {
 		return <EditorSkeleton />;
@@ -106,10 +109,47 @@ export default function EditorContent() {
 	return (
 		<div className="h-screen flex flex-col font-sans overflow-hidden bg-background">
 			<EditorToolbarSection handlers={handlers} state={state} />
-			<EditorFormulaSection handlers={handlers} state={state} spreadsheet={spreadsheet} />
-			<EditorGridSection gridRef={gridRef} handlers={handlers} state={state} spreadsheet={spreadsheet} />
-			<EditorSheetSection handlers={handlers} state={state} spreadsheet={spreadsheet} />
-			<EditorModalsSection handlers={handlers} state={state} spreadsheet={spreadsheet} />
+			<div className="flex-1 flex overflow-hidden">
+				<div className="flex-1 flex flex-col overflow-hidden">
+					<EditorFormulaSection
+						handlers={handlers}
+						state={state}
+						spreadsheet={spreadsheet}
+					/>
+					<EditorGridSection
+						gridRef={gridRef}
+						handlers={handlers}
+						state={state}
+						spreadsheet={spreadsheet}
+					/>
+				</div>
+				{state.showCommentsSidebar && (
+					<CommentsSidebar
+						comments={spreadsheet.comments}
+						onAddComment={(text) =>
+							spreadsheet.addComment({
+								cellId: spreadsheet.selectedCell || "",
+								author: "You",
+								text,
+							})
+						}
+						onRemoveComment={spreadsheet.removeComment}
+						onResolveComment={spreadsheet.resolveComment}
+						onClose={() => state.setShowCommentsSidebar(false)}
+						selectedCell={spreadsheet.selectedCell}
+					/>
+				)}
+			</div>
+			<EditorSheetSection
+				handlers={handlers}
+				state={state}
+				spreadsheet={spreadsheet}
+			/>
+			<EditorModalsSection
+				handlers={handlers}
+				state={state}
+				spreadsheet={spreadsheet}
+			/>
 		</div>
 	);
 }

@@ -145,6 +145,7 @@ interface ClassicToolbarProps {
 	onSpelling?: () => void;
 	onDecreaseIndent?: () => void;
 	onIncreaseIndent?: () => void;
+	onToggleComments?: () => void;
 	// Platform detection for shortcut labels
 	isMac?: boolean;
 }
@@ -238,6 +239,7 @@ export const ClassicToolbar = ({
 	onSpelling,
 	onDecreaseIndent,
 	onIncreaseIndent,
+	onToggleComments,
 	isMac = false,
 }: ClassicToolbarProps) => {
 	const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -366,6 +368,10 @@ export const ClassicToolbar = ({
 						</DropdownMenuItem>
 						<DropdownMenuItem onClick={onToggleFreezePanes}>
 							Freeze Panes
+						</DropdownMenuItem>
+						<DropdownMenuSeparator />
+						<DropdownMenuItem onClick={onToggleComments}>
+							Comments Sidebar
 						</DropdownMenuItem>
 						<DropdownMenuSeparator />
 						<DropdownMenuItem onClick={onToggleFullScreen}>
@@ -691,6 +697,11 @@ export const ClassicToolbar = ({
 					icon={Lock}
 					tooltip="Freeze Panes"
 					onClick={onToggleFreezePanes}
+				/>
+				<ToolbarButton
+					icon={MessageSquare}
+					tooltip="Toggle Comments Sidebar"
+					onClick={onToggleComments}
 				/>
 			</div>
 

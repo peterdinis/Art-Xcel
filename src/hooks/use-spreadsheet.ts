@@ -97,6 +97,15 @@ export interface IconData {
 	color?: string;
 }
 
+export interface CommentData {
+	id: string;
+	cellId: string;
+	author: string;
+	text: string;
+	timestamp: number;
+	resolved: boolean;
+}
+
 export interface Sheet {
 	name: string;
 	data: SheetData;
@@ -104,6 +113,7 @@ export interface Sheet {
 	images: ImageData[];
 	shapes: ShapeData[];
 	icons: IconData[];
+	comments: CommentData[];
 	selectedCell: string | null;
 	selectionRange: string[] | null;
 	namedRanges: Record<string, string>;
@@ -121,6 +131,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 			images: [],
 			shapes: [],
 			icons: [],
+			comments: [],
 			selectedCell: "A1",
 			selectionRange: null,
 			namedRanges: {},
@@ -261,6 +272,25 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 								typeof newIcons === "function"
 									? newIcons(sheet.icons)
 									: newIcons,
+						}
+						: sheet,
+				),
+			);
+		},
+		[currentSheetIndex],
+	);
+
+	const setComments = useCallback(
+		(newComments: CommentData[] | ((prev: CommentData[]) => CommentData[])) => {
+			setSheets((prev) =>
+				prev.map((sheet, i) =>
+					i === currentSheetIndex
+						? {
+							...sheet,
+							comments:
+								typeof newComments === "function"
+									? newComments(sheet.comments)
+									: newComments,
 						}
 						: sheet,
 				),
@@ -1207,6 +1237,36 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 		[setIcons],
 	);
 
+	// Comment operations
+	const addComment = useCallback(
+		(comment: Omit<CommentData, "id" | "timestamp" | "resolved">) => {
+			const newComment: CommentData = {
+				...comment,
+				id: `comment-${Date.now()}`,
+				timestamp: Date.now(),
+				resolved: false,
+			};
+			setComments((prev) => [...prev, newComment]);
+		},
+		[setComments],
+	);
+
+	const removeComment = useCallback(
+		(id: string) => {
+			setComments((prev) => prev.filter((c) => c.id !== id));
+		},
+		[setComments],
+	);
+
+	const resolveComment = useCallback(
+		(id: string, resolved: boolean = true) => {
+			setComments((prev) =>
+				prev.map((c) => (c.id === id ? { ...c, resolved } : c)),
+			);
+		},
+		[setComments],
+	);
+
 	// Get cell formula
 	const getCellFormula = useCallback(
 		(cellId: string) => {
@@ -1324,6 +1384,11 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 		addIcon,
 		removeIcon,
 		updateIcon,
+		comments,
+		addComment,
+		removeComment,
+		resolveComment,
+		setComments,
 
 		// Utilities
 		clearSheet,

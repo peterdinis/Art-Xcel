@@ -58,6 +58,7 @@ export function EditorToolbarSection({ handlers, state }: EditorToolbarSectionPr
 			onBackgroundColorPick={(color) => handlers.handleStyleChange({ backgroundColor: color })}
 			onDecreaseIndent={handlers.handleDecreaseIndent}
 			onIncreaseIndent={handlers.handleIncreaseIndent}
+			onToggleComments={() => state.setShowCommentsSidebar(!state.showCommentsSidebar)}
 			onInsertSpecialChar={() => state.setShowSpecialCharDialog(true)}
 			onInsertHyperlink={() => state.setShowHyperlinkDialog(true)}
 			onSpelling={handlers.handleSpelling}

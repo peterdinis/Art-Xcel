@@ -4,13 +4,14 @@
 import { useCallback, useEffect, useState, useMemo } from 'react'
 import { createCollection, useLiveQuery } from '@tanstack/react-db'
 import { localStorageCollectionOptions } from '@tanstack/db'
-import type { SheetData } from '@/hooks/use-spreadsheet'
+import type { SheetData, CommentData } from '@/hooks/use-spreadsheet'
 import type { ShareSettings } from '@/components/shared/share-dialog'
 
 export interface SpreadsheetRecord {
   id: string
   name: string
   data: SheetData
+  comments?: CommentData[]
   shareSettings?: ShareSettings
   lastModified: number
   createdAt: number
