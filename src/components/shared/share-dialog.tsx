@@ -339,7 +339,7 @@ export function ShareDialog({
 									value={invitePermission}
 									onValueChange={(val: Permission) => setInvitePermission(val)}
 								>
-									<SelectTrigger className="w-[110px]">
+									<SelectTrigger className="w-27.5">
 										<SelectValue />
 									</SelectTrigger>
 									<SelectContent>
@@ -384,7 +384,7 @@ export function ShareDialog({
 										className="flex items-center justify-between group"
 									>
 										<div className="flex items-center gap-3 min-w-0 flex-1">
-											<Avatar className="h-8 w-8 flex-shrink-0">
+											<Avatar className="h-8 w-8 shrink-0">
 												<AvatarFallback className="text-xs">
 													{collaborator.name
 														? collaborator.name.charAt(0).toUpperCase()

@@ -10,8 +10,6 @@ import { useEditorHandlers } from "@/hooks/use-editor-handlers";
 import { GridHandle } from "@/components/editor/Grid";
 import { toast } from "sonner";
 import { FileSpreadsheet } from "lucide-react";
-
-// Decomposed components
 import { EditorSkeleton } from "./components/EditorSkeleton";
 import { EditorToolbarSection } from "./components/EditorToolbarSection";
 import { EditorFormulaSection } from "./components/EditorFormulaSection";

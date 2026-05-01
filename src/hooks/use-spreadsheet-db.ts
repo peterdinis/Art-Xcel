@@ -1,152 +1,128 @@
-"use client";
+// use-spreadsheet-db.ts
+'use client'
 
-import { useCallback, useEffect, useState } from "react";
-import type { SheetData } from "@/hooks/use-spreadsheet";
-import type { ShareSettings } from "@/components/shared/share-dialog";
-
-const DB_NAME = "art-xcel-db";
-const DB_VERSION = 1;
-const STORE_NAME = "spreadsheets";
-const LS_FILES_KEY = "excel-editor-files";
-const LS_MIGRATED_KEY = "art-xcel-idb-migrated";
+import { useCallback, useEffect, useState } from 'react'
+import { createCollection, useLiveQuery } from '@tanstack/react-db'
+import { localStorageCollectionOptions } from '@tanstack/db'
+import type { SheetData } from '@/hooks/use-spreadsheet'
+import type { ShareSettings } from '@/components/shared/share-dialog'
 
 export interface SpreadsheetRecord {
-	id: string;
-	name: string;
-	data: SheetData;
-	shareSettings?: ShareSettings;
-	lastModified: number;
-	createdAt: number;
+  id: string
+  name: string
+  data: SheetData
+  shareSettings?: ShareSettings
+  lastModified: number
+  createdAt: number
 }
 
-// ── Low-level IndexedDB helpers ─────────────────────────────────────────────
+// ── TanStack DB Collection (module-level, singleton) ────────────────────────
 
-function openDB(): Promise<IDBDatabase> {
-	return new Promise((resolve, reject) => {
-		const request = indexedDB.open(DB_NAME, DB_VERSION);
+const spreadsheetsCollection = createCollection(
+  localStorageCollectionOptions<SpreadsheetRecord, string>({
+    storageKey: 'art-xcel-spreadsheets',
+    getKey: item => item.id
+  })
+)
 
-		request.onupgradeneeded = (event) => {
-			const db = (event.target as IDBOpenDBRequest).result;
-			if (!db.objectStoreNames.contains(STORE_NAME)) {
-				const store = db.createObjectStore(STORE_NAME, { keyPath: "id" });
-				store.createIndex("lastModified", "lastModified", { unique: false });
-			}
-		};
+// ── One-time migration z IndexedDB ──────────────────────────────────────────
 
-		request.onsuccess = () => resolve(request.result);
-		request.onerror = () => reject(request.error);
-	});
-}
+const LS_MIGRATED_KEY = 'art-xcel-idb-migrated'
+const DB_NAME = 'art-xcel-db'
+const STORE_NAME = 'spreadsheets'
 
-async function idbPut(record: SpreadsheetRecord): Promise<void> {
-	const db = await openDB();
-	return new Promise((resolve, reject) => {
-		const tx = db.transaction(STORE_NAME, "readwrite");
-		tx.objectStore(STORE_NAME).put(record);
-		tx.oncomplete = () => resolve();
-		tx.onerror = () => reject(tx.error);
-	});
-}
+async function migrateFromIndexedDB (): Promise<void> {
+  if (typeof window === 'undefined') return
+  if (localStorage.getItem(LS_MIGRATED_KEY) === 'true') return
 
-async function idbGet(id: string): Promise<SpreadsheetRecord | undefined> {
-	const db = await openDB();
-	return new Promise((resolve, reject) => {
-		const tx = db.transaction(STORE_NAME, "readonly");
-		const req = tx.objectStore(STORE_NAME).get(id);
-		req.onsuccess = () => resolve(req.result as SpreadsheetRecord | undefined);
-		req.onerror = () => reject(req.error);
-	});
-}
+  try {
+    const records = await new Promise<SpreadsheetRecord[]>(
+      (resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, 1)
+        request.onsuccess = () => {
+          const db = request.result
+          if (!db.objectStoreNames.contains(STORE_NAME)) {
+            resolve([])
+            return
+          }
+          const tx = db.transaction(STORE_NAME, 'readonly')
+          const req = tx.objectStore(STORE_NAME).getAll()
+          req.onsuccess = () => resolve(req.result as SpreadsheetRecord[])
+          req.onerror = () => reject(req.error)
+        }
+        request.onerror = () => resolve([]) // IDB neexistuje, nič na migráciu
+      }
+    )
 
-async function idbGetAll(): Promise<SpreadsheetRecord[]> {
-	const db = await openDB();
-	return new Promise((resolve, reject) => {
-		const tx = db.transaction(STORE_NAME, "readonly");
-		const req = tx.objectStore(STORE_NAME).getAll();
-		req.onsuccess = () => resolve(req.result as SpreadsheetRecord[]);
-		req.onerror = () => reject(req.error);
-	});
-}
+    for (const record of records) {
+      spreadsheetsCollection.insert(record)
+    }
 
-async function idbDelete(id: string): Promise<void> {
-	const db = await openDB();
-	return new Promise((resolve, reject) => {
-		const tx = db.transaction(STORE_NAME, "readwrite");
-		tx.objectStore(STORE_NAME).delete(id);
-		tx.oncomplete = () => resolve();
-		tx.onerror = () => reject(tx.error);
-	});
-}
-
-// ── One-time migration from localStorage ────────────────────────────────────
-
-async function migrateFromLocalStorage(): Promise<void> {
-	if (typeof window === "undefined") return;
-	if (localStorage.getItem(LS_MIGRATED_KEY) === "true") return;
-
-	try {
-		const stored = localStorage.getItem(LS_FILES_KEY);
-		if (stored) {
-			const records: SpreadsheetRecord[] = JSON.parse(stored);
-			for (const record of records) {
-				await idbPut({
-					...record,
-					createdAt: record.lastModified ?? Date.now(),
-				});
-			}
-		}
-		localStorage.setItem(LS_MIGRATED_KEY, "true");
-	} catch {
-		// Silently fail – migration is best-effort
-	}
+    localStorage.setItem(LS_MIGRATED_KEY, 'true')
+  } catch {
+    // Migrácia je best-effort, potichu zlyháme
+  }
 }
 
 // ── React hook ───────────────────────────────────────────────────────────────
 
-export function useSpreadsheetDB() {
-	const [isReady, setIsReady] = useState(false);
+export function useSpreadsheetDB () {
+  const [isReady, setIsReady] = useState(false)
 
-	useEffect(() => {
-		migrateFromLocalStorage().finally(() => setIsReady(true));
-	}, []);
+  useEffect(() => {
+    migrateFromIndexedDB().finally(() => setIsReady(true))
+  }, [])
 
-	const saveSpreadsheet = useCallback(
-		async (
-			record: Omit<SpreadsheetRecord, "createdAt"> & { createdAt?: number },
-		) => {
-			const existing = await idbGet(record.id);
-			await idbPut({
-				...record,
-				createdAt: existing?.createdAt ?? record.createdAt ?? Date.now(),
-				lastModified: Date.now(),
-			});
-		},
-		[],
-	);
+  // Live query — reaktívne sa aktualizuje pri každej zmene v kolekcii
+  const { data: spreadsheets } = useLiveQuery(q =>
+    q.from({ s: spreadsheetsCollection })
+  )
 
-	const loadSpreadsheet = useCallback(
-		async (id: string): Promise<SpreadsheetRecord | undefined> => {
-			return idbGet(id);
-		},
-		[],
-	);
+  const saveSpreadsheet = useCallback(
+    async (
+      record: Omit<SpreadsheetRecord, 'createdAt'> & { createdAt?: number }
+    ) => {
+      const existing = spreadsheetsCollection.get(record.id)
+      const full: SpreadsheetRecord = {
+        ...record,
+        createdAt: existing?.createdAt ?? record.createdAt ?? Date.now(),
+        lastModified: Date.now()
+      }
 
-	const getAllSpreadsheets = useCallback(
-		async (): Promise<SpreadsheetRecord[]> => {
-			return idbGetAll();
-		},
-		[],
-	);
+      if (existing) {
+        spreadsheetsCollection.update(record.id, draft => {
+          Object.assign(draft, full)
+        })
+      } else {
+        spreadsheetsCollection.insert(full)
+      }
+    },
+    []
+  )
 
-	const deleteSpreadsheet = useCallback(async (id: string): Promise<void> => {
-		return idbDelete(id);
-	}, []);
+  const loadSpreadsheet = useCallback(
+    async (id: string): Promise<SpreadsheetRecord | undefined> => {
+      return spreadsheetsCollection.get(id)
+    },
+    []
+  )
 
-	return {
-		isReady,
-		saveSpreadsheet,
-		loadSpreadsheet,
-		getAllSpreadsheets,
-		deleteSpreadsheet,
-	};
+  const getAllSpreadsheets = useCallback(async (): Promise<
+    SpreadsheetRecord[]
+  > => {
+    return spreadsheets ?? []
+  }, [spreadsheets])
+
+  const deleteSpreadsheet = useCallback(async (id: string): Promise<void> => {
+    spreadsheetsCollection.delete(id)
+  }, [])
+
+  return {
+    isReady,
+    spreadsheets,
+    saveSpreadsheet,
+    loadSpreadsheet,
+    getAllSpreadsheets,
+    deleteSpreadsheet
+  }
 }
