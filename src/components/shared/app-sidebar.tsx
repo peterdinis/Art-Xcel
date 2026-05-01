@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { FileSpreadsheet, Trash2, Settings, Home } from "lucide-react";
 import { ModeToggle } from "@/components/mode-toggle";
+import { UrlObject } from "url";
 
 export function AppSidebar() {
 	const pathname = usePathname();
@@ -27,7 +28,7 @@ export function AppSidebar() {
 					const Icon = link.icon;
 					const isActive = pathname === link.href;
 					return (
-						<Link key={link.href} href={link.href} className="block">
+						<Link key={link.href} href={link.href as unknown as UrlObject} className="block">
 							<Button
 								variant={isActive ? "secondary" : "ghost"}
 								className={cn(

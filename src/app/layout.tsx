@@ -40,7 +40,7 @@ export const metadata: Metadata = {
 		address: false,
 		telephone: false,
 	},
-	metadataBase: new URL("https://excel-editor.com"), // Replace with your actual domain
+	metadataBase: new URL("https://excel-editor.com"),
 	alternates: {
 		canonical: "/",
 		languages: {
@@ -56,7 +56,7 @@ export const metadata: Metadata = {
 		siteName: "ArtXcel",
 		images: [
 			{
-				url: "/og-image.png", // Make sure to add this image to your public folder
+				url: "/og-image.png",
 				width: 1200,
 				height: 630,
 				alt: "ArtXcel - Online Spreadsheet Application",

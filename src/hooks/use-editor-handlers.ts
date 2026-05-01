@@ -144,15 +144,32 @@ export function useEditorHandlers({
 
 	const handleStyleChange = useCallback(
 		(style: Record<string, unknown>) => {
+			const toggleStyle = (currentStyle: any) => {
+				const newStyle = { ...style };
+				Object.keys(style).forEach((key) => {
+					if (typeof style[key] === "boolean" && currentStyle?.[key] === true) {
+						(newStyle as any)[key] = false;
+					}
+				});
+				return newStyle;
+			};
+
 			if (selectionRange && selectionRange.length > 0) {
-				updateCellStyle(selectionRange, style as any);
+				// For ranges, we just apply the first cell's toggle to all, or just apply the new style
+				// A more robust way would be to check if all cells have the style
+				const firstCellId = selectionRange[0];
+				const firstCellStyle = data[firstCellId]?.style;
+				const newStyle = toggleStyle(firstCellStyle);
+				updateCellStyle(selectionRange, newStyle as any);
 				toast.success("Style applied to selection", { duration: 1000 });
 			} else if (selectedCell) {
-				updateCellStyle(selectedCell, style as any);
+				const currentStyle = data[selectedCell]?.style;
+				const newStyle = toggleStyle(currentStyle);
+				updateCellStyle(selectedCell, newStyle as any);
 				toast.success("Style applied", { duration: 1000 });
 			}
 		},
-		[selectedCell, selectionRange, updateCellStyle],
+		[selectedCell, selectionRange, updateCellStyle, data],
 	);
 
 	const handleFormulaClick = useCallback(
@@ -172,6 +189,10 @@ export function useEditorHandlers({
 	// ── Save / Undo / Redo ───────────────────────────────────────────────────
 
 	const handleSave = useCallback(async () => {
+		state.setShowSaveDialog(true);
+	}, [state]);
+
+	const handleConfirmSave = useCallback(async () => {
 		const result = await saveSpreadsheetAction(id, data);
 		if (result.success) {
 			toast.success("Saved to Cloud", {
@@ -183,6 +204,17 @@ export function useEditorHandlers({
 			});
 		}
 	}, [id, data]);
+
+	const handleNew = useCallback(() => {
+		router.push("/editor/new");
+		toast.info("Creating new spreadsheet...");
+	}, [router]);
+
+	const handleOpen = useCallback(() => {
+		// This is usually handled by the hidden file input in the toolbar
+		// but we can provide a toast or navigate to dashboard
+		router.push("/dashboard");
+	}, [router]);
 
 	const handleUndo = useCallback(() => {
 		undo();
@@ -362,13 +394,13 @@ export function useEditorHandlers({
 
 	// ── Sort / Filter / Data ─────────────────────────────────────────────────
 
-	const handleSort = useCallback(() => {
+	const handleSort = useCallback((direction: "asc" | "desc" = "asc") => {
 		if (!selectionRange || selectionRange.length === 0) {
 			toast.error("No range selected");
 			return;
 		}
-		sortRange(`${selectionRange[0]}:${selectionRange[selectionRange.length - 1]}`, 0, true);
-		toast.success("Sort", { description: "Range sorted" });
+		sortRange(`${selectionRange[0]}:${selectionRange[selectionRange.length - 1]}`, 0, direction === "asc");
+		toast.success("Sort", { description: `Range sorted ${direction === "asc" ? "ascending" : "descending"}` });
 	}, [selectionRange, sortRange]);
 
 	const handleFilter = useCallback(() => {
@@ -431,6 +463,40 @@ export function useEditorHandlers({
 		setShowConditionalFormattingDialog(true);
 	}, [setShowConditionalFormattingDialog]);
 
+	const handleFontFamily = useCallback((font: string) => {
+		if (selectedCell) {
+			updateCellStyle(selectedCell, { fontFamily: font } as any);
+			toast.success(`Font: ${font}`);
+		}
+	}, [selectedCell, updateCellStyle]);
+
+	const handleFontSize = useCallback((size: number) => {
+		if (selectedCell) {
+			updateCellStyle(selectedCell, { fontSize: size } as any);
+			toast.success(`Size: ${size}px`);
+		}
+	}, [selectedCell, updateCellStyle]);
+
+	const handleDecreaseIndent = useCallback(() => {
+		toast.info("Decrease indent");
+	}, []);
+
+	const handleIncreaseIndent = useCallback(() => {
+		toast.info("Increase indent");
+	}, []);
+
+	const handleFullScreen = useCallback(() => {
+		if (!document.fullscreenElement) {
+			document.documentElement.requestFullscreen();
+			toast.info("Entered Full Screen");
+		} else {
+			if (document.exitFullscreen) {
+				document.exitFullscreen();
+				toast.info("Exited Full Screen");
+			}
+		}
+	}, []);
+
 	const handleApplyConditionalFormatting = useCallback(
 		(rule: { type: string; value: string; color: string }) => {
 			if (!selectedCell) return;
@@ -482,20 +548,30 @@ export function useEditorHandlers({
 	// ── Charts / Images / Shapes / Icons ─────────────────────────────────────
 
 	const handleInsertChart = useCallback(() => {
-		if (!selectionRange || selectionRange.length === 0) {
-			toast.error("No range selected");
+		const finalRange = state.chartRange || (selectionRange && selectionRange.length > 0
+			? `${selectionRange[0]}:${selectionRange[selectionRange.length - 1]}`
+			: null);
+
+		if (!finalRange) {
+			toast.error("No range specified");
 			return;
 		}
+
 		addChart({
-			type: chartType,
-			range: `${selectionRange[0]}:${selectionRange[selectionRange.length - 1]}`,
-			title: chartTitle,
-			position: { x: 100, y: 100 },
-			size: { width: 400, height: 300 },
+			type: state.chartType,
+			range: finalRange,
+			title: state.chartTitle || "New Chart",
+			position: { x: 150, y: 150 },
+			size: { width: 450, height: 350 },
 		});
-		setShowChartDialog(false);
-		toast.success("Chart Inserted");
-	}, [selectionRange, chartType, chartTitle, addChart, setShowChartDialog]);
+
+		state.setShowChartDialog(false);
+		state.setChartRange("");
+		state.setChartTitle("");
+		toast.success("Chart Inserted", {
+			description: `Chart for range ${finalRange} has been added.`,
+		});
+	}, [selectionRange, state, addChart]);
 
 	const handleInsertImage = useCallback(
 		(e: React.ChangeEvent<HTMLInputElement>) => {
@@ -556,13 +632,18 @@ export function useEditorHandlers({
 	const handleInsertComment = useCallback(
 		(comment: string) => {
 			if (selectedCell) {
-				addNote(selectedCell, comment);
+				addComment({
+					cellId: selectedCell,
+					author: "You",
+					text: comment,
+				});
+				state.setShowCommentsSidebar(true);
 				toast.success("Comment added");
 			} else {
 				toast.error("No cell selected");
 			}
 		},
-		[selectedCell, addNote],
+		[selectedCell, addComment, state],
 	);
 
 	const handleInsertSpecialChar = useCallback(
@@ -700,6 +781,9 @@ export function useEditorHandlers({
 		handleSelectCell,
 		// Save/Undo/Redo
 		handleSave,
+		handleConfirmSave,
+		handleNew,
+		handleOpen,
 		handleUndo,
 		handleRedo,
 		// Clipboard
@@ -727,6 +811,7 @@ export function useEditorHandlers({
 		// Zoom
 		handleZoomIn,
 		handleZoomOut,
+		handleFullScreen,
 		// Data
 		handleSort,
 		handleFilter,
@@ -736,6 +821,10 @@ export function useEditorHandlers({
 		// Formatting
 		handleNumberFormat,
 		handleAlignment,
+		handleFontFamily,
+		handleFontSize,
+		handleDecreaseIndent,
+		handleIncreaseIndent,
 		handleConditionalFormatting,
 		handleApplyConditionalFormatting,
 		handleFormatPainter,

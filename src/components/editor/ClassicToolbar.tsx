@@ -145,6 +145,7 @@ interface ClassicToolbarProps {
 	onSpelling?: () => void;
 	onDecreaseIndent?: () => void;
 	onIncreaseIndent?: () => void;
+	onToggleComments?: () => void;
 	// Platform detection for shortcut labels
 	isMac?: boolean;
 }
@@ -238,6 +239,7 @@ export const ClassicToolbar = ({
 	onSpelling,
 	onDecreaseIndent,
 	onIncreaseIndent,
+	onToggleComments,
 	isMac = false,
 }: ClassicToolbarProps) => {
 	const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -368,6 +370,10 @@ export const ClassicToolbar = ({
 							Freeze Panes
 						</DropdownMenuItem>
 						<DropdownMenuSeparator />
+						<DropdownMenuItem onClick={onToggleComments}>
+							Comments Sidebar
+						</DropdownMenuItem>
+						<DropdownMenuSeparator />
 						<DropdownMenuItem onClick={onToggleFullScreen}>
 							Full Screen {isMac ? "⌘⌃F" : "F11"}
 						</DropdownMenuItem>
@@ -384,7 +390,11 @@ export const ClassicToolbar = ({
 						</Button>
 					</DropdownMenuTrigger>
 					<DropdownMenuContent align="start" className="min-w-48">
-						<DropdownMenuItem onClick={onInsertImage ? () => {} : undefined}>
+						<DropdownMenuItem
+							onClick={() =>
+								document.getElementById("menu-insert-image")?.click()
+							}
+						>
 							Image...
 						</DropdownMenuItem>
 						<DropdownMenuItem onClick={onInsertChart}>
@@ -650,6 +660,7 @@ export const ClassicToolbar = ({
 				<div className="relative">
 					<ToolbarButton icon={ImageIcon} tooltip="Insert Image" />
 					<input
+						id="menu-insert-image"
 						type="file"
 						className="absolute inset-0 opacity-0 cursor-pointer"
 						onChange={onInsertImage}
@@ -686,6 +697,11 @@ export const ClassicToolbar = ({
 					icon={Lock}
 					tooltip="Freeze Panes"
 					onClick={onToggleFreezePanes}
+				/>
+				<ToolbarButton
+					icon={MessageSquare}
+					tooltip="Toggle Comments Sidebar"
+					onClick={onToggleComments}
 				/>
 			</div>
 

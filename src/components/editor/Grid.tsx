@@ -63,6 +63,11 @@ interface GridProps {
 	autoSaveInterval?: number;
 	showAutoSaveStatus?: boolean;
 	zoom?: number;
+	onStyleChange?: (style: Record<string, unknown>) => void;
+	onUndo?: () => void;
+	onRedo?: () => void;
+	onInsertComment?: () => void;
+	onInsertHyperlink?: () => void;
 }
 
 export interface GridHandle {
@@ -335,6 +340,11 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 			autoSaveInterval = 30000,
 			showAutoSaveStatus = true,
 			zoom = 100,
+			onStyleChange,
+			onUndo,
+			onRedo,
+			onInsertComment,
+			onInsertHyperlink,
 		},
 		ref,
 	) => {
@@ -727,6 +737,65 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 			window.addEventListener("mouseup", handleGlobalMouseUp);
 			return () => window.removeEventListener("mouseup", handleGlobalMouseUp);
 		}, []);
+		useEffect(() => {
+			const handleGlobalKeyDown = (e: KeyboardEvent) => {
+				// Don't trigger shortcuts if user is typing in an input
+				if (
+					document.activeElement?.tagName === "INPUT" ||
+					document.activeElement?.tagName === "TEXTAREA" ||
+					editingCell
+				) {
+					return;
+				}
+
+				const isCtrl = e.ctrlKey || e.metaKey;
+
+				// Bold
+				if (isCtrl && e.key.toLowerCase() === "b") {
+					e.preventDefault();
+					onStyleChange?.({ bold: true });
+				}
+				// Italic
+				if (isCtrl && e.key.toLowerCase() === "i") {
+					e.preventDefault();
+					onStyleChange?.({ italic: true });
+				}
+				// Underline
+				if (isCtrl && e.key.toLowerCase() === "u") {
+					e.preventDefault();
+					onStyleChange?.({ underline: true });
+				}
+				// Undo
+				if (isCtrl && e.key.toLowerCase() === "z") {
+					e.preventDefault();
+					onUndo?.();
+				}
+				// Redo
+				if (isCtrl && e.key.toLowerCase() === "y") {
+					e.preventDefault();
+					onRedo?.();
+				}
+				// Delete / Clear
+				if (e.key === "Delete" || e.key === "Backspace") {
+					if (selectedCell && !editingCell) {
+						onClearCell(selectedCell);
+					}
+				}
+			};
+
+			window.addEventListener("keydown", handleGlobalKeyDown);
+			return () => window.removeEventListener("keydown", handleGlobalKeyDown);
+		}, [
+			editingCell,
+			onStyleChange,
+			onUndo,
+			onRedo,
+			selectedCell,
+			onClearCell,
+			onCopy,
+			onCut,
+			onPaste,
+		]);
 
 		const handleDoubleClick = useCallback(
 			(cellId: string) => {
@@ -1202,6 +1271,14 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 							}}
 							onClearCell={() => {
 								onClearCell(contextMenu.cellId);
+								closeContextMenu();
+							}}
+							onInsertComment={() => {
+								onInsertComment?.();
+								closeContextMenu();
+							}}
+							onInsertHyperlink={() => {
+								onInsertHyperlink?.();
 								closeContextMenu();
 							}}
 							onShowShortcuts={() => {

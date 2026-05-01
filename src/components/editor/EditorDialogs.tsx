@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ShareDialog, type ShareSettings } from "@/components/shared/share-dialog";
 import {
 	Select,
 	SelectContent,
@@ -78,6 +79,20 @@ interface EditorDialogsProps {
 	selectedCell: string | null;
 	handleSaveNote: () => void;
 
+	// Save
+	showSaveDialog?: boolean;
+	setShowSaveDialog?: (v: boolean) => void;
+	handleSave?: () => void;
+	sheetName?: string;
+	setSheetName?: (v: string) => void;
+	// Share
+	showShareDialog?: boolean;
+	setShowShareDialog?: (v: boolean) => void;
+	shareSettings?: ShareSettings;
+	handleShareSave?: (settings: ShareSettings) => void;
+	handleCopyLink?: () => void;
+	spreadsheetId?: string;
+
 	// Validation
 	showValidationDialog: boolean;
 	setShowValidationDialog: (open: boolean) => void;
@@ -125,6 +140,8 @@ interface EditorDialogsProps {
 	setChartTitle: (title: string) => void;
 	chartType: "bar" | "line" | "pie";
 	setChartType: (type: "bar" | "line" | "pie") => void;
+	chartRange?: string;
+	setChartRange?: (range: string) => void;
 	handleInsertChart: () => void;
 
 	// Icon
@@ -141,6 +158,10 @@ interface EditorDialogsProps {
 	// User Guide
 	showUserGuideDialog: boolean;
 	setShowUserGuideDialog: (open: boolean) => void;
+
+	// About
+	showAboutDialog?: boolean;
+	setShowAboutDialog?: (open: boolean) => void;
 
 	// Additional Features
 	showSpecialCharDialog: boolean;
@@ -227,6 +248,8 @@ export const EditorDialogs: React.FC<EditorDialogsProps> = (props) => {
 		setChartTitle,
 		chartType,
 		setChartType,
+		chartRange,
+		setChartRange,
 		handleInsertChart,
 		showIconDialog,
 		setShowIconDialog,
@@ -249,6 +272,8 @@ export const EditorDialogs: React.FC<EditorDialogsProps> = (props) => {
 		handleInsertHyperlink,
 		handleInsertComment,
 		handleApplyConditionalFormatting,
+		showAboutDialog,
+		setShowAboutDialog,
 		isMac = false,
 	} = props;
 
@@ -541,6 +566,14 @@ export const EditorDialogs: React.FC<EditorDialogsProps> = (props) => {
 					</DialogHeader>
 					<div className="space-y-4 py-4">
 						<div className="space-y-2">
+							<Label>File Name</Label>
+							<Input
+								placeholder="Enter file name..."
+								value={props.sheetName}
+								onChange={(e) => props.setSheetName?.(e.target.value)}
+							/>
+						</div>
+						<div className="space-y-2">
 							<Label>Format</Label>
 							<Select
 								defaultValue="excel"
@@ -749,6 +782,14 @@ export const EditorDialogs: React.FC<EditorDialogsProps> = (props) => {
 								value={chartTitle}
 								onChange={(e) => setChartTitle(e.target.value)}
 								placeholder="Enter chart title..."
+							/>
+						</div>
+						<div className="space-y-2">
+							<Label>Data Range (e.g., A1:B10)</Label>
+							<Input
+								value={props.chartRange}
+								onChange={(e) => props.setChartRange?.(e.target.value)}
+								placeholder="Leave empty to use selection..."
 							/>
 						</div>
 						<div className="space-y-2">
@@ -1194,6 +1235,84 @@ export const EditorDialogs: React.FC<EditorDialogsProps> = (props) => {
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
+			{/* About Dialog */}
+			<Dialog open={showAboutDialog} onOpenChange={setShowAboutDialog}>
+				<DialogContent className="max-w-md">
+					<DialogHeader>
+						<DialogTitle>About Art-Xcel</DialogTitle>
+						<DialogDescription>
+							Premium Spreadsheet Editor v1.0.0
+						</DialogDescription>
+					</DialogHeader>
+					<div className="space-y-4 py-4 text-sm">
+						<p>
+							Art-Xcel is a state-of-the-art spreadsheet application built for
+							modern teams. It combines the power of Excel with a sleek,
+							intuitive interface.
+						</p>
+						<div className="flex flex-col gap-1 text-xs text-muted-foreground">
+							<span>Built with Next.js, Tailwind CSS, and Framer Motion.</span>
+							<span>© 2026 Art-Xcel Inc. All rights reserved.</span>
+						</div>
+					</div>
+					<DialogFooter>
+						<Button onClick={() => setShowAboutDialog?.(false)}>
+							Close
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+			{/* Save Dialog */}
+			<Dialog open={props.showSaveDialog} onOpenChange={props.setShowSaveDialog}>
+				<DialogContent className="max-w-md">
+					<DialogHeader>
+						<DialogTitle>Save Spreadsheet</DialogTitle>
+						<DialogDescription>
+							Enter a name for your spreadsheet before saving.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="space-y-4 py-4">
+						<div className="space-y-2">
+							<Label>Spreadsheet Name</Label>
+							<Input
+								placeholder="Enter name..."
+								value={props.sheetName}
+								onChange={(e) => props.setSheetName?.(e.target.value)}
+								autoFocus
+							/>
+						</div>
+					</div>
+					<DialogFooter>
+						<Button variant="outline" onClick={() => props.setShowSaveDialog?.(false)}>
+							Cancel
+						</Button>
+						<Button
+							onClick={() => {
+								props.handleSave?.();
+								props.setShowSaveDialog?.(false);
+							}}
+							disabled={!props.sheetName?.trim()}
+						>
+							Save Now
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+			{/* Share Dialog */}
+			{props.showShareDialog && (
+				<ShareDialog
+					resourceName={props.sheetName || "Untitled Spreadsheet"}
+					resourceType="spreadsheet"
+					initialSettings={props.shareSettings}
+					currentUserEmail="user@example.com"
+					currentUserId="user-1"
+					onSave={(s) => {
+						props.handleShareSave?.(s);
+						props.setShowShareDialog?.(false);
+					}}
+					onCopyLink={props.handleCopyLink}
+				/>
+			)}
 		</>
 	);
 };

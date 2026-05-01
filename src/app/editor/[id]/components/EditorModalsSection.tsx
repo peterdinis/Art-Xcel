@@ -90,6 +90,8 @@ export function EditorModalsSection({ handlers, state, spreadsheet }: EditorModa
 			setShowChartDialog={state.setShowChartDialog}
 			chartTitle={state.chartTitle}
 			setChartTitle={state.setChartTitle}
+			chartRange={state.chartRange}
+			setChartRange={state.setChartRange}
 			chartType={state.chartType}
 			setChartType={state.setChartType}
 			handleInsertChart={handlers.handleInsertChart}
@@ -105,6 +107,13 @@ export function EditorModalsSection({ handlers, state, spreadsheet }: EditorModa
 			// User Guide
 			showUserGuideDialog={state.userGuideDialog}
 			setShowUserGuideDialog={state.setShowUserGuideDialog}
+			showAboutDialog={state.aboutDialog}
+			setShowAboutDialog={(open) => open ? state.openDialog("aboutDialog") : state.closeDialog("aboutDialog")}
+			showSaveDialog={state.saveDialog}
+			setShowSaveDialog={state.setShowSaveDialog}
+			handleSave={handlers.handleConfirmSave}
+			sheetName={state.sheetName}
+			setSheetName={state.setSheetName}
 			// Additional
 			showSpecialCharDialog={state.specialCharDialog}
 			setShowSpecialCharDialog={state.setShowSpecialCharDialog}
@@ -118,6 +127,13 @@ export function EditorModalsSection({ handlers, state, spreadsheet }: EditorModa
 			handleInsertHyperlink={handlers.handleInsertHyperlink}
 			handleInsertComment={handlers.handleInsertComment}
 			handleApplyConditionalFormatting={handlers.handleApplyConditionalFormatting}
+			// Share
+			showShareDialog={state.shareDialog}
+			setShowShareDialog={state.setShowShareDialog}
+			shareSettings={state.shareSettings}
+			handleShareSave={handlers.handleShareSave}
+			handleCopyLink={handlers.handleCopyLink}
+			spreadsheetId={spreadsheet.id as string}
 		/>
 	);
 }

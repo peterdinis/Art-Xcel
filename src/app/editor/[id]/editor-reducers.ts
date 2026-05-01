@@ -1,7 +1,5 @@
 import { ShareSettings } from "@/components/shared/share-dialog";
 
-// ── Dialogs Reducer ─────────────────────────────────────────────────────────
-
 export type DialogName =
 	| "findDialog"
 	| "printDialog"
@@ -23,7 +21,10 @@ export type DialogName =
 	| "chartDialog"
 	| "imageDialog"
 	| "shapeDialog"
-	| "iconDialog";
+	| "iconDialog"
+	| "aboutDialog"
+	| "saveDialog"
+	| "shareDialog";
 
 export type DialogsState = Record<DialogName, boolean>;
 
@@ -54,6 +55,9 @@ export const initialDialogsState: DialogsState = {
 	imageDialog: false,
 	shapeDialog: false,
 	iconDialog: false,
+	aboutDialog: false,
+	saveDialog: false,
+	shareDialog: false,
 };
 
 export function dialogsReducer(
@@ -81,6 +85,7 @@ export type EditorState = {
 	showStatusBar: boolean;
 	showGrid: boolean;
 	showHeaders: boolean;
+	showCommentsSidebar: boolean;
 	freezePanes: boolean;
 	isLoading: boolean;
 	formatPainter: {
@@ -105,6 +110,7 @@ export type EditorState = {
 	shapeType: "rectangle" | "circle" | "line";
 	chartType: "bar" | "line" | "pie";
 	chartTitle: string;
+	chartRange: string;
 	shareSettings: ShareSettings;
 };
 
@@ -120,6 +126,7 @@ export const initialEditorState: EditorState = {
 	showStatusBar: true,
 	showGrid: true,
 	showHeaders: true,
+	showCommentsSidebar: false,
 	freezePanes: false,
 	isLoading: true,
 	formatPainter: null,
@@ -140,6 +147,7 @@ export const initialEditorState: EditorState = {
 	shapeType: "rectangle",
 	chartType: "bar",
 	chartTitle: "New Chart",
+	chartRange: "",
 	shareSettings: {
 		accessLevel: "private",
 		linkPermission: "view",
