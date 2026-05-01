@@ -384,7 +384,11 @@ export const ClassicToolbar = ({
 						</Button>
 					</DropdownMenuTrigger>
 					<DropdownMenuContent align="start" className="min-w-48">
-						<DropdownMenuItem onClick={onInsertImage ? () => {} : undefined}>
+						<DropdownMenuItem
+							onClick={() =>
+								document.getElementById("menu-insert-image")?.click()
+							}
+						>
 							Image...
 						</DropdownMenuItem>
 						<DropdownMenuItem onClick={onInsertChart}>
@@ -650,6 +654,7 @@ export const ClassicToolbar = ({
 				<div className="relative">
 					<ToolbarButton icon={ImageIcon} tooltip="Insert Image" />
 					<input
+						id="menu-insert-image"
 						type="file"
 						className="absolute inset-0 opacity-0 cursor-pointer"
 						onChange={onInsertImage}

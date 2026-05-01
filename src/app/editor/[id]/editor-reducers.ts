@@ -1,7 +1,5 @@
 import { ShareSettings } from "@/components/shared/share-dialog";
 
-// ── Dialogs Reducer ─────────────────────────────────────────────────────────
-
 export type DialogName =
 	| "findDialog"
 	| "printDialog"

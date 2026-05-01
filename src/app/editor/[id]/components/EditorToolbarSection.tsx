@@ -13,6 +13,8 @@ export function EditorToolbarSection({ handlers, state }: EditorToolbarSectionPr
 	return (
 		<ClassicToolbar
 			onSave={handlers.handleSave}
+			onNew={handlers.handleNew}
+			onOpen={handlers.handleOpen}
 			onUndo={handlers.handleUndo}
 			onRedo={handlers.handleRedo}
 			onExport={() => handlers.handleExport("xlsx")}
@@ -24,7 +26,7 @@ export function EditorToolbarSection({ handlers, state }: EditorToolbarSectionPr
 			onDeleteRow={handlers.handleDeleteRow}
 			onInsertColumn={handlers.handleInsertColumn}
 			onDeleteColumn={handlers.handleDeleteColumn}
-			onSort={(dir) => handlers.handleSort()}
+			onSort={(dir) => handlers.handleSort(dir)}
 			onFilter={handlers.handleFilter}
 			onFind={() => state.setShowFindDialog(true)}
 			onDataValidation={handlers.handleDataValidation}
@@ -46,13 +48,23 @@ export function EditorToolbarSection({ handlers, state }: EditorToolbarSectionPr
 			onToggleGrid={() => state.setShowGrid(!state.showGrid)}
 			onToggleHeaders={() => state.setShowHeaders(!state.showHeaders)}
 			onToggleFreezePanes={() => state.setFreezePanes((p) => !p)}
+			onToggleFullScreen={handlers.handleFullScreen}
 			onNumberFormatChange={handlers.handleNumberFormat}
 			onInsertComment={() => state.setShowCommentDialog(true)}
 			onFormatPainter={handlers.handleFormatPainter}
+			onFontFamilyChange={handlers.handleFontFamily}
+			onFontSizeChange={handlers.handleFontSize}
+			onFontColorPick={(color) => handlers.handleStyleChange({ color })}
+			onBackgroundColorPick={(color) => handlers.handleStyleChange({ backgroundColor: color })}
+			onDecreaseIndent={handlers.handleDecreaseIndent}
+			onIncreaseIndent={handlers.handleIncreaseIndent}
 			onInsertSpecialChar={() => state.setShowSpecialCharDialog(true)}
 			onInsertHyperlink={() => state.setShowHyperlinkDialog(true)}
 			onSpelling={handlers.handleSpelling}
 			onConditionalFormatting={handlers.handleConditionalFormatting}
+			onUserGuides={() => state.setShowUserGuideDialog(true)}
+			onShortcuts={() => state.setShowShortcutsDialog(true)}
+			onAbout={() => state.openDialog("aboutDialog")}
 		/>
 	);
 }

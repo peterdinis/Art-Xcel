@@ -184,6 +184,17 @@ export function useEditorHandlers({
 		}
 	}, [id, data]);
 
+	const handleNew = useCallback(() => {
+		router.push("/editor/new");
+		toast.info("Creating new spreadsheet...");
+	}, [router]);
+
+	const handleOpen = useCallback(() => {
+		// This is usually handled by the hidden file input in the toolbar
+		// but we can provide a toast or navigate to dashboard
+		router.push("/dashboard");
+	}, [router]);
+
 	const handleUndo = useCallback(() => {
 		undo();
 		toast.info("Undo", { description: "Undo last action" });
@@ -362,13 +373,13 @@ export function useEditorHandlers({
 
 	// ── Sort / Filter / Data ─────────────────────────────────────────────────
 
-	const handleSort = useCallback(() => {
+	const handleSort = useCallback((direction: "asc" | "desc" = "asc") => {
 		if (!selectionRange || selectionRange.length === 0) {
 			toast.error("No range selected");
 			return;
 		}
-		sortRange(`${selectionRange[0]}:${selectionRange[selectionRange.length - 1]}`, 0, true);
-		toast.success("Sort", { description: "Range sorted" });
+		sortRange(`${selectionRange[0]}:${selectionRange[selectionRange.length - 1]}`, 0, direction === "asc");
+		toast.success("Sort", { description: `Range sorted ${direction === "asc" ? "ascending" : "descending"}` });
 	}, [selectionRange, sortRange]);
 
 	const handleFilter = useCallback(() => {
@@ -430,6 +441,40 @@ export function useEditorHandlers({
 	const handleConditionalFormatting = useCallback(() => {
 		setShowConditionalFormattingDialog(true);
 	}, [setShowConditionalFormattingDialog]);
+
+	const handleFontFamily = useCallback((font: string) => {
+		if (selectedCell) {
+			updateCellStyle(selectedCell, { fontFamily: font } as any);
+			toast.success(`Font: ${font}`);
+		}
+	}, [selectedCell, updateCellStyle]);
+
+	const handleFontSize = useCallback((size: number) => {
+		if (selectedCell) {
+			updateCellStyle(selectedCell, { fontSize: size } as any);
+			toast.success(`Size: ${size}px`);
+		}
+	}, [selectedCell, updateCellStyle]);
+
+	const handleDecreaseIndent = useCallback(() => {
+		toast.info("Decrease indent");
+	}, []);
+
+	const handleIncreaseIndent = useCallback(() => {
+		toast.info("Increase indent");
+	}, []);
+
+	const handleFullScreen = useCallback(() => {
+		if (!document.fullscreenElement) {
+			document.documentElement.requestFullscreen();
+			toast.info("Entered Full Screen");
+		} else {
+			if (document.exitFullscreen) {
+				document.exitFullscreen();
+				toast.info("Exited Full Screen");
+			}
+		}
+	}, []);
 
 	const handleApplyConditionalFormatting = useCallback(
 		(rule: { type: string; value: string; color: string }) => {
@@ -700,6 +745,8 @@ export function useEditorHandlers({
 		handleSelectCell,
 		// Save/Undo/Redo
 		handleSave,
+		handleNew,
+		handleOpen,
 		handleUndo,
 		handleRedo,
 		// Clipboard
@@ -727,6 +774,7 @@ export function useEditorHandlers({
 		// Zoom
 		handleZoomIn,
 		handleZoomOut,
+		handleFullScreen,
 		// Data
 		handleSort,
 		handleFilter,
@@ -736,6 +784,10 @@ export function useEditorHandlers({
 		// Formatting
 		handleNumberFormat,
 		handleAlignment,
+		handleFontFamily,
+		handleFontSize,
+		handleDecreaseIndent,
+		handleIncreaseIndent,
 		handleConditionalFormatting,
 		handleApplyConditionalFormatting,
 		handleFormatPainter,

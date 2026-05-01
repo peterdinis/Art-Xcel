@@ -142,6 +142,10 @@ interface EditorDialogsProps {
 	showUserGuideDialog: boolean;
 	setShowUserGuideDialog: (open: boolean) => void;
 
+	// About
+	showAboutDialog?: boolean;
+	setShowAboutDialog?: (open: boolean) => void;
+
 	// Additional Features
 	showSpecialCharDialog: boolean;
 	setShowSpecialCharDialog: (open: boolean) => void;
@@ -249,6 +253,8 @@ export const EditorDialogs: React.FC<EditorDialogsProps> = (props) => {
 		handleInsertHyperlink,
 		handleInsertComment,
 		handleApplyConditionalFormatting,
+		showAboutDialog,
+		setShowAboutDialog,
 		isMac = false,
 	} = props;
 
@@ -1190,6 +1196,33 @@ export const EditorDialogs: React.FC<EditorDialogsProps> = (props) => {
 							}}
 						>
 							Apply Rule
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+			{/* About Dialog */}
+			<Dialog open={showAboutDialog} onOpenChange={setShowAboutDialog}>
+				<DialogContent className="max-w-md">
+					<DialogHeader>
+						<DialogTitle>About Art-Xcel</DialogTitle>
+						<DialogDescription>
+							Premium Spreadsheet Editor v1.0.0
+						</DialogDescription>
+					</DialogHeader>
+					<div className="space-y-4 py-4 text-sm">
+						<p>
+							Art-Xcel is a state-of-the-art spreadsheet application built for
+							modern teams. It combines the power of Excel with a sleek,
+							intuitive interface.
+						</p>
+						<div className="flex flex-col gap-1 text-xs text-muted-foreground">
+							<span>Built with Next.js, Tailwind CSS, and Framer Motion.</span>
+							<span>© 2026 Art-Xcel Inc. All rights reserved.</span>
+						</div>
+					</div>
+					<DialogFooter>
+						<Button onClick={() => setShowAboutDialog?.(false)}>
+							Close
 						</Button>
 					</DialogFooter>
 				</DialogContent>

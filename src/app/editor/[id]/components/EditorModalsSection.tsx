@@ -118,6 +118,8 @@ export function EditorModalsSection({ handlers, state, spreadsheet }: EditorModa
 			handleInsertHyperlink={handlers.handleInsertHyperlink}
 			handleInsertComment={handlers.handleInsertComment}
 			handleApplyConditionalFormatting={handlers.handleApplyConditionalFormatting}
+			showAboutDialog={state.aboutDialog}
+			setShowAboutDialog={(open) => open ? state.openDialog("aboutDialog") : state.closeDialog("aboutDialog")}
 		/>
 	);
 }
