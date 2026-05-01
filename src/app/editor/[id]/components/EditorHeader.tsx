@@ -33,7 +33,9 @@ export function EditorHeader({
 	const handleConfirm = () => {
 		if (tempName.trim() && tempName !== name) {
 			onRename(tempName.trim());
-			toast.success(`Renamed to "${tempName.trim()}"`);
+			toast.success(`Spreadsheet renamed to "${tempName.trim()}"`);
+		} else if (!tempName.trim()) {
+			toast.error("Name cannot be empty");
 		}
 		setIsEditing(false);
 	};
@@ -41,6 +43,11 @@ export function EditorHeader({
 	const handleCancel = () => {
 		setTempName(name);
 		setIsEditing(false);
+	};
+
+	const handleSave = () => {
+		onSave();
+		toast.success("Spreadsheet saved successfully");
 	};
 
 	return (
@@ -75,7 +82,7 @@ export function EditorHeader({
 							className="flex items-center gap-2 cursor-pointer group px-2 py-1 rounded-md hover:bg-muted transition-colors overflow-hidden"
 							onClick={() => setIsEditing(true)}
 						>
-							<h1 className="text-sm font-semibold truncate max-w-[200px] lg:max-w-md">
+							<h1 className="text-sm font-semibold truncate max-w-50 lg:max-w-md">
 								{name || "Untitled Spreadsheet"}
 							</h1>
 							<Edit2 className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -101,7 +108,7 @@ export function EditorHeader({
 					<Share2 className="h-3.5 w-3.5" />
 					Share
 				</Button>
-				<Button size="sm" className="h-8 gap-2 text-xs px-4" onClick={onSave} disabled={isSaving}>
+				<Button size="sm" className="h-8 gap-2 text-xs px-4" onClick={handleSave} disabled={isSaving}>
 					{isSaving ? "Saving..." : "Save"}
 				</Button>
 			</div>

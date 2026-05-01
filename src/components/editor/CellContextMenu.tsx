@@ -31,6 +31,8 @@ interface CellContextMenuProps {
 	onInsertColumnRight: () => void;
 	onDeleteColumn: () => void;
 	onClearCell: () => void;
+	onInsertComment?: () => void;
+	onInsertHyperlink?: () => void;
 	onShowShortcuts?: () => void;
 	isMac?: boolean;
 }
@@ -129,6 +131,24 @@ export const CellContextMenu = ({
 					<Eraser className="h-4 w-4" />
 					<span>Clear Contents</span>
 					<span className="ml-auto text-xs text-muted-foreground">Delete</span>
+				</ContextMenuItem>
+
+				<ContextMenuSeparator />
+
+				<ContextMenuItem onClick={props.onInsertComment} className="gap-2">
+					<PlusCircle className="h-4 w-4" />
+					<span>Insert Comment</span>
+					<span className="ml-auto text-xs text-muted-foreground">
+						{getShortcutText("Alt+M")}
+					</span>
+				</ContextMenuItem>
+
+				<ContextMenuItem onClick={props.onInsertHyperlink} className="gap-2">
+					<PlusCircle className="h-4 w-4" />
+					<span>Insert Link</span>
+					<span className="ml-auto text-xs text-muted-foreground">
+						{getShortcutText("Ctrl+K")}
+					</span>
 				</ContextMenuItem>
 
 				<ContextMenuSeparator />

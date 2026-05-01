@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ShareDialog, type ShareSettings } from "@/components/shared/share-dialog";
 import {
 	Select,
 	SelectContent,
@@ -84,6 +85,13 @@ interface EditorDialogsProps {
 	handleSave?: () => void;
 	sheetName?: string;
 	setSheetName?: (v: string) => void;
+	// Share
+	showShareDialog?: boolean;
+	setShowShareDialog?: (v: boolean) => void;
+	shareSettings?: ShareSettings;
+	handleShareSave?: (settings: ShareSettings) => void;
+	handleCopyLink?: () => void;
+	spreadsheetId?: string;
 
 	// Validation
 	showValidationDialog: boolean;
@@ -1290,6 +1298,21 @@ export const EditorDialogs: React.FC<EditorDialogsProps> = (props) => {
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
+			{/* Share Dialog */}
+			{props.showShareDialog && (
+				<ShareDialog
+					resourceName={props.sheetName || "Untitled Spreadsheet"}
+					resourceType="spreadsheet"
+					initialSettings={props.shareSettings}
+					currentUserEmail="user@example.com"
+					currentUserId="user-1"
+					onSave={(s) => {
+						props.handleShareSave?.(s);
+						props.setShowShareDialog?.(false);
+					}}
+					onCopyLink={props.handleCopyLink}
+				/>
+			)}
 		</>
 	);
 };

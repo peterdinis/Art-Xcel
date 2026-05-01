@@ -439,7 +439,8 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				const evaluated = evaluateFormula(input, prev, cellId);
 
 				newData[cellId] = {
-					...(prev[cellId] || { value: "", formula: "" }),
+					...(prev[cellId] || { id: cellId, value: "", formula: "" }),
+					id: cellId,
 					value: evaluated,
 					formula: input,
 				};
@@ -490,7 +491,8 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				Object.entries(updates).forEach(([cellId, input]) => {
 					const evaluated = evaluateFormula(input, newData, cellId);
 					newData[cellId] = {
-						...(prev[cellId] || { value: "", formula: "" }),
+						...(prev[cellId] || { id: cellId, value: "", formula: "" }),
+						id: cellId,
 						value: evaluated,
 						formula: input,
 					};
@@ -526,7 +528,8 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				const newData = { ...prev };
 				ids.forEach((id) => {
 					newData[id] = {
-						...(prev[id] || { value: "", formula: "" }),
+						...(prev[id] || { id, value: "", formula: "" }),
+						id,
 						style: {
 							...prev[id]?.style,
 							...style,

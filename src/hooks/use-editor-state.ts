@@ -37,6 +37,7 @@ export type EditorStateActions = {
 	setShowChartDialog: (v: boolean) => void;
 	setShowIconDialog: (v: boolean) => void;
 	setShowSaveDialog: (v: boolean) => void;
+	setShowShareDialog: (v: boolean) => void;
 	// Editor field setters
 	setSheetName: (v: string) => void;
 	setZoom: (v: number | ((prev: number) => number)) => void;
@@ -154,6 +155,7 @@ export function useEditorState(): UseEditorStateReturn {
 	const setShowChartDialog = useCallback(mkDialog("chartDialog"), [mkDialog]);
 	const setShowIconDialog = useCallback(mkDialog("iconDialog"), [mkDialog]);
 	const setShowSaveDialog = useCallback(mkDialog("saveDialog"), [mkDialog]);
+	const setShowShareDialog = useCallback(mkDialog("shareDialog"), [mkDialog]);
 
 	// Memoize editor field setters
 	const setSheetName = useCallback((v: string) => setField("sheetName", v), [setField]);
@@ -214,6 +216,7 @@ export function useEditorState(): UseEditorStateReturn {
 		setShowChartDialog,
 		setShowIconDialog,
 		setShowSaveDialog,
+		setShowShareDialog,
 		// Editor field setters
 		setSheetName,
 		setZoom,

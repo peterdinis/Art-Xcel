@@ -144,15 +144,32 @@ export function useEditorHandlers({
 
 	const handleStyleChange = useCallback(
 		(style: Record<string, unknown>) => {
+			const toggleStyle = (currentStyle: any) => {
+				const newStyle = { ...style };
+				Object.keys(style).forEach((key) => {
+					if (typeof style[key] === "boolean" && currentStyle?.[key] === true) {
+						(newStyle as any)[key] = false;
+					}
+				});
+				return newStyle;
+			};
+
 			if (selectionRange && selectionRange.length > 0) {
-				updateCellStyle(selectionRange, style as any);
+				// For ranges, we just apply the first cell's toggle to all, or just apply the new style
+				// A more robust way would be to check if all cells have the style
+				const firstCellId = selectionRange[0];
+				const firstCellStyle = data[firstCellId]?.style;
+				const newStyle = toggleStyle(firstCellStyle);
+				updateCellStyle(selectionRange, newStyle as any);
 				toast.success("Style applied to selection", { duration: 1000 });
 			} else if (selectedCell) {
-				updateCellStyle(selectedCell, style as any);
+				const currentStyle = data[selectedCell]?.style;
+				const newStyle = toggleStyle(currentStyle);
+				updateCellStyle(selectedCell, newStyle as any);
 				toast.success("Style applied", { duration: 1000 });
 			}
 		},
-		[selectedCell, selectionRange, updateCellStyle],
+		[selectedCell, selectionRange, updateCellStyle, data],
 	);
 
 	const handleFormulaClick = useCallback(

@@ -127,6 +127,13 @@ export function EditorModalsSection({ handlers, state, spreadsheet }: EditorModa
 			handleInsertHyperlink={handlers.handleInsertHyperlink}
 			handleInsertComment={handlers.handleInsertComment}
 			handleApplyConditionalFormatting={handlers.handleApplyConditionalFormatting}
+			// Share
+			showShareDialog={state.shareDialog}
+			setShowShareDialog={state.setShowShareDialog}
+			shareSettings={state.shareSettings}
+			handleShareSave={handlers.handleShareSave}
+			handleCopyLink={handlers.handleCopyLink}
+			spreadsheetId={spreadsheet.id as string}
 		/>
 	);
 }

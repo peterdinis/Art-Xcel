@@ -73,6 +73,11 @@ export function EditorGridSection({ gridRef, handlers, state, spreadsheet }: Edi
 				onRemoveIcon={removeIcon}
 				onUpdateShape={updateShape}
 				onUpdateIcon={updateIcon}
+				onStyleChange={handlers.handleStyleChange}
+				onUndo={handlers.handleUndo}
+				onRedo={handlers.handleRedo}
+				onInsertComment={() => state.setShowCommentDialog(true)}
+				onInsertHyperlink={() => state.setShowHyperlinkDialog(true)}
 			/>
 		</div>
 	);

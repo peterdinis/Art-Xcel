@@ -113,7 +113,7 @@ export default function EditorContent() {
 				name={state.sheetName}
 				onRename={state.setSheetName}
 				onSave={handlers.handleSave}
-				onShare={() => {}}
+				onShare={() => state.setShowShareDialog(true)}
 				isSaving={state.isLoading}
 			/>
 			<EditorToolbarSection handlers={handlers} state={state} />
