@@ -5,10 +5,8 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
-	FileSpreadsheet,
 	RefreshCw,
 	Home,
-	Download,
 	AlertCircle,
 	ChevronRight,
 	ChevronDown,
@@ -16,7 +14,6 @@ import {
 	Code2,
 	Search,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 interface SpreadsheetErrorProps {
 	error: Error & { digest?: string };
