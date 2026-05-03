@@ -152,6 +152,79 @@ export const registerCustomFunctions = () => {
 				istext: (val: unknown) => typeof val === "string",
 				isblank: (val: unknown) =>
 					val === undefined || val === null || val === "",
+				/** IFERROR(expr, fallback) — returns fallback when expr throws */
+				iferror: (val: unknown, fallback: unknown) => {
+					if (
+						val === null ||
+						val === undefined ||
+						(typeof val === "string" &&
+							(val.startsWith("#") || val === "NaN"))
+					)
+						return fallback;
+					return val;
+				},
+				/** AVERAGEIF(range, criteria, avgRange?) */
+				averageif: (
+					range: unknown,
+					criteria: unknown,
+					avgRange?: unknown,
+				) => {
+					const r = (
+						range && (range as any).toArray
+							? (range as any).toArray()
+							: range
+					) as unknown[];
+					const ar = (
+						avgRange && (avgRange as any).toArray
+							? (avgRange as any).toArray()
+							: r
+					) as (number | string)[];
+					if (!Array.isArray(r)) return 0;
+					const matching: number[] = [];
+					r.forEach((val, idx) => {
+						if (val == criteria) {
+							const n = Number(ar[idx]);
+							if (!isNaN(n)) matching.push(n);
+						}
+					});
+					return matching.length > 0
+						? matching.reduce((a, b) => a + b, 0) / matching.length
+						: 0;
+				},
+				/** TRIM — remove leading/trailing/extra internal spaces */
+				trim: (str: string) =>
+					String(str)
+						.trim()
+						.replace(/\s+/g, " "),
+				/** PROPER — title case */
+				proper: (str: string) =>
+					String(str)
+						.toLowerCase()
+						.replace(/(?:^|\s)\S/g, (c) => c.toUpperCase()),
+				/** SUBSTITUTE(text, old, new, [instance]) */
+				substitute: (
+					text: string,
+					oldText: string,
+					newText: string,
+					instance?: number,
+				) => {
+					const s = String(text);
+					const o = String(oldText);
+					const n = String(newText);
+					if (instance === undefined)
+						return s.split(o).join(n);
+					let count = 0;
+					return s.replace(
+						new RegExp(o.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"),
+						(match) => {
+							count++;
+							return count === instance ? n : match;
+						},
+					);
+				},
+				/** REPT(text, count) — repeat text N times */
+				rept: (str: string, count: number) =>
+					String(str).repeat(Math.max(0, Math.floor(Number(count)))),
 				sum: (...args: unknown[]) => {
 					const nums = args
 						.flatMap((arg) =>
@@ -270,12 +343,18 @@ const functionMap: Record<string, string> = {
 	mod: "mod",
 	// Custom functions (ensure they are lowercase in mathjs scope)
 	if: "if",
+	iferror: "iferror",
 	sumif: "sumif",
 	countif: "countif",
+	averageif: "averageif",
 	vlookup: "vlookup",
 	len: "len",
 	upper: "upper",
 	lower: "lower",
+	trim: "trim",
+	proper: "proper",
+	substitute: "substitute",
+	rept: "rept",
 	concat: "concat",
 	left: "left",
 	right: "right",

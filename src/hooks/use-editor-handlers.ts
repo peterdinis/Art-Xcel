@@ -75,6 +75,13 @@ export function useEditorHandlers({
 		getCellFormula,
 		getCellValue,
 		setData,
+		// New Excel features
+		mergeCells,
+		unmergeCells,
+		fillDown,
+		fillRight,
+		toggleWrapText,
+		setFrozenPanes,
 	} = spreadsheet;
 
 	const { exportToFile, importFromFile } = excelService;
@@ -888,6 +895,70 @@ export function useEditorHandlers({
 		gridRef.current?.scrollToTop();
 	}, [gridRef]);
 
+	// ── New Excel Feature Handlers ────────────────────────────────────────────
+
+	const handleMergeCells = useCallback(() => {
+		const cells = selectionRange ?? (selectedCell ? [selectedCell] : []);
+		if (cells.length < 2) {
+			toast.error("Select at least 2 cells to merge");
+			return;
+		}
+		mergeCells(cells);
+		toast.success("Cells merged");
+	}, [selectionRange, selectedCell, mergeCells]);
+
+	const handleUnmergeCells = useCallback(() => {
+		const cells = selectionRange ?? (selectedCell ? [selectedCell] : []);
+		unmergeCells(cells);
+		toast.success("Cells unmerged");
+	}, [selectionRange, selectedCell, unmergeCells]);
+
+	const handleFillDown = useCallback(() => {
+		fillDown();
+		toast.success("Fill Down applied");
+	}, [fillDown]);
+
+	const handleFillRight = useCallback(() => {
+		fillRight();
+		toast.success("Fill Right applied");
+	}, [fillRight]);
+
+	const handleToggleWrapText = useCallback(() => {
+		const target = selectionRange && selectionRange.length > 0
+			? selectionRange
+			: selectedCell ?? [];
+		if (!target || (Array.isArray(target) && target.length === 0)) {
+			toast.error("No cell selected");
+			return;
+		}
+		toggleWrapText(target);
+		toast.success("Wrap text toggled");
+	}, [selectionRange, selectedCell, toggleWrapText]);
+
+	const handleSetFrozenPanes = useCallback(
+		(rows: number, cols: number) => {
+			setFrozenPanes(rows, cols);
+			toast.success(
+				rows || cols
+					? `Frozen: ${rows} row(s), ${cols} col(s)`
+					: "Freeze panes removed",
+			);
+		},
+		[setFrozenPanes],
+	);
+
+	const handleToggleFreezePanes = useCallback(() => {
+		if (!selectedCell) {
+			toast.error("Select a cell to set freeze point");
+			return;
+		}
+		const row = parseInt(selectedCell.match(/\d+/)?.[0] || "1");
+		const col =
+			(selectedCell.match(/[A-Z]+/)?.[0]?.charCodeAt(0) ?? 65) - 65;
+		setFrozenPanes(row - 1, col);
+		toast.success(`Panes frozen at row ${row}, col ${col + 1}`);
+	}, [selectedCell, setFrozenPanes]);
+
 	return {
 		// Cell
 		handleCellChange,
@@ -972,5 +1043,13 @@ export function useEditorHandlers({
 		// Misc
 		handleSpelling,
 		handleScrollToTop,
+		// New Excel Features
+		handleMergeCells,
+		handleUnmergeCells,
+		handleFillDown,
+		handleFillRight,
+		handleToggleWrapText,
+		handleSetFrozenPanes,
+		handleToggleFreezePanes,
 	};
 }

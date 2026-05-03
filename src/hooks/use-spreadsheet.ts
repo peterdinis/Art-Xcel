@@ -25,6 +25,7 @@ export interface CellData {
 		borderLeft?: string;
 		borderRight?: string;
 		paddingLeft?: number;
+		wrapText?: boolean;
 		numberFormat?:
 			| "general"
 			| "number"
@@ -41,6 +42,10 @@ export interface CellData {
 		list?: string[];
 		required?: boolean;
 	};
+	/** If this cell is part of a merged region, this is the top-left anchor cell id */
+	mergeParent?: string;
+	/** Present only on the anchor cell of a merged region */
+	mergeSpan?: { colSpan: number; rowSpan: number };
 }
 
 export type SheetData = Record<string, CellData>;
@@ -118,6 +123,10 @@ export interface Sheet {
 	selectionRange: string[] | null;
 	namedRanges: Record<string, string>;
 	hiddenRows: Set<number>;
+	/** Number of rows frozen at the top (0 = none) */
+	frozenRows: number;
+	/** Number of columns frozen at the left (0 = none) */
+	frozenCols: number;
 	undoStack: SheetData[];
 	redoStack: SheetData[];
 }
@@ -136,6 +145,8 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 			selectionRange: null,
 			namedRanges: {},
 			hiddenRows: new Set(),
+			frozenRows: 0,
+			frozenCols: 0,
 			undoStack: [],
 			redoStack: [],
 		},
@@ -1320,6 +1331,160 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 		[currentSheetIndex, renameSheet],
 	);
 
+	// ── New Excel Features ────────────────────────────────────────────────────
+
+	// Freeze panes: freeze the first N rows and first M columns
+	const setFrozenPanes = useCallback(
+		(rows: number, cols: number) => {
+			updateCurrentSheet({ frozenRows: rows, frozenCols: cols });
+		},
+		[updateCurrentSheet],
+	);
+
+	// Merge a rectangular selection into one cell (anchor = top-left)
+	const mergeCells = useCallback(
+		(cells: string[]) => {
+			if (cells.length < 2) return;
+			saveToUndo();
+
+			setData((prev) => {
+				const newData = { ...prev };
+
+				// Determine bounding box
+				let minCol = Infinity,
+					maxCol = -Infinity,
+					minRow = Infinity,
+					maxRow = -Infinity;
+				cells.forEach((id) => {
+					const { col, row } = parseCellId(id);
+					if (col < minCol) minCol = col;
+					if (col > maxCol) maxCol = col;
+					if (row < minRow) minRow = row;
+					if (row > maxRow) maxRow = row;
+				});
+
+				const anchorId = `${indexToColLetter(minCol)}${minRow + 1}`;
+				const colSpan = maxCol - minCol + 1;
+				const rowSpan = maxRow - minRow + 1;
+
+				// Set anchor cell with merge metadata
+				newData[anchorId] = {
+					...(prev[anchorId] || { value: "", formula: "" }),
+					mergeSpan: { colSpan, rowSpan },
+				};
+
+				// Mark all other cells as children of the anchor
+				cells.forEach((id) => {
+					if (id === anchorId) return;
+					newData[id] = {
+						...(prev[id] || { value: "", formula: "" }),
+						value: "",
+						formula: "",
+						mergeParent: anchorId,
+					};
+				});
+
+				return newData;
+			});
+		},
+		[saveToUndo, setData],
+	);
+
+	// Unmerge: remove merge metadata from all cells in a previously merged region
+	const unmergeCells = useCallback(
+		(cells: string[]) => {
+			saveToUndo();
+			setData((prev) => {
+				const newData = { ...prev };
+				cells.forEach((id) => {
+					if (!newData[id]) return;
+					const { mergeParent: _mp, mergeSpan: _ms, ...rest } = newData[id];
+					newData[id] = rest;
+				});
+				return newData;
+			});
+		},
+		[saveToUndo, setData],
+	);
+
+	// Fill Down: copy the top cell of a selection into all rows below it
+	const fillDown = useCallback(() => {
+		if (!selectionRange || selectionRange.length < 2) return;
+		saveToUndo();
+
+		setData((prev) => {
+			const newData = { ...prev };
+
+			// Group cells by column
+			const colMap: Record<string, string[]> = {};
+			selectionRange.forEach((id) => {
+				const col = id.match(/[A-Z]+/)?.[0] || "";
+				if (!colMap[col]) colMap[col] = [];
+				colMap[col].push(id);
+			});
+
+			// For each column, copy the first cell down
+			Object.values(colMap).forEach((colCells) => {
+				const sorted = [...colCells].sort((a, b) => {
+					const ra = parseInt(a.match(/\d+/)?.[0] || "0");
+					const rb = parseInt(b.match(/\d+/)?.[0] || "0");
+					return ra - rb;
+				});
+				const source = prev[sorted[0]] || { value: "", formula: "" };
+				for (let i = 1; i < sorted.length; i++) {
+					newData[sorted[i]] = { ...source };
+				}
+			});
+
+			return newData;
+		});
+	}, [selectionRange, saveToUndo, setData]);
+
+	// Fill Right: copy the leftmost cell of a selection into all columns to the right
+	const fillRight = useCallback(() => {
+		if (!selectionRange || selectionRange.length < 2) return;
+		saveToUndo();
+
+		setData((prev) => {
+			const newData = { ...prev };
+
+			// Group cells by row
+			const rowMap: Record<number, string[]> = {};
+			selectionRange.forEach((id) => {
+				const row = parseInt(id.match(/\d+/)?.[0] || "0");
+				if (!rowMap[row]) rowMap[row] = [];
+				rowMap[row].push(id);
+			});
+
+			// For each row, copy the leftmost cell to the right
+			Object.values(rowMap).forEach((rowCells) => {
+				const sorted = [...rowCells].sort((a, b) => {
+					const ca = a.match(/[A-Z]+/)?.[0] || "";
+					const cb = b.match(/[A-Z]+/)?.[0] || "";
+					return ca.localeCompare(cb);
+				});
+				const source = prev[sorted[0]] || { value: "", formula: "" };
+				for (let i = 1; i < sorted.length; i++) {
+					newData[sorted[i]] = { ...source };
+				}
+			});
+
+			return newData;
+		});
+	}, [selectionRange, saveToUndo, setData]);
+
+	// Toggle wrap text on a cell or range
+	const toggleWrapText = useCallback(
+		(cellIds: string | string[]) => {
+			const ids = Array.isArray(cellIds) ? cellIds : [cellIds];
+			// Determine current state from first cell
+			const firstCell = ids[0] ? currentSheet.data[ids[0]] : undefined;
+			const currentlyWrapped = firstCell?.style?.wrapText ?? false;
+			updateCellStyle(ids, { wrapText: !currentlyWrapped });
+		},
+		[currentSheet.data, updateCellStyle],
+	);
+
 	return {
 		// Core data
 		data,
@@ -1406,5 +1571,15 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 		clearSheet,
 		setData,
 		updateSheetName,
+
+		// ── New Excel Features ────────────────────────────────────────────────
+		frozenRows: currentSheet.frozenRows,
+		frozenCols: currentSheet.frozenCols,
+		setFrozenPanes,
+		mergeCells,
+		unmergeCells,
+		fillDown,
+		fillRight,
+		toggleWrapText,
 	};
 };

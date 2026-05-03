@@ -68,6 +68,8 @@ interface GridProps {
 	onRedo?: () => void;
 	onInsertComment?: () => void;
 	onInsertHyperlink?: () => void;
+	onFillDown?: () => void;
+	onFillRight?: () => void;
 }
 
 export interface GridHandle {
@@ -198,7 +200,14 @@ const Cell = memo(
 						autoFocus
 					/>
 				) : (
-					<span className="px-1 text-sm truncate w-full">{displayValue}</span>
+					<span
+						className={cn(
+							"px-1 text-sm w-full",
+							style?.wrapText ? "whitespace-normal break-words" : "truncate",
+						)}
+					>
+						{displayValue}
+					</span>
 				)}
 				<div
 					className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/50 z-30 opacity-0 hover:opacity-100"
@@ -345,6 +354,8 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 			onRedo,
 			onInsertComment,
 			onInsertHyperlink,
+			onFillDown,
+			onFillRight,
 		},
 		ref,
 	) => {
@@ -775,6 +786,16 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 					e.preventDefault();
 					onRedo?.();
 				}
+				// Fill Down
+				if (isCtrl && e.key.toLowerCase() === "d") {
+					e.preventDefault();
+					onFillDown?.();
+				}
+				// Fill Right
+				if (isCtrl && e.key.toLowerCase() === "r") {
+					e.preventDefault();
+					onFillRight?.();
+				}
 				// Delete / Clear
 				if (e.key === "Delete" || e.key === "Backspace") {
 					if (selectedCell && !editingCell) {
@@ -795,6 +816,8 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 			onCopy,
 			onCut,
 			onPaste,
+			onFillDown,
+			onFillRight,
 		]);
 
 		const handleDoubleClick = useCallback(
