@@ -174,6 +174,7 @@ export default function EditorContent() {
 				handlers={handlers}
 				state={state}
 				spreadsheet={spreadsheet}
+				id={id as string}
 			/>
 		</div>
 	);

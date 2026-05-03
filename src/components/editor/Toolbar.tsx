@@ -12,8 +12,8 @@ import {
 	FileSpreadsheet,
 	FileUp,
 	Info,
+	Keyboard,
 } from "lucide-react";
-import { ShortcutsDropdown } from "@/components/shortcuts-dropdown";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -39,6 +39,7 @@ interface ToolbarProps {
 	onExport: () => void;
 	onImport: (file: File) => void;
 	onSave: () => void;
+	onShortcuts?: () => void;
 }
 
 export const Toolbar = ({
@@ -46,6 +47,7 @@ export const Toolbar = ({
 	onExport,
 	onImport,
 	onSave,
+	onShortcuts,
 }: ToolbarProps) => {
 	const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
 		const file = event.target.files?.[0];
@@ -323,9 +325,14 @@ export const Toolbar = ({
 				<div className="flex items-center gap-1 ml-auto">
 					<Tooltip>
 						<TooltipTrigger asChild>
-							<div>
-								<ShortcutsDropdown />
-							</div>
+							<Button
+								variant="ghost"
+								size="icon"
+								className="h-8 w-8"
+								onClick={onShortcuts}
+							>
+								<Keyboard className="h-4 w-4" />
+							</Button>
 						</TooltipTrigger>
 						<TooltipContent side="bottom">
 							<p>Keyboard shortcuts</p>

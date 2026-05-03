@@ -69,6 +69,7 @@ export function useEditorHandlers({
 		addShape,
 		addIcon,
 		addNote,
+		addComment,
 		addValidation,
 		createNamedRange,
 		getCellFormula,
@@ -211,9 +212,8 @@ export function useEditorHandlers({
 	}, [router]);
 
 	const handleOpen = useCallback(() => {
-		// This is usually handled by the hidden file input in the toolbar
-		// but we can provide a toast or navigate to dashboard
-		router.push("/dashboard");
+		// Navigate to dashboard so user can open a different spreadsheet
+		router.push("/dashboard" as any);
 	}, [router]);
 
 	const handleUndo = useCallback(() => {

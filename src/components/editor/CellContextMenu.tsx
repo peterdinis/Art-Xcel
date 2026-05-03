@@ -49,6 +49,8 @@ export const CellContextMenu = ({
 	onInsertColumnRight,
 	onDeleteColumn,
 	onClearCell,
+	onInsertComment,
+	onInsertHyperlink,
 	onShowShortcuts,
 	isMac = false,
 }: CellContextMenuProps) => {
@@ -135,7 +137,7 @@ export const CellContextMenu = ({
 
 				<ContextMenuSeparator />
 
-				<ContextMenuItem onClick={props.onInsertComment} className="gap-2">
+				<ContextMenuItem onClick={onInsertComment} className="gap-2">
 					<PlusCircle className="h-4 w-4" />
 					<span>Insert Comment</span>
 					<span className="ml-auto text-xs text-muted-foreground">
@@ -143,7 +145,7 @@ export const CellContextMenu = ({
 					</span>
 				</ContextMenuItem>
 
-				<ContextMenuItem onClick={props.onInsertHyperlink} className="gap-2">
+				<ContextMenuItem onClick={onInsertHyperlink} className="gap-2">
 					<PlusCircle className="h-4 w-4" />
 					<span>Insert Link</span>
 					<span className="ml-auto text-xs text-muted-foreground">

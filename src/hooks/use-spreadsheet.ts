@@ -1104,6 +1104,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				images: [],
 				shapes: [],
 				icons: [],
+				comments: [],
 				selectedCell: "A1",
 				selectionRange: null,
 				namedRanges: {},

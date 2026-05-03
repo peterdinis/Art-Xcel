@@ -9,12 +9,14 @@ interface EditorModalsSectionProps {
 	handlers: ReturnType<typeof useEditorHandlers>;
 	state: UseEditorStateReturn;
 	spreadsheet: ReturnType<typeof useSpreadsheet>;
+	id: string;
 }
 
 export function EditorModalsSection({
 	handlers,
 	state,
 	spreadsheet,
+	id,
 }: EditorModalsSectionProps) {
 	const { sheetNames, selectedCell } = spreadsheet;
 
@@ -145,7 +147,7 @@ export function EditorModalsSection({
 			shareSettings={state.shareSettings}
 			handleShareSave={handlers.handleShareSave}
 			handleCopyLink={handlers.handleCopyLink}
-			spreadsheetId={spreadsheet.id as string}
+			spreadsheetId={id}
 		/>
 	);
 }
