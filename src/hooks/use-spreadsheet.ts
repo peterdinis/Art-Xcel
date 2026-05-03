@@ -414,7 +414,6 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 	);
 
 	// Save state to undo stack
-	// Save state to undo stack
 	const saveToUndo = useCallback(() => {
 		setSheets((prev) =>
 			prev.map((sheet, i) =>
@@ -439,13 +438,12 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				const evaluated = evaluateFormula(input, prev, cellId);
 
 				newData[cellId] = {
-					...(prev[cellId] || { id: cellId, value: "", formula: "" }),
-					id: cellId,
+					...(prev[cellId] || { value: "", formula: "" }),
 					value: evaluated,
 					formula: input,
 				};
 
-				// Track formula cells
+				// Track formula cells via the shared Set (state update queued outside)
 				if (input.startsWith("=")) {
 					setFormulaCells((prevSet) => {
 						const next = new Set(prevSet);
@@ -463,21 +461,25 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 					});
 				}
 
-				// Re-evaluate ONLY formula cells
-				formulaCells.forEach((key) => {
-					if (key !== cellId) {
-						newData[key].value = evaluateFormula(
-							newData[key].formula,
-							newData,
-							key,
-						);
+				// Re-evaluate all OTHER formula cells by scanning newData directly
+				// (avoids stale-closure bug with the formulaCells Set)
+				Object.keys(newData).forEach((key) => {
+					if (key !== cellId && newData[key]?.formula?.startsWith("=")) {
+						newData[key] = {
+							...newData[key],
+							value: evaluateFormula(
+								newData[key].formula,
+								newData,
+								key,
+							),
+						};
 					}
 				});
 
 				return newData;
 			});
 		},
-		[evaluateFormula, formulaCells, saveToUndo, setData],
+		[evaluateFormula, saveToUndo, setData],
 	);
 
 	// Update multiple cells
@@ -491,8 +493,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				Object.entries(updates).forEach(([cellId, input]) => {
 					const evaluated = evaluateFormula(input, newData, cellId);
 					newData[cellId] = {
-						...(prev[cellId] || { id: cellId, value: "", formula: "" }),
-						id: cellId,
+						...(prev[cellId] || { value: "", formula: "" }),
 						value: evaluated,
 						formula: input,
 					};
@@ -528,8 +529,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				const newData = { ...prev };
 				ids.forEach((id) => {
 					newData[id] = {
-						...(prev[id] || { id, value: "", formula: "" }),
-						id,
+						...(prev[id] || { value: "", formula: "" }),
 						style: {
 							...prev[id]?.style,
 							...style,
@@ -854,7 +854,6 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 			const matches = new Set<number>();
 
 			cells.forEach((cellId) => {
-				const colIdx = cellId.match(/[A-Z]+/)?.[0].charCodeAt(0) || 0;
 				const row = parseInt(cellId.match(/\d+/)?.[0] || "1");
 				rowsInRange.add(row);
 
@@ -1028,7 +1027,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				return newData;
 			});
 		},
-		[getRange, saveToUndo, setData, parseCellId],
+		[getRange, saveToUndo, setData],
 	);
 
 	// Find and replace
