@@ -275,7 +275,7 @@ export function useEditorHandlers({
 		}
 		if (selectionRange && selectionRange.length > 1) {
 			const updates: Record<string, string> = {};
-			selectionRange.forEach((c) => (updates[c] = ""));
+			selectionRange.forEach((c: string | number) => (updates[c] = ""));
 			updateCells(updates);
 			toast.success("Deleted", {
 				description: `${selectionRange.length} cells cleared`,

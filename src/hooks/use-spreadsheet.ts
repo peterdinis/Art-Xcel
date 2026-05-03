@@ -27,12 +27,12 @@ export interface CellData {
 		paddingLeft?: number;
 		wrapText?: boolean;
 		numberFormat?:
-			| "general"
-			| "number"
-			| "currency"
-			| "percentage"
-			| "date"
-			| "time";
+		| "general"
+		| "number"
+		| "currency"
+		| "percentage"
+		| "date"
+		| "time";
 	};
 	note?: string;
 	validation?: {
@@ -132,7 +132,7 @@ export interface Sheet {
 }
 
 export const useSpreadsheet = (initialData: SheetData = {}) => {
-	const [sheets, setSheets] = useState<Sheet[]>([
+	const [sheets, setSheets] = useState<any[]>([
 		{
 			name: "Sheet1",
 			data: initialData,
@@ -195,10 +195,10 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				prev.map((sheet, i) =>
 					i === currentSheetIndex
 						? {
-								...sheet,
-								data:
-									typeof newData === "function" ? newData(sheet.data) : newData,
-							}
+							...sheet,
+							data:
+								typeof newData === "function" ? newData(sheet.data) : newData,
+						}
 						: sheet,
 				),
 			);
@@ -222,12 +222,12 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				prev.map((sheet, i) =>
 					i === currentSheetIndex
 						? {
-								...sheet,
-								charts:
-									typeof newCharts === "function"
-										? newCharts(sheet.charts)
-										: newCharts,
-							}
+							...sheet,
+							charts:
+								typeof newCharts === "function"
+									? newCharts(sheet.charts)
+									: newCharts,
+						}
 						: sheet,
 				),
 			);
@@ -241,12 +241,12 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				prev.map((sheet, i) =>
 					i === currentSheetIndex
 						? {
-								...sheet,
-								images:
-									typeof newImages === "function"
-										? newImages(sheet.images)
-										: newImages,
-							}
+							...sheet,
+							images:
+								typeof newImages === "function"
+									? newImages(sheet.images)
+									: newImages,
+						}
 						: sheet,
 				),
 			);
@@ -260,12 +260,12 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				prev.map((sheet, i) =>
 					i === currentSheetIndex
 						? {
-								...sheet,
-								shapes:
-									typeof newShapes === "function"
-										? newShapes(sheet.shapes)
-										: newShapes,
-							}
+							...sheet,
+							shapes:
+								typeof newShapes === "function"
+									? newShapes(sheet.shapes)
+									: newShapes,
+						}
 						: sheet,
 				),
 			);
@@ -279,12 +279,12 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				prev.map((sheet, i) =>
 					i === currentSheetIndex
 						? {
-								...sheet,
-								icons:
-									typeof newIcons === "function"
-										? newIcons(sheet.icons)
-										: newIcons,
-							}
+							...sheet,
+							icons:
+								typeof newIcons === "function"
+									? newIcons(sheet.icons)
+									: newIcons,
+						}
 						: sheet,
 				),
 			);
@@ -298,12 +298,12 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				prev.map((sheet, i) =>
 					i === currentSheetIndex
 						? {
-								...sheet,
-								comments:
-									typeof newComments === "function"
-										? newComments(sheet.comments)
-										: newComments,
-							}
+							...sheet,
+							comments:
+								typeof newComments === "function"
+									? newComments(sheet.comments)
+									: newComments,
+						}
 						: sheet,
 				),
 			);
@@ -321,12 +321,12 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				prev.map((sheet, i) =>
 					i === currentSheetIndex
 						? {
-								...sheet,
-								namedRanges:
-									typeof newNamedRanges === "function"
-										? newNamedRanges(sheet.namedRanges)
-										: newNamedRanges,
-							}
+							...sheet,
+							namedRanges:
+								typeof newNamedRanges === "function"
+									? newNamedRanges(sheet.namedRanges)
+									: newNamedRanges,
+						}
 						: sheet,
 				),
 			);
@@ -340,12 +340,12 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 				prev.map((sheet, i) =>
 					i === currentSheetIndex
 						? {
-								...sheet,
-								hiddenRows:
-									typeof newHiddenRows === "function"
-										? newHiddenRows(sheet.hiddenRows)
-										: newHiddenRows,
-							}
+							...sheet,
+							hiddenRows:
+								typeof newHiddenRows === "function"
+									? newHiddenRows(sheet.hiddenRows)
+									: newHiddenRows,
+						}
 						: sheet,
 				),
 			);
@@ -430,10 +430,10 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 			prev.map((sheet, i) =>
 				i === currentSheetIndex
 					? {
-							...sheet,
-							undoStack: [...sheet.undoStack, sheet.data],
-							redoStack: [],
-						}
+						...sheet,
+						undoStack: [...sheet.undoStack, sheet.data],
+						redoStack: [],
+					}
 					: sheet,
 			),
 		);
@@ -660,11 +660,11 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 			prev.map((s, i) =>
 				i === currentSheetIndex
 					? {
-							...s,
-							data: previous,
-							undoStack: s.undoStack.slice(0, -1),
-							redoStack: [...s.redoStack, s.data],
-						}
+						...s,
+						data: previous,
+						undoStack: s.undoStack.slice(0, -1),
+						redoStack: [...s.redoStack, s.data],
+					}
 					: s,
 			),
 		);
@@ -680,11 +680,11 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 			prev.map((s, i) =>
 				i === currentSheetIndex
 					? {
-							...s,
-							data: next,
-							undoStack: [...s.undoStack, s.data],
-							redoStack: s.redoStack.slice(0, -1),
-						}
+						...s,
+						data: next,
+						undoStack: [...s.undoStack, s.data],
+						redoStack: s.redoStack.slice(0, -1),
+					}
 					: s,
 			),
 		);
@@ -1417,7 +1417,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 
 			// Group cells by column
 			const colMap: Record<string, string[]> = {};
-			selectionRange.forEach((id) => {
+			selectionRange.forEach((id: string) => {
 				const col = id.match(/[A-Z]+/)?.[0] || "";
 				if (!colMap[col]) colMap[col] = [];
 				colMap[col].push(id);
@@ -1450,7 +1450,7 @@ export const useSpreadsheet = (initialData: SheetData = {}) => {
 
 			// Group cells by row
 			const rowMap: Record<number, string[]> = {};
-			selectionRange.forEach((id) => {
+			selectionRange.forEach((id: string) => {
 				const row = parseInt(id.match(/\d+/)?.[0] || "0");
 				if (!rowMap[row]) rowMap[row] = [];
 				rowMap[row].push(id);

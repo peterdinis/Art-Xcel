@@ -83,6 +83,8 @@ export function EditorGridSection({
 				onRedo={handlers.handleRedo}
 				onInsertComment={() => state.setShowCommentDialog(true)}
 				onInsertHyperlink={() => state.setShowHyperlinkDialog(true)}
+				onFillDown={handlers.handleFillDown}
+				onFillRight={handlers.handleFillRight}
 			/>
 		</div>
 	);
