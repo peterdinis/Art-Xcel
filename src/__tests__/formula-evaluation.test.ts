@@ -175,4 +175,70 @@ describe("formula-evaluator", () => {
 			expect(result).toMatch(/€/);
 		});
 	});
+
+	describe("MATCH & INDEX", () => {
+		const data: SheetData = {
+			A1: { value: "10", formula: "" },
+			A2: { value: "20", formula: "" },
+			A3: { value: "30", formula: "" },
+			B1: { value: "X", formula: "" },
+			B2: { value: "Y", formula: "" },
+			B3: { value: "Z", formula: "" },
+		};
+
+		it("should evaluate MATCH correctly", () => {
+			expect(evaluateFormula("=MATCH(20, A1:A3, 0)", data)).toBe("2");
+			expect(evaluateFormula("=MATCH(10, A1:A3, 0)", data)).toBe("1");
+			expect(evaluateFormula("=MATCH(30, A1:A3, 0)", data)).toBe("3");
+			expect(evaluateFormula("=MATCH(40, A1:A3, 0)", data)).toBe("#N/A");
+		});
+
+		it("should evaluate INDEX correctly", () => {
+			expect(evaluateFormula("=INDEX(A1:A3, 2)", data)).toBe("20");
+			expect(evaluateFormula("=INDEX(B1:B3, 3)", data)).toBe("Z");
+		});
+
+		it("should evaluate INDEX with 2D array", () => {
+			expect(evaluateFormula("=INDEX(A1:B3, 2, 2)", data)).toBe("Y");
+			expect(evaluateFormula("=INDEX(A1:B3, 3, 1)", data)).toBe("30");
+		});
+	});
+
+	describe("XLOOKUP", () => {
+		const data: SheetData = {
+			A1: { value: "ID01", formula: "" },
+			A2: { value: "ID02", formula: "" },
+			B1: { value: "Alice", formula: "" },
+			B2: { value: "Bob", formula: "" },
+		};
+
+		it("should evaluate XLOOKUP correctly", () => {
+			expect(evaluateFormula('=XLOOKUP("ID02", A1:A2, B1:B2)', data)).toBe("Bob");
+			expect(evaluateFormula('=XLOOKUP("ID03", A1:A2, B1:B2, "Not Found")', data)).toBe("Not Found");
+		});
+	});
+
+	describe("Text Functions", () => {
+		it("should evaluate REPLACE", () => {
+			expect(evaluateFormula('=REPLACE("Hello World", 7, 5, "Antigravity")', {})).toBe("Hello Antigravity");
+		});
+
+		it("should evaluate SEARCH and FIND", () => {
+			expect(evaluateFormula('=SEARCH("world", "Hello World")', {})).toBe("7");
+			expect(evaluateFormula('=FIND("World", "Hello World")', {})).toBe("7");
+			expect(evaluateFormula('=FIND("world", "Hello World")', {})).toBe("#VALUE!");
+		});
+	});
+
+	describe("Advanced Logical", () => {
+		it("should evaluate IFNA", () => {
+			expect(evaluateFormula('=IFNA("#N/A", "Fallback")', {})).toBe("Fallback");
+			expect(evaluateFormula('=IFNA(100, "Fallback")', {})).toBe("100");
+		});
+
+		it("should evaluate IFS", () => {
+			expect(evaluateFormula("=IFS(1>2, 10, 2>3, 20, 3>2, 30)", {})).toBe("30");
+			expect(evaluateFormula("=IFS(1>2, 10, 2>3, 20)", {})).toBe("#N/A");
+		});
+	});
 });

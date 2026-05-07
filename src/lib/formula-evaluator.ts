@@ -267,6 +267,137 @@ export const registerCustomFunctions = () => {
 						? nums.reduce((a, b) => a + b, 0) / nums.length
 						: 0;
 				},
+				/** MATCH(lookup_value, lookup_array, [match_type]) */
+				match: (lookupValue: unknown, lookupArray: unknown, matchType: number = 1) => {
+					let arr = (
+						lookupArray && (lookupArray as any).toArray ? (lookupArray as any).toArray() : lookupArray
+					) as unknown[];
+					if (!Array.isArray(arr)) return "#N/A";
+
+					// Flatten 2D array if it's 1D-like
+					if (Array.isArray(arr[0])) {
+						const flatArr = arr.flat();
+						// If original was 2D with multiple cols, this might be wrong, but usually MATCH takes a 1D range
+						arr = flatArr;
+					}
+
+					if (matchType === 0) {
+						const idx = arr.findIndex(v => v == lookupValue);
+						return idx !== -1 ? idx + 1 : "#N/A";
+					} else if (matchType === 1) {
+						// Less than (assumes sorted ascending)
+						let bestIdx = -1;
+						for (let i = 0; i < arr.length; i++) {
+							if (arr[i] == lookupValue) return i + 1;
+							if (Number(arr[i]) < Number(lookupValue)) {
+								bestIdx = i;
+							} else if (Number(arr[i]) > Number(lookupValue)) {
+								break;
+							}
+						}
+						return bestIdx !== -1 ? bestIdx + 1 : "#N/A";
+					} else if (matchType === -1) {
+						// Greater than (assumes sorted descending)
+						let bestIdx = -1;
+						for (let i = 0; i < arr.length; i++) {
+							if (arr[i] == lookupValue) return i + 1;
+							if (Number(arr[i]) > Number(lookupValue)) {
+								bestIdx = i;
+							} else if (Number(arr[i]) < Number(lookupValue)) {
+								break;
+							}
+						}
+						return bestIdx !== -1 ? bestIdx + 1 : "#N/A";
+					}
+					return "#VALUE!";
+				},
+				/** INDEX(array, row_num, [column_num]) */
+				index: (array: unknown, rowNum: number, colNum?: number) => {
+					const arr = (
+						array && (array as any).toArray ? (array as any).toArray() : array
+					) as any[];
+					if (!Array.isArray(arr)) return "#VALUE!";
+					
+					// Handle 2D array
+					if (Array.isArray(arr[0])) {
+						const r = Math.floor(rowNum) - 1;
+						const c = colNum ? Math.floor(colNum) - 1 : 0;
+						if (arr[r] && arr[r][c] !== undefined) return arr[r][c];
+						// If colNum not provided, and it's a single column/row array, handle it
+						if (colNum === undefined) {
+							const flat = arr.flat();
+							if (flat[r] !== undefined) return flat[r];
+						}
+						return "#REF!";
+					}
+					
+					// Handle 1D array
+					const idx = Math.floor(rowNum) - 1;
+					if (arr[idx] !== undefined) return arr[idx];
+					return "#REF!";
+				},
+				/** XLOOKUP(lookup_value, lookup_array, return_array, [if_not_found], [match_mode], [search_mode]) */
+				xlookup: (
+					lookupValue: unknown,
+					lookupArray: unknown,
+					returnArray: unknown,
+					ifNotFound: unknown = "#N/A",
+					matchMode: number = 0,
+					searchMode: number = 1
+				) => {
+					let lArr = (
+						lookupArray && (lookupArray as any).toArray ? (lookupArray as any).toArray() : lookupArray
+					) as unknown[];
+					let rArr = (
+						returnArray && (returnArray as any).toArray ? (returnArray as any).toArray() : returnArray
+					) as unknown[];
+					
+					if (!Array.isArray(lArr) || !Array.isArray(rArr)) return "#VALUE!";
+
+					if (Array.isArray(lArr[0])) lArr = lArr.flat();
+					if (Array.isArray(rArr[0])) rArr = rArr.flat();
+
+					const findIdx = () => {
+						if (matchMode === 0) { // Exact match
+							if (searchMode === 1) return lArr.indexOf(lookupValue);
+							if (searchMode === -1) return lArr.lastIndexOf(lookupValue);
+						}
+						// Simplified match modes for now
+						return lArr.findIndex(v => v == lookupValue);
+					};
+
+					const idx = findIdx();
+					if (idx !== -1) return rArr[idx] ?? "#REF!";
+					return ifNotFound;
+				},
+				/** REPLACE(old_text, start_num, num_chars, new_text) */
+				replace: (oldText: string, start: number, num: number, newText: string) => {
+					const s = String(oldText);
+					const st = Math.floor(start) - 1;
+					const n = Math.floor(num);
+					return s.substring(0, st) + String(newText) + s.substring(st + n);
+				},
+				/** SEARCH(find_text, within_text, [start_num]) - case insensitive */
+				search: (find: string, within: string, start: number = 1) => {
+					const idx = String(within).toLowerCase().indexOf(String(find).toLowerCase(), Math.floor(start) - 1);
+					return idx !== -1 ? idx + 1 : "#VALUE!";
+				},
+				/** FIND(find_text, within_text, [start_num]) - case sensitive */
+				find: (find: string, within: string, start: number = 1) => {
+					const idx = String(within).indexOf(String(find), Math.floor(start) - 1);
+					return idx !== -1 ? idx + 1 : "#VALUE!";
+				},
+				/** IFNA(value, value_if_na) */
+				ifna: (val: unknown, fallback: unknown) => {
+					return val === "#N/A" ? fallback : val;
+				},
+				/** IFS(condition1, value1, [condition2, value2], ...) */
+				ifs: (...args: unknown[]) => {
+					for (let i = 0; i < args.length; i += 2) {
+						if (args[i]) return args[i + 1];
+					}
+					return "#N/A";
+				},
 			},
 			{ override: true },
 		);
@@ -375,6 +506,14 @@ const functionMap: Record<string, string> = {
 	isnumber: "isnumber",
 	istext: "istext",
 	isblank: "isblank",
+	match: "match",
+	index: "index",
+	xlookup: "xlookup",
+	replace: "replace",
+	search: "search",
+	find: "find",
+	ifna: "ifna",
+	ifs: "ifs",
 };
 
 export const evaluateFormula = (
@@ -406,7 +545,12 @@ export const evaluateFormula = (
 	// 1. Pre-process Ranges
 	const rangeRegex = /\b([a-zA-Z]+[0-9]+:[a-zA-Z]+[0-9]+)\b/g;
 	expression = expression.replace(rangeRegex, (match) => {
-		if (expression.toLowerCase().includes("vlookup")) {
+		const lowerExpr = expression.toLowerCase();
+		if (
+			lowerExpr.includes("vlookup") ||
+			lowerExpr.includes("index") ||
+			lowerExpr.includes("xlookup")
+		) {
 			const values2D = getRange2D(match.toUpperCase(), currentData);
 			return JSON.stringify(values2D);
 		}
@@ -418,13 +562,20 @@ export const evaluateFormula = (
 	});
 
 	// 2. Pre-process Cell References
+	// Avoid replacing cell references that are already inside quotes
 	const cellRegex = /\b([a-zA-Z]+[0-9]+)\b/g;
-	expression = expression.replace(cellRegex, (match) => {
-		const val = getVal(match.toUpperCase(), currentData);
-		return typeof val === "string"
-			? `"${val.replace(/"/g, '\\"')}"`
-			: String(val);
-	});
+	const parts = expression.split(/("[^"]*")/);
+	expression = parts
+		.map((part) => {
+			if (part.startsWith('"')) return part; // Skip quoted strings
+			return part.replace(cellRegex, (match) => {
+				const val = getVal(match.toUpperCase(), currentData);
+				return typeof val === "string"
+					? `"${val.replace(/"/g, '\\"')}"`
+					: String(val);
+			});
+		})
+		.join("");
 
 	Object.entries(functionMap).forEach(([excel, mathjs]) => {
 		const regex = new RegExp(`\\b${excel}\\(`, "gi");
