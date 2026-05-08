@@ -13,7 +13,12 @@ interface EditorGridSectionProps {
 	spreadsheet: ReturnType<typeof useSpreadsheet>;
 }
 
-export function EditorGridSection({ gridRef, handlers, state, spreadsheet }: EditorGridSectionProps) {
+export function EditorGridSection({
+	gridRef,
+	handlers,
+	state,
+	spreadsheet,
+}: EditorGridSectionProps) {
 	const {
 		data,
 		selectedCell,
@@ -35,7 +40,7 @@ export function EditorGridSection({ gridRef, handlers, state, spreadsheet }: Edi
 		removeShape,
 		removeIcon,
 		updateShape,
-		updateIcon
+		updateIcon,
 	} = spreadsheet;
 	const { showGrid, showHeaders, freezePanes, zoom } = state;
 
@@ -78,6 +83,8 @@ export function EditorGridSection({ gridRef, handlers, state, spreadsheet }: Edi
 				onRedo={handlers.handleRedo}
 				onInsertComment={() => state.setShowCommentDialog(true)}
 				onInsertHyperlink={() => state.setShowHyperlinkDialog(true)}
+				onFillDown={handlers.handleFillDown}
+				onFillRight={handlers.handleFillRight}
 			/>
 		</div>
 	);

@@ -15,6 +15,7 @@ import {
 	ChartData,
 	ImageData,
 } from "@/hooks/use-spreadsheet";
+import { getRowSelection } from "@/lib/grid-selection";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { CellContextMenu } from "./CellContextMenu";
 import { ChartComponent } from "./ChartComponent";
@@ -68,6 +69,8 @@ interface GridProps {
 	onRedo?: () => void;
 	onInsertComment?: () => void;
 	onInsertHyperlink?: () => void;
+	onFillDown?: () => void;
+	onFillRight?: () => void;
 }
 
 export interface GridHandle {
@@ -198,7 +201,14 @@ const Cell = memo(
 						autoFocus
 					/>
 				) : (
-					<span className="px-1 text-sm truncate w-full">{displayValue}</span>
+					<span
+						className={cn(
+							"px-1 text-sm w-full",
+							style?.wrapText ? "whitespace-normal break-words" : "truncate",
+						)}
+					>
+						{displayValue}
+					</span>
 				)}
 				<div
 					className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/50 z-30 opacity-0 hover:opacity-100"
@@ -345,6 +355,8 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 			onRedo,
 			onInsertComment,
 			onInsertHyperlink,
+			onFillDown,
+			onFillRight,
 		},
 		ref,
 	) => {
@@ -714,6 +726,17 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 			[selectedCell, onSelectCell, onSelectRange],
 		);
 
+		const selectEntireRow = useCallback(
+			(row: number, opts?: { extend?: boolean }) => {
+				const { anchorCell, range } = getRowSelection(row, totalCols, {
+					extendFromCell: opts?.extend ? selectedCell || undefined : undefined,
+				});
+				onSelectCell(anchorCell);
+				onSelectRange(range);
+			},
+			[onSelectCell, onSelectRange, selectedCell, totalCols],
+		);
+
 		const handleCellMouseEnter = useCallback(
 			(cellId: string) => {
 				if (isDragging && dragStart) {
@@ -775,6 +798,16 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 					e.preventDefault();
 					onRedo?.();
 				}
+				// Fill Down
+				if (isCtrl && e.key.toLowerCase() === "d") {
+					e.preventDefault();
+					onFillDown?.();
+				}
+				// Fill Right
+				if (isCtrl && e.key.toLowerCase() === "r") {
+					e.preventDefault();
+					onFillRight?.();
+				}
 				// Delete / Clear
 				if (e.key === "Delete" || e.key === "Backspace") {
 					if (selectedCell && !editingCell) {
@@ -795,6 +828,8 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 			onCopy,
 			onCut,
 			onPaste,
+			onFillDown,
+			onFillRight,
 		]);
 
 		const handleDoubleClick = useCallback(
@@ -936,13 +971,13 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 		const virtualCols = colVirtualizer.getVirtualItems();
 
 		return (
-			<div 
+			<div
 				className="relative w-full h-full overflow-hidden bg-background"
-				style={{ 
-					transform: `scale(${zoom / 100})`, 
+				style={{
+					transform: `scale(${zoom / 100})`,
 					transformOrigin: "top left",
 					width: `${10000 / zoom}%`,
-					height: `${10000 / zoom}%`
+					height: `${10000 / zoom}%`,
 				}}
 			>
 				{/* Fixed corner */}
@@ -1041,6 +1076,21 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 											width: ROW_HEADER_WIDTH,
 											height: virtualRow.size,
 											top: virtualRow.start,
+										}}
+										role="button"
+										tabIndex={0}
+										onMouseDown={(e) => {
+											e.preventDefault();
+											e.stopPropagation();
+											selectEntireRow(row, { extend: e.shiftKey });
+										}}
+										onKeyDown={(e) => {
+											if (e.key === "Enter" || e.key === " ") {
+												e.preventDefault();
+												selectEntireRow(row, {
+													extend: (e as unknown as React.KeyboardEvent).shiftKey,
+												});
+											}
 										}}
 									>
 										{row}

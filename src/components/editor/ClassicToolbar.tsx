@@ -719,7 +719,10 @@ export const ClassicToolbar = ({
 						<SelectItem value="monospace">Monospace</SelectItem>
 					</SelectContent>
 				</Select>
-				<Select defaultValue="10" onValueChange={(v) => onFontSizeChange?.(parseInt(v))}>
+				<Select
+					defaultValue="10"
+					onValueChange={(v) => onFontSizeChange?.(parseInt(v))}
+				>
 					<SelectTrigger className="h-7 w-15 text-xs bg-white dark:bg-zinc-950">
 						<SelectValue placeholder="Size" />
 					</SelectTrigger>

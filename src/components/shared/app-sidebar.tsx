@@ -21,14 +21,18 @@ export function AppSidebar() {
 		<div className="w-64 border-r bg-muted/40 h-screen flex flex-col">
 			<div className="h-16 flex items-center px-6 border-b font-semibold text-lg text-primary gap-2">
 				<FileSpreadsheet className="h-6 w-6" />
-				<span>Excel Editor</span>
+				<span>Art-Xcel</span>
 			</div>
 			<nav className="flex-1 p-4 space-y-2">
 				{links.map((link) => {
 					const Icon = link.icon;
 					const isActive = pathname === link.href;
 					return (
-						<Link key={link.href} href={link.href as unknown as UrlObject} className="block">
+						<Link
+							key={link.href}
+							href={link.href as unknown as UrlObject}
+							className="block"
+						>
 							<Button
 								variant={isActive ? "secondary" : "ghost"}
 								className={cn(

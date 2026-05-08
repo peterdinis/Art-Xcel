@@ -13,24 +13,30 @@ interface EditorFormulaSectionProps {
 	spreadsheet: ReturnType<typeof useSpreadsheet>;
 }
 
-export function EditorFormulaSection({ handlers, state, spreadsheet }: EditorFormulaSectionProps) {
-	const { selectedCell, getCellFormula, getCellValue, data, updateCell } = spreadsheet;
+export function EditorFormulaSection({
+	handlers,
+	state,
+	spreadsheet,
+}: EditorFormulaSectionProps) {
+	const { selectedCell, getCellFormula, getCellValue, data, updateCell } =
+		spreadsheet;
 	const { insertFunctionDialog, setShowInsertFunctionDialog } = state;
 	const { showFormulaBar } = state;
 
-	if (!showFormulaBar) return (
-		<InsertFunctionDialog
-			open={insertFunctionDialog}
-			onOpenChange={setShowInsertFunctionDialog}
-			currentFormula={selectedCell ? getCellFormula(selectedCell) : ""}
-			onInsert={(_, template) => {
-				if (selectedCell) {
-					updateCell(selectedCell, template);
-					toast.success("Function inserted");
-				}
-			}}
-		/>
-	);
+	if (!showFormulaBar)
+		return (
+			<InsertFunctionDialog
+				open={insertFunctionDialog}
+				onOpenChange={setShowInsertFunctionDialog}
+				currentFormula={selectedCell ? getCellFormula(selectedCell) : ""}
+				onInsert={(_, template) => {
+					if (selectedCell) {
+						updateCell(selectedCell, template);
+						toast.success("Function inserted");
+					}
+				}}
+			/>
+		);
 
 	return (
 		<>

@@ -9,10 +9,16 @@ interface EditorModalsSectionProps {
 	handlers: ReturnType<typeof useEditorHandlers>;
 	state: UseEditorStateReturn;
 	spreadsheet: ReturnType<typeof useSpreadsheet>;
+	id: string;
 }
 
-export function EditorModalsSection({ handlers, state, spreadsheet }: EditorModalsSectionProps) {
-	const { sheetNames, selectedCell } = spreadsheet;
+export function EditorModalsSection({
+	handlers,
+	state,
+	spreadsheet,
+	id,
+}: EditorModalsSectionProps) {
+	const { sheetNames, selectedCell, selectionRange, data } = spreadsheet;
 
 	return (
 		<EditorDialogs
@@ -101,6 +107,22 @@ export function EditorModalsSection({ handlers, state, spreadsheet }: EditorModa
 			iconName={state.iconName}
 			setIconName={state.setIconName}
 			handleInsertIcon={handlers.handleInsertIcon}
+			// Data tools
+			showDataToolsDialog={state.dataToolsDialog}
+			setShowDataToolsDialog={state.setShowDataToolsDialog}
+			dataToolKind={state.dataToolKind}
+			setDataToolKind={state.setDataToolKind}
+			dataToolSortDirection={state.dataToolSortDirection}
+			setDataToolSortDirection={state.setDataToolSortDirection}
+			dataToolSelectedCols={state.dataToolSelectedCols}
+			setDataToolSelectedCols={state.setDataToolSelectedCols}
+			dataToolHasHeader={state.dataToolHasHeader}
+			setDataToolHasHeader={state.setDataToolHasHeader}
+			dataToolDelimiter={state.dataToolDelimiter}
+			setDataToolDelimiter={state.setDataToolDelimiter}
+			selectionRange={selectionRange}
+			sheetData={data}
+			handleApplyDataTool={handlers.handleApplyDataTool}
 			// Shortcuts
 			showShortcutsDialog={state.shortcutsDialog}
 			setShowShortcutsDialog={state.setShowShortcutsDialog}
@@ -108,7 +130,11 @@ export function EditorModalsSection({ handlers, state, spreadsheet }: EditorModa
 			showUserGuideDialog={state.userGuideDialog}
 			setShowUserGuideDialog={state.setShowUserGuideDialog}
 			showAboutDialog={state.aboutDialog}
-			setShowAboutDialog={(open) => open ? state.openDialog("aboutDialog") : state.closeDialog("aboutDialog")}
+			setShowAboutDialog={(open) =>
+				open
+					? state.openDialog("aboutDialog")
+					: state.closeDialog("aboutDialog")
+			}
 			showSaveDialog={state.saveDialog}
 			setShowSaveDialog={state.setShowSaveDialog}
 			handleSave={handlers.handleConfirmSave}
@@ -122,18 +148,22 @@ export function EditorModalsSection({ handlers, state, spreadsheet }: EditorModa
 			showCommentDialog={state.commentDialog}
 			setShowCommentDialog={state.setShowCommentDialog}
 			showConditionalFormattingDialog={state.conditionalFormattingDialog}
-			setShowConditionalFormattingDialog={state.setShowConditionalFormattingDialog}
+			setShowConditionalFormattingDialog={
+				state.setShowConditionalFormattingDialog
+			}
 			handleInsertSpecialChar={handlers.handleInsertSpecialChar}
 			handleInsertHyperlink={handlers.handleInsertHyperlink}
 			handleInsertComment={handlers.handleInsertComment}
-			handleApplyConditionalFormatting={handlers.handleApplyConditionalFormatting}
+			handleApplyConditionalFormatting={
+				handlers.handleApplyConditionalFormatting
+			}
 			// Share
 			showShareDialog={state.shareDialog}
 			setShowShareDialog={state.setShowShareDialog}
 			shareSettings={state.shareSettings}
 			handleShareSave={handlers.handleShareSave}
 			handleCopyLink={handlers.handleCopyLink}
-			spreadsheetId={spreadsheet.id as string}
+			spreadsheetId={id}
 		/>
 	);
 }

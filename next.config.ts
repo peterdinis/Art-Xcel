@@ -26,14 +26,6 @@ const nextConfig: NextConfig = {
 			"sonner",
 		],
 	},
-	// @ts-ignore
-	typescript: {
-		ignoreBuildErrors: true,
-	},
-	// @ts-ignore
-	eslint: {
-		ignoreDuringBuilds: true,
-	},
 	logging: {
 		fetches: {
 			fullUrl: true,

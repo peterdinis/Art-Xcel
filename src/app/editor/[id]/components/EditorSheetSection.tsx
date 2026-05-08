@@ -15,7 +15,11 @@ interface EditorSheetSectionProps {
 	spreadsheet: ReturnType<typeof useSpreadsheet>;
 }
 
-export function EditorSheetSection({ handlers, state, spreadsheet }: EditorSheetSectionProps) {
+export function EditorSheetSection({
+	handlers,
+	state,
+	spreadsheet,
+}: EditorSheetSectionProps) {
 	const router = useRouter();
 	const {
 		sheetNames,

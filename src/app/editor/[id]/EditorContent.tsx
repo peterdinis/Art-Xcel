@@ -79,7 +79,15 @@ export default function EditorContent() {
 		};
 
 		loadData();
-	}, [id, db.isReady, setData, setIsLoading, setSheetName, setShareSettings, db.loadSpreadsheet]);
+	}, [
+		id,
+		db.isReady,
+		setData,
+		setIsLoading,
+		setSheetName,
+		setShareSettings,
+		db.loadSpreadsheet,
+	]);
 
 	// 2. Auto-save to IndexedDB
 	useEffect(() => {
@@ -101,7 +109,16 @@ export default function EditorContent() {
 		}, 1000);
 
 		return () => clearTimeout(timer);
-	}, [spreadsheet.data, spreadsheet.comments, state.sheetName, state.shareSettings, state.isLoading, id, db.isReady, db.saveSpreadsheet]);
+	}, [
+		spreadsheet.data,
+		spreadsheet.comments,
+		state.sheetName,
+		state.shareSettings,
+		state.isLoading,
+		id,
+		db.isReady,
+		db.saveSpreadsheet,
+	]);
 
 	if (state.isLoading) {
 		return <EditorSkeleton />;
@@ -157,6 +174,7 @@ export default function EditorContent() {
 				handlers={handlers}
 				state={state}
 				spreadsheet={spreadsheet}
+				id={id as string}
 			/>
 		</div>
 	);

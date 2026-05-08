@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
 	Dialog,
 	DialogContent,
@@ -11,7 +11,10 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ShareDialog, type ShareSettings } from "@/components/shared/share-dialog";
+import {
+	ShareDialog,
+	type ShareSettings,
+} from "@/components/shared/share-dialog";
 import {
 	Select,
 	SelectContent,
@@ -21,12 +24,8 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import {
-	Tabs,
-	TabsContent,
-	TabsList,
-	TabsTrigger,
-} from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
 	Upload,
 	Keyboard,
@@ -38,6 +37,8 @@ import {
 	Scissors,
 	Plus,
 } from "lucide-react";
+import { indexToColLetter, parseCellId } from "@/lib/excel-utils";
+import type { SheetData } from "@/hooks/use-spreadsheet";
 
 interface EditorDialogsProps {
 	// Find & Replace
@@ -151,6 +152,25 @@ interface EditorDialogsProps {
 	setIconName: (name: string) => void;
 	handleInsertIcon: (name: string) => void;
 
+	// Data tools (Sort / Filter / Remove duplicates / Text-to-columns)
+	showDataToolsDialog: boolean;
+	setShowDataToolsDialog: (open: boolean) => void;
+	dataToolKind: "sort" | "filter" | "removeDuplicates" | "textToColumns";
+	setDataToolKind: (
+		v: "sort" | "filter" | "removeDuplicates" | "textToColumns",
+	) => void;
+	dataToolSortDirection: "asc" | "desc";
+	setDataToolSortDirection: (v: "asc" | "desc") => void;
+	dataToolSelectedCols: number[];
+	setDataToolSelectedCols: (v: number[]) => void;
+	dataToolHasHeader: boolean;
+	setDataToolHasHeader: (v: boolean) => void;
+	dataToolDelimiter: string;
+	setDataToolDelimiter: (v: string) => void;
+	selectionRange: string[] | null;
+	sheetData: SheetData;
+	handleApplyDataTool: () => void;
+
 	// Shortcuts
 	showShortcutsDialog: boolean;
 	setShowShortcutsDialog: (open: boolean) => void;
@@ -175,7 +195,11 @@ interface EditorDialogsProps {
 	handleInsertSpecialChar: (char: string) => void;
 	handleInsertHyperlink: (url: string, text: string) => void;
 	handleInsertComment: (comment: string) => void;
-	handleApplyConditionalFormatting: (rule: { type: string; value: string; color: string }) => void;
+	handleApplyConditionalFormatting: (rule: {
+		type: string;
+		value: string;
+		color: string;
+	}) => void;
 
 	// Platform detection
 	isMac?: boolean;
@@ -256,6 +280,21 @@ export const EditorDialogs: React.FC<EditorDialogsProps> = (props) => {
 		iconName,
 		setIconName,
 		handleInsertIcon,
+		showDataToolsDialog,
+		setShowDataToolsDialog,
+		dataToolKind,
+		setDataToolKind,
+		dataToolSortDirection,
+		setDataToolSortDirection,
+		dataToolSelectedCols,
+		setDataToolSelectedCols,
+		dataToolHasHeader,
+		setDataToolHasHeader,
+		dataToolDelimiter,
+		setDataToolDelimiter,
+		selectionRange,
+		sheetData,
+		handleApplyDataTool,
 		showShortcutsDialog,
 		setShowShortcutsDialog,
 		showUserGuideDialog,
@@ -283,13 +322,97 @@ export const EditorDialogs: React.FC<EditorDialogsProps> = (props) => {
 	const [cfType, setCfType] = useState("greaterThan");
 	const [cfValue, setCfValue] = useState("");
 	const [cfColor, setCfColor] = useState("#fef08a"); // Default yellow
+	const [dataToolSearch, setDataToolSearch] = useState("");
+
+	const dataToolColumns = useMemo(() => {
+		if (!selectionRange || selectionRange.length === 0) return [];
+		const start = selectionRange[0];
+		const end = selectionRange[selectionRange.length - 1];
+		const { col: startColRaw, row: startRowRaw } = parseCellId(start);
+		const { col: endColRaw, row: endRowRaw } = parseCellId(end);
+		const startCol = Math.min(startColRaw, endColRaw);
+		const endCol = Math.max(startColRaw, endColRaw);
+		const headerRow = Math.min(startRowRaw, endRowRaw) + 1; // 1-based
+
+		const cols = [];
+		for (let c = startCol; c <= endCol; c++) {
+			const letter = indexToColLetter(c);
+			const headerCellId = `${letter}${headerRow}`;
+			const headerValue = sheetData[headerCellId]?.value?.trim?.() || "";
+			cols.push({
+				relIndex: c - startCol,
+				letter,
+				headerValue,
+				label: headerValue ? `${letter} — ${headerValue}` : letter,
+			});
+		}
+		return cols;
+	}, [selectionRange, sheetData]);
+
+	const filteredDataToolColumns = useMemo(() => {
+		const q = dataToolSearch.trim().toLowerCase();
+		if (!q) return dataToolColumns;
+		return dataToolColumns.filter((c) => {
+			return (
+				c.letter.toLowerCase().includes(q) ||
+				c.headerValue.toLowerCase().includes(q)
+			);
+		});
+	}, [dataToolColumns, dataToolSearch]);
+
+	const isMultiSelect = dataToolKind === "removeDuplicates";
 
 	const specialChars = [
-		"©", "®", "™", "§", "¶", "†", "‡", "•", "–", "—",
-		"€", "£", "¥", "¢", "¤", "±", "×", "÷", "≈", "≠",
-		"≤", "≥", "∞", "√", "∑", "∆", "∏", "µ", "π", "Ω",
-		"α", "β", "γ", "δ", "ε", "θ", "λ", "ω", "ø", "←",
-		"↑", "→", "↓", "↔", "♠", "♣", "♥", "♦", "♩", "♪"
+		"©",
+		"®",
+		"™",
+		"§",
+		"¶",
+		"†",
+		"‡",
+		"•",
+		"–",
+		"—",
+		"€",
+		"£",
+		"¥",
+		"¢",
+		"¤",
+		"±",
+		"×",
+		"÷",
+		"≈",
+		"≠",
+		"≤",
+		"≥",
+		"∞",
+		"√",
+		"∑",
+		"∆",
+		"∏",
+		"µ",
+		"π",
+		"Ω",
+		"α",
+		"β",
+		"γ",
+		"δ",
+		"ε",
+		"θ",
+		"λ",
+		"ω",
+		"ø",
+		"←",
+		"↑",
+		"→",
+		"↓",
+		"↔",
+		"♠",
+		"♣",
+		"♥",
+		"♦",
+		"♩",
+		"♪",
 	];
 
 	// Helper function to format shortcuts based on platform
@@ -861,6 +984,176 @@ export const EditorDialogs: React.FC<EditorDialogsProps> = (props) => {
 				</DialogContent>
 			</Dialog>
 
+			{/* Data Tools Dialog */}
+			<Dialog open={showDataToolsDialog} onOpenChange={setShowDataToolsDialog}>
+				<DialogContent className="max-w-lg">
+					<DialogHeader>
+						<DialogTitle>Data Tools</DialogTitle>
+						<DialogDescription>
+							Choose which column(s) to use for{" "}
+							{dataToolKind === "sort"
+								? "sorting"
+								: dataToolKind === "filter"
+									? "filtering"
+									: dataToolKind === "removeDuplicates"
+										? "removing duplicates"
+										: "text to columns"}
+							.
+						</DialogDescription>
+					</DialogHeader>
+
+					<div className="space-y-4 py-2">
+						<div className="space-y-2">
+							<Label>Tool</Label>
+							<Select
+								value={dataToolKind}
+								onValueChange={(v) =>
+									setDataToolKind(
+										v as "sort" | "filter" | "removeDuplicates" | "textToColumns",
+									)
+								}
+							>
+								<SelectTrigger>
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="sort">Sort</SelectItem>
+									<SelectItem value="filter">Filter</SelectItem>
+									<SelectItem value="removeDuplicates">Remove Duplicates</SelectItem>
+									<SelectItem value="textToColumns">Text to Columns</SelectItem>
+								</SelectContent>
+							</Select>
+						</div>
+
+						{dataToolKind === "sort" && (
+							<div className="space-y-2">
+								<Label>Direction</Label>
+								<Select
+									value={dataToolSortDirection}
+									onValueChange={(v) => setDataToolSortDirection(v as "asc" | "desc")}
+								>
+									<SelectTrigger>
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="asc">Ascending (A → Z)</SelectItem>
+										<SelectItem value="desc">Descending (Z → A)</SelectItem>
+									</SelectContent>
+								</Select>
+							</div>
+						)}
+
+						{dataToolKind === "textToColumns" && (
+							<div className="space-y-2">
+								<Label>Delimiter</Label>
+								<Input
+									value={dataToolDelimiter}
+									onChange={(e) => setDataToolDelimiter(e.target.value)}
+									placeholder=","
+								/>
+							</div>
+						)}
+
+						<div className="flex items-center justify-between gap-3">
+							<div className="flex items-center gap-2">
+								<Switch
+									id="data-tool-has-headers"
+									checked={dataToolHasHeader}
+									onCheckedChange={setDataToolHasHeader}
+								/>
+								<Label htmlFor="data-tool-has-headers">My range has headers</Label>
+							</div>
+							{dataToolKind === "removeDuplicates" && (
+								<Button
+									variant="outline"
+									size="sm"
+									onClick={() => setDataToolSelectedCols(dataToolColumns.map((c) => c.relIndex))}
+									disabled={dataToolColumns.length === 0}
+								>
+									Select all
+								</Button>
+							)}
+						</div>
+
+						<div className="space-y-2">
+							<Label>
+								{isMultiSelect ? "Columns" : "Column"}{" "}
+								<span className="text-muted-foreground text-xs">
+									({dataToolColumns.length} in selection)
+								</span>
+							</Label>
+							<Input
+								value={dataToolSearch}
+								onChange={(e) => setDataToolSearch(e.target.value)}
+								placeholder="Search by letter or header…"
+							/>
+							<ScrollArea className="h-56 rounded-md border">
+								<div className="p-2 space-y-1">
+									{filteredDataToolColumns.length === 0 ? (
+										<div className="text-sm text-muted-foreground p-2">
+											No columns match your search.
+										</div>
+									) : (
+										filteredDataToolColumns.map((col) => {
+											const selected = dataToolSelectedCols.includes(col.relIndex);
+											return (
+												<button
+													key={col.relIndex}
+													type="button"
+													className={[
+														"w-full text-left px-2 py-2 rounded-md border transition-colors",
+														selected
+															? "bg-primary/10 border-primary/30"
+															: "bg-background hover:bg-muted/50 border-transparent hover:border-border",
+													].join(" ")}
+													onClick={() => {
+														if (isMultiSelect) {
+															setDataToolSelectedCols(
+																selected
+																	? dataToolSelectedCols.filter((i) => i !== col.relIndex)
+																	: [...dataToolSelectedCols, col.relIndex].sort((a, b) => a - b),
+															);
+														} else {
+															setDataToolSelectedCols([col.relIndex]);
+														}
+													}}
+												>
+													<div className="flex items-center justify-between gap-3">
+														<div className="min-w-0">
+															<div className="text-sm font-medium truncate">{col.label}</div>
+															{col.headerValue && (
+																<div className="text-xs text-muted-foreground truncate">
+																	Header: {col.headerValue}
+																</div>
+															)}
+														</div>
+														<div className="text-xs text-muted-foreground shrink-0">
+															{selected ? "Selected" : isMultiSelect ? "Tap to add" : "Tap to choose"}
+														</div>
+													</div>
+												</button>
+											);
+										})
+									)}
+								</div>
+							</ScrollArea>
+						</div>
+					</div>
+
+					<DialogFooter>
+						<Button variant="outline" onClick={() => setShowDataToolsDialog(false)}>
+							Cancel
+						</Button>
+						<Button
+							onClick={() => handleApplyDataTool()}
+							disabled={dataToolColumns.length === 0}
+						>
+							Apply
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
 			{/* Shortcuts Dialog */}
 			<Dialog open={showShortcutsDialog} onOpenChange={setShowShortcutsDialog}>
 				<DialogContent className="max-w-2xl">
@@ -965,7 +1258,9 @@ export const EditorDialogs: React.FC<EditorDialogsProps> = (props) => {
 								</div>
 								<div className="flex justify-between text-xs">
 									<span>Start of Row</span>
-									<kbd className="bg-muted px-1.5 rounded text-[10px]">Home</kbd>
+									<kbd className="bg-muted px-1.5 rounded text-[10px]">
+										Home
+									</kbd>
 								</div>
 								<div className="flex justify-between text-xs">
 									<span>End of Sheet</span>
@@ -1003,7 +1298,10 @@ export const EditorDialogs: React.FC<EditorDialogsProps> = (props) => {
 						</DialogDescription>
 					</DialogHeader>
 
-					<Tabs defaultValue="formulas" className="flex-1 overflow-hidden flex flex-col">
+					<Tabs
+						defaultValue="formulas"
+						className="flex-1 overflow-hidden flex flex-col"
+					>
 						<TabsList className="grid grid-cols-3 w-full">
 							<TabsTrigger value="formulas" className="flex items-center gap-2">
 								<FunctionSquare className="h-4 w-4" /> Formulas
@@ -1019,54 +1317,106 @@ export const EditorDialogs: React.FC<EditorDialogsProps> = (props) => {
 						<div className="flex-1 overflow-y-auto py-4 pr-2">
 							<TabsContent value="formulas" className="space-y-4 mt-0">
 								<div>
-									<h4 className="font-semibold text-sm mb-2">Basic Arithmetic</h4>
+									<h4 className="font-semibold text-sm mb-2">
+										Basic Arithmetic
+									</h4>
 									<p className="text-xs text-muted-foreground mb-2">
-										Start with an equals sign <code className="bg-muted px-1 rounded">=</code> followed by your expression.
+										Start with an equals sign{" "}
+										<code className="bg-muted px-1 rounded">=</code> followed by
+										your expression.
 									</p>
 									<ul className="list-disc list-inside text-xs space-y-1 text-muted-foreground">
-										<li><code className="bg-muted px-1 rounded">=A1 + B1</code> (Addition)</li>
-										<li><code className="bg-muted px-1 rounded">=SUM(A1:A10)</code> (Range Sum)</li>
-										<li><code className="bg-muted px-1 rounded">=AVERAGE(B1:B20)</code> (Average)</li>
+										<li>
+											<code className="bg-muted px-1 rounded">=A1 + B1</code>{" "}
+											(Addition)
+										</li>
+										<li>
+											<code className="bg-muted px-1 rounded">
+												=SUM(A1:A10)
+											</code>{" "}
+											(Range Sum)
+										</li>
+										<li>
+											<code className="bg-muted px-1 rounded">
+												=AVERAGE(B1:B20)
+											</code>{" "}
+											(Average)
+										</li>
 									</ul>
 								</div>
 								<div>
-									<h4 className="font-semibold text-sm mb-2">Advanced Functions</h4>
+									<h4 className="font-semibold text-sm mb-2">
+										Advanced Functions
+									</h4>
 									<ul className="list-disc list-inside text-xs space-y-1 text-muted-foreground">
-										<li><code className="bg-muted px-1 rounded">=VLOOKUP(value, range, col, [match])</code> - Search in ranges</li>
-										<li><code className="bg-muted px-1 rounded">=IF(condition, true, false)</code> - Logical operations</li>
-										<li><code className="bg-muted px-1 rounded">=PMT(rate, nper, pv)</code> - Financial calculations</li>
+										<li>
+											<code className="bg-muted px-1 rounded">
+												=VLOOKUP(value, range, col, [match])
+											</code>{" "}
+											- Search in ranges
+										</li>
+										<li>
+											<code className="bg-muted px-1 rounded">
+												=IF(condition, true, false)
+											</code>{" "}
+											- Logical operations
+										</li>
+										<li>
+											<code className="bg-muted px-1 rounded">
+												=PMT(rate, nper, pv)
+											</code>{" "}
+											- Financial calculations
+										</li>
 									</ul>
 								</div>
 							</TabsContent>
 
 							<TabsContent value="data" className="space-y-4 mt-0">
 								<div>
-									<h4 className="font-semibold text-sm mb-2">Data Operations</h4>
+									<h4 className="font-semibold text-sm mb-2">
+										Data Operations
+									</h4>
 									<div className="grid grid-cols-2 gap-4">
 										<div className="space-y-1">
 											<p className="text-xs font-medium">Sorting</p>
-											<p className="text-[11px] text-muted-foreground">Select a range and use Data {">"} Sort to organize your rows alphabetically or numerically.</p>
+											<p className="text-[11px] text-muted-foreground">
+												Select a range and use Data {">"} Sort to organize your
+												rows alphabetically or numerically.
+											</p>
 										</div>
 										<div className="space-y-1">
 											<p className="text-xs font-medium">Filtering</p>
-											<p className="text-[11px] text-muted-foreground">Enable AutoFilter to quickly find specific values in large data sets.</p>
+											<p className="text-[11px] text-muted-foreground">
+												Enable AutoFilter to quickly find specific values in
+												large data sets.
+											</p>
 										</div>
 									</div>
 								</div>
 								<div>
 									<h4 className="font-semibold text-sm mb-2">Validation</h4>
-									<p className="text-xs text-muted-foreground">Restrict cell input to specific types (numbers, dates, lists) via the Data Validation dialog.</p>
+									<p className="text-xs text-muted-foreground">
+										Restrict cell input to specific types (numbers, dates,
+										lists) via the Data Validation dialog.
+									</p>
 								</div>
 							</TabsContent>
 
 							<TabsContent value="visuals" className="space-y-4 mt-0">
 								<div>
 									<h4 className="font-semibold text-sm mb-2">Charts</h4>
-									<p className="text-xs text-muted-foreground">Select data including headers and click Insert {">"} Chart. Supports Bar, Line, and Pie charts.</p>
+									<p className="text-xs text-muted-foreground">
+										Select data including headers and click Insert {">"} Chart.
+										Supports Bar, Line, and Pie charts.
+									</p>
 								</div>
 								<div>
 									<h4 className="font-semibold text-sm mb-2">Graphics</h4>
-									<p className="text-xs text-muted-foreground">Insert shapes, icons, and images to enhance your spreadsheet's visual appeal. All objects are draggable and resizable.</p>
+									<p className="text-xs text-muted-foreground">
+										Insert shapes, icons, and images to enhance your
+										spreadsheet's visual appeal. All objects are draggable and
+										resizable.
+									</p>
 								</div>
 							</TabsContent>
 						</div>
@@ -1081,7 +1431,10 @@ export const EditorDialogs: React.FC<EditorDialogsProps> = (props) => {
 			</Dialog>
 
 			{/* Special Character Dialog */}
-			<Dialog open={showSpecialCharDialog} onOpenChange={setShowSpecialCharDialog}>
+			<Dialog
+				open={showSpecialCharDialog}
+				onOpenChange={setShowSpecialCharDialog}
+			>
 				<DialogContent className="max-w-md">
 					<DialogHeader>
 						<DialogTitle>Special Characters</DialogTitle>
@@ -1175,7 +1528,10 @@ export const EditorDialogs: React.FC<EditorDialogsProps> = (props) => {
 				</DialogContent>
 			</Dialog>
 			{/* Conditional Formatting Dialog */}
-			<Dialog open={showConditionalFormattingDialog} onOpenChange={setShowConditionalFormattingDialog}>
+			<Dialog
+				open={showConditionalFormattingDialog}
+				onOpenChange={setShowConditionalFormattingDialog}
+			>
 				<DialogContent>
 					<DialogHeader>
 						<DialogTitle>Conditional Formatting</DialogTitle>
@@ -1200,8 +1556,8 @@ export const EditorDialogs: React.FC<EditorDialogsProps> = (props) => {
 						</div>
 						<div className="space-y-2">
 							<Label>Value</Label>
-							<Input 
-								placeholder="Enter value" 
+							<Input
+								placeholder="Enter value"
 								value={cfValue}
 								onChange={(e) => setCfValue(e.target.value)}
 							/>
@@ -1209,13 +1565,13 @@ export const EditorDialogs: React.FC<EditorDialogsProps> = (props) => {
 						<div className="space-y-2">
 							<Label>Fill Color</Label>
 							<div className="flex gap-2">
-								<Input 
-									type="color" 
-									className="w-12 h-8 p-1" 
+								<Input
+									type="color"
+									className="w-12 h-8 p-1"
 									value={cfColor}
 									onChange={(e) => setCfColor(e.target.value)}
 								/>
-								<Input 
+								<Input
 									value={cfColor}
 									onChange={(e) => setCfColor(e.target.value)}
 									placeholder="#RRGGBB"
@@ -1226,7 +1582,11 @@ export const EditorDialogs: React.FC<EditorDialogsProps> = (props) => {
 					<DialogFooter>
 						<Button
 							onClick={() => {
-								handleApplyConditionalFormatting({ type: cfType, value: cfValue, color: cfColor });
+								handleApplyConditionalFormatting({
+									type: cfType,
+									value: cfValue,
+									color: cfColor,
+								});
 								setShowConditionalFormattingDialog(false);
 							}}
 						>
@@ -1256,14 +1616,15 @@ export const EditorDialogs: React.FC<EditorDialogsProps> = (props) => {
 						</div>
 					</div>
 					<DialogFooter>
-						<Button onClick={() => setShowAboutDialog?.(false)}>
-							Close
-						</Button>
+						<Button onClick={() => setShowAboutDialog?.(false)}>Close</Button>
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
 			{/* Save Dialog */}
-			<Dialog open={props.showSaveDialog} onOpenChange={props.setShowSaveDialog}>
+			<Dialog
+				open={props.showSaveDialog}
+				onOpenChange={props.setShowSaveDialog}
+			>
 				<DialogContent className="max-w-md">
 					<DialogHeader>
 						<DialogTitle>Save Spreadsheet</DialogTitle>
@@ -1283,7 +1644,10 @@ export const EditorDialogs: React.FC<EditorDialogsProps> = (props) => {
 						</div>
 					</div>
 					<DialogFooter>
-						<Button variant="outline" onClick={() => props.setShowSaveDialog?.(false)}>
+						<Button
+							variant="outline"
+							onClick={() => props.setShowSaveDialog?.(false)}
+						>
 							Cancel
 						</Button>
 						<Button

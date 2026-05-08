@@ -1,12 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Edit2, Check, X, FileSpreadsheet, Share2, Cloud } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 
 interface EditorHeaderProps {
 	name: string;
@@ -56,7 +55,7 @@ export function EditorHeader({
 				<div className="bg-primary/10 p-1.5 rounded-lg">
 					<FileSpreadsheet className="h-5 w-5 text-primary" />
 				</div>
-				
+
 				<div className="flex items-center gap-1 overflow-hidden">
 					{isEditing ? (
 						<div className="flex items-center gap-1 animate-in fade-in slide-in-from-left-1 duration-200">
@@ -70,15 +69,25 @@ export function EditorHeader({
 									if (e.key === "Escape") handleCancel();
 								}}
 							/>
-							<Button size="icon" variant="ghost" className="h-8 w-8 text-green-600" onClick={handleConfirm}>
+							<Button
+								size="icon"
+								variant="ghost"
+								className="h-8 w-8 text-green-600"
+								onClick={handleConfirm}
+							>
 								<Check className="h-4 w-4" />
 							</Button>
-							<Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={handleCancel}>
+							<Button
+								size="icon"
+								variant="ghost"
+								className="h-8 w-8 text-destructive"
+								onClick={handleCancel}
+							>
 								<X className="h-4 w-4" />
 							</Button>
 						</div>
 					) : (
-						<div 
+						<div
 							className="flex items-center gap-2 cursor-pointer group px-2 py-1 rounded-md hover:bg-muted transition-colors overflow-hidden"
 							onClick={() => setIsEditing(true)}
 						>
@@ -91,7 +100,10 @@ export function EditorHeader({
 				</div>
 
 				<div className="flex items-center gap-2 ml-2">
-					<Badge variant="secondary" className="font-normal text-[10px] uppercase tracking-wider px-1.5 py-0">
+					<Badge
+						variant="secondary"
+						className="font-normal text-[10px] uppercase tracking-wider px-1.5 py-0"
+					>
 						Draft
 					</Badge>
 					{isSaving && (
@@ -104,11 +116,21 @@ export function EditorHeader({
 			</div>
 
 			<div className="flex items-center gap-2">
-				<Button variant="ghost" size="sm" className="h-8 gap-2 text-xs" onClick={onShare}>
+				<Button
+					variant="ghost"
+					size="sm"
+					className="h-8 gap-2 text-xs"
+					onClick={onShare}
+				>
 					<Share2 className="h-3.5 w-3.5" />
 					Share
 				</Button>
-				<Button size="sm" className="h-8 gap-2 text-xs px-4" onClick={handleSave} disabled={isSaving}>
+				<Button
+					size="sm"
+					className="h-8 gap-2 text-xs px-4"
+					onClick={handleSave}
+					disabled={isSaving}
+				>
 					{isSaving ? "Saving..." : "Save"}
 				</Button>
 			</div>
