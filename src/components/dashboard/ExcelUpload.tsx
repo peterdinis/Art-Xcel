@@ -1,14 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { FilePond, registerPlugin } from "react-filepond";
 import FilePondPluginFileValidateType from "filepond-plugin-file-validate-type";
 import { Spreadsheet } from "@/app/(dashboard)/page";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { parseExcelAction } from "@/app/editor/[id]/actions";
-
-// Import FilePond styles
 import "filepond/dist/filepond.min.css";
 
 // Register the plugin
