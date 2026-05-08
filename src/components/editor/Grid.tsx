@@ -15,6 +15,7 @@ import {
 	ChartData,
 	ImageData,
 } from "@/hooks/use-spreadsheet";
+import { getRowSelection } from "@/lib/grid-selection";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { CellContextMenu } from "./CellContextMenu";
 import { ChartComponent } from "./ChartComponent";
@@ -725,6 +726,17 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 			[selectedCell, onSelectCell, onSelectRange],
 		);
 
+		const selectEntireRow = useCallback(
+			(row: number, opts?: { extend?: boolean }) => {
+				const { anchorCell, range } = getRowSelection(row, totalCols, {
+					extendFromCell: opts?.extend ? selectedCell || undefined : undefined,
+				});
+				onSelectCell(anchorCell);
+				onSelectRange(range);
+			},
+			[onSelectCell, onSelectRange, selectedCell, totalCols],
+		);
+
 		const handleCellMouseEnter = useCallback(
 			(cellId: string) => {
 				if (isDragging && dragStart) {
@@ -1064,6 +1076,21 @@ export const Grid = forwardRef<GridHandle, GridProps>(
 											width: ROW_HEADER_WIDTH,
 											height: virtualRow.size,
 											top: virtualRow.start,
+										}}
+										role="button"
+										tabIndex={0}
+										onMouseDown={(e) => {
+											e.preventDefault();
+											e.stopPropagation();
+											selectEntireRow(row, { extend: e.shiftKey });
+										}}
+										onKeyDown={(e) => {
+											if (e.key === "Enter" || e.key === " ") {
+												e.preventDefault();
+												selectEntireRow(row, {
+													extend: (e as unknown as React.KeyboardEvent).shiftKey,
+												});
+											}
 										}}
 									>
 										{row}

@@ -9,6 +9,7 @@ import type { useExcelService } from "./use-excel-service";
 import type { useSpreadsheetDB } from "./use-spreadsheet-db";
 import type { GridHandle } from "@/components/editor/Grid";
 import { saveSpreadsheetAction } from "@/app/editor/[id]/actions";
+import { indexToColLetter, parseCellId } from "@/lib/excel-utils";
 
 type Spreadsheet = ReturnType<typeof useSpreadsheet>;
 type ExcelService = ReturnType<typeof useExcelService>;
@@ -435,60 +436,137 @@ export function useEditorHandlers({
 
 	// ── Sort / Filter / Data ─────────────────────────────────────────────────
 
-	const handleSort = useCallback(
-		(direction: "asc" | "desc" = "asc") => {
-			if (!selectionRange || selectionRange.length === 0) {
+	const getSelectionBounds = useCallback(() => {
+		if (!selectionRange || selectionRange.length === 0) return null;
+		const start = selectionRange[0];
+		const end = selectionRange[selectionRange.length - 1];
+		const { col: startCol, row: startRow } = parseCellId(start);
+		const { col: endCol, row: endRow } = parseCellId(end);
+		return {
+			startCol: Math.min(startCol, endCol),
+			endCol: Math.max(startCol, endCol),
+			startRow: Math.min(startRow, endRow),
+			endRow: Math.max(startRow, endRow),
+		};
+	}, [selectionRange]);
+
+	const buildRange = useCallback(
+		(bounds: { startCol: number; endCol: number; startRow: number; endRow: number }) => {
+			const startCell = `${indexToColLetter(bounds.startCol)}${bounds.startRow + 1}`;
+			const endCell = `${indexToColLetter(bounds.endCol)}${bounds.endRow + 1}`;
+			return `${startCell}:${endCell}`;
+		},
+		[],
+	);
+
+	const openDataToolDialog = useCallback(
+		(kind: UseEditorStateReturn["dataToolKind"], extras?: { direction?: "asc" | "desc" }) => {
+			const bounds = getSelectionBounds();
+			if (!bounds) {
 				toast.error("No range selected");
 				return;
 			}
-			sortRange(
-				`${selectionRange[0]}:${selectionRange[selectionRange.length - 1]}`,
-				0,
-				direction === "asc",
-			);
-			toast.success("Sort", {
-				description: `Range sorted ${direction === "asc" ? "ascending" : "descending"}`,
-			});
+			state.setDataToolKind(kind);
+			if (extras?.direction) state.setDataToolSortDirection(extras.direction);
+			// default: first column of selection
+			state.setDataToolSelectedCols([0]);
+			state.setShowDataToolsDialog(true);
 		},
-		[selectionRange, sortRange],
+		[getSelectionBounds, state],
+	);
+
+	const handleSort = useCallback(
+		(direction: "asc" | "desc" = "asc") => {
+			openDataToolDialog("sort", { direction });
+		},
+		[openDataToolDialog],
 	);
 
 	const handleFilter = useCallback(() => {
-		if (!selectionRange || selectionRange.length === 0) {
-			toast.error("No range selected");
-			return;
-		}
-		filterRange(
-			`${selectionRange[0]}:${selectionRange[selectionRange.length - 1]}`,
-			0,
-			(v) => v !== "",
-		);
-		toast.success("Filter applied");
-	}, [selectionRange, filterRange]);
+		openDataToolDialog("filter");
+	}, [openDataToolDialog]);
 
 	const handleRemoveDuplicates = useCallback(() => {
-		if (!selectionRange || selectionRange.length === 0) {
-			toast.error("No range selected");
-			return;
-		}
-		removeDuplicates(
-			`${selectionRange[0]}:${selectionRange[selectionRange.length - 1]}`,
-			0,
-		);
-		toast.success("Remove Duplicates done");
-	}, [selectionRange, removeDuplicates]);
+		openDataToolDialog("removeDuplicates");
+	}, [openDataToolDialog]);
 
 	const handleTextToColumns = useCallback(() => {
-		if (!selectionRange || selectionRange.length === 0) {
+		openDataToolDialog("textToColumns");
+	}, [openDataToolDialog]);
+
+	const handleApplyDataTool = useCallback(() => {
+		const bounds = getSelectionBounds();
+		if (!bounds) {
 			toast.error("No range selected");
 			return;
 		}
-		textToColumns(
-			`${selectionRange[0]}:${selectionRange[selectionRange.length - 1]}`,
-			",",
-		);
-		toast.success("Text to Columns done");
-	}, [selectionRange, textToColumns]);
+
+		const selectedRelCols = state.dataToolSelectedCols.length
+			? state.dataToolSelectedCols
+			: [0];
+
+		const absCols = selectedRelCols
+			.map((rel) => bounds.startCol + rel)
+			.filter((c) => c >= bounds.startCol && c <= bounds.endCol);
+
+		if (absCols.length === 0) {
+			toast.error("Pick at least one column");
+			return;
+		}
+
+		const effectiveBounds = { ...bounds };
+		if (state.dataToolHasHeader && effectiveBounds.startRow < effectiveBounds.endRow) {
+			effectiveBounds.startRow += 1;
+		}
+		const range = buildRange(effectiveBounds);
+
+		switch (state.dataToolKind) {
+			case "sort": {
+				const col = absCols[0];
+				sortRange(range, col, state.dataToolSortDirection === "asc");
+				toast.success("Sort applied", {
+					description: `Sorted by ${indexToColLetter(col)} (${state.dataToolSortDirection})`,
+				});
+				break;
+			}
+			case "filter": {
+				const col = absCols[0];
+				filterRange(range, col, (v) => v !== "");
+				toast.success("Filter applied", {
+					description: `Filtered by non-empty values in ${indexToColLetter(col)}`,
+				});
+				break;
+			}
+			case "removeDuplicates": {
+				// Apply sequentially to keep current API (single column per call)
+				absCols.forEach((col) => removeDuplicates(range, col));
+				toast.success("Remove duplicates applied", {
+					description:
+						absCols.length === 1
+							? `Column ${indexToColLetter(absCols[0])}`
+							: `${absCols.length} columns`,
+				});
+				break;
+			}
+			case "textToColumns": {
+				textToColumns(range, state.dataToolDelimiter || ",");
+				toast.success("Text to Columns applied", {
+					description: `Delimiter: "${state.dataToolDelimiter || ","}"`,
+				});
+				break;
+			}
+		}
+
+		state.setShowDataToolsDialog(false);
+	}, [
+		getSelectionBounds,
+		buildRange,
+		state,
+		sortRange,
+		filterRange,
+		removeDuplicates,
+		textToColumns,
+	]);
 
 	const handleDataValidation = useCallback(() => {
 		if (selectedCell) {
@@ -1004,6 +1082,7 @@ export function useEditorHandlers({
 		handleFilter,
 		handleRemoveDuplicates,
 		handleTextToColumns,
+		handleApplyDataTool,
 		handleDataValidation,
 		// Formatting
 		handleNumberFormat,

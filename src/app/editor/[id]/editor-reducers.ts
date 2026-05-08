@@ -23,6 +23,7 @@ export type DialogName =
 	| "shapeDialog"
 	| "iconDialog"
 	| "aboutDialog"
+	| "dataToolsDialog"
 	| "saveDialog"
 	| "shareDialog";
 
@@ -56,6 +57,7 @@ export const initialDialogsState: DialogsState = {
 	shapeDialog: false,
 	iconDialog: false,
 	aboutDialog: false,
+	dataToolsDialog: false,
 	saveDialog: false,
 	shareDialog: false,
 };
@@ -111,6 +113,11 @@ export type EditorState = {
 	chartType: "bar" | "line" | "pie";
 	chartTitle: string;
 	chartRange: string;
+	dataToolKind: "sort" | "filter" | "removeDuplicates" | "textToColumns";
+	dataToolSortDirection: "asc" | "desc";
+	dataToolSelectedCols: number[]; // relative to current selection (0 = leftmost)
+	dataToolHasHeader: boolean;
+	dataToolDelimiter: string;
 	shareSettings: ShareSettings;
 };
 
@@ -148,6 +155,11 @@ export const initialEditorState: EditorState = {
 	chartType: "bar",
 	chartTitle: "New Chart",
 	chartRange: "",
+	dataToolKind: "sort",
+	dataToolSortDirection: "asc",
+	dataToolSelectedCols: [0],
+	dataToolHasHeader: true,
+	dataToolDelimiter: ",",
 	shareSettings: {
 		accessLevel: "private",
 		linkPermission: "view",

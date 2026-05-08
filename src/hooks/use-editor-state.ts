@@ -36,6 +36,7 @@ export type EditorStateActions = {
 	setShowConditionalFormattingDialog: (v: boolean) => void;
 	setShowChartDialog: (v: boolean) => void;
 	setShowIconDialog: (v: boolean) => void;
+	setShowDataToolsDialog: (v: boolean) => void;
 	setShowSaveDialog: (v: boolean) => void;
 	setShowShareDialog: (v: boolean) => void;
 	// Editor field setters
@@ -66,6 +67,11 @@ export type EditorStateActions = {
 	setChartType: (v: EditorState["chartType"]) => void;
 	setChartTitle: (v: string) => void;
 	setChartRange: (v: string) => void;
+	setDataToolKind: (v: EditorState["dataToolKind"]) => void;
+	setDataToolSortDirection: (v: EditorState["dataToolSortDirection"]) => void;
+	setDataToolSelectedCols: (v: EditorState["dataToolSelectedCols"]) => void;
+	setDataToolHasHeader: (v: EditorState["dataToolHasHeader"]) => void;
+	setDataToolDelimiter: (v: EditorState["dataToolDelimiter"]) => void;
 	setShareSettings: (v: ShareSettings) => void;
 };
 
@@ -201,6 +207,9 @@ export function useEditorState(): UseEditorStateReturn {
 	);
 	const setShowChartDialog = useCallback(mkDialog("chartDialog"), [mkDialog]);
 	const setShowIconDialog = useCallback(mkDialog("iconDialog"), [mkDialog]);
+	const setShowDataToolsDialog = useCallback(mkDialog("dataToolsDialog"), [
+		mkDialog,
+	]);
 	const setShowSaveDialog = useCallback(mkDialog("saveDialog"), [mkDialog]);
 	const setShowShareDialog = useCallback(mkDialog("shareDialog"), [mkDialog]);
 
@@ -293,6 +302,27 @@ export function useEditorState(): UseEditorStateReturn {
 		(v: string) => setField("chartRange", v),
 		[setField],
 	);
+	const setDataToolKind = useCallback(
+		(v: EditorState["dataToolKind"]) => setField("dataToolKind", v),
+		[setField],
+	);
+	const setDataToolSortDirection = useCallback(
+		(v: EditorState["dataToolSortDirection"]) =>
+			setField("dataToolSortDirection", v),
+		[setField],
+	);
+	const setDataToolSelectedCols = useCallback(
+		(v: EditorState["dataToolSelectedCols"]) => setField("dataToolSelectedCols", v),
+		[setField],
+	);
+	const setDataToolHasHeader = useCallback(
+		(v: EditorState["dataToolHasHeader"]) => setField("dataToolHasHeader", v),
+		[setField],
+	);
+	const setDataToolDelimiter = useCallback(
+		(v: EditorState["dataToolDelimiter"]) => setField("dataToolDelimiter", v),
+		[setField],
+	);
 	const setShareSettings = useCallback(
 		(v: ShareSettings) => setField("shareSettings", v),
 		[setField],
@@ -333,6 +363,7 @@ export function useEditorState(): UseEditorStateReturn {
 		setShowConditionalFormattingDialog,
 		setShowChartDialog,
 		setShowIconDialog,
+		setShowDataToolsDialog,
 		setShowSaveDialog,
 		setShowShareDialog,
 		// Editor field setters
@@ -363,6 +394,11 @@ export function useEditorState(): UseEditorStateReturn {
 		setChartType,
 		setChartTitle,
 		setChartRange,
+		setDataToolKind,
+		setDataToolSortDirection,
+		setDataToolSelectedCols,
+		setDataToolHasHeader,
+		setDataToolDelimiter,
 		setShareSettings,
 	};
 }

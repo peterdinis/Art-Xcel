@@ -18,7 +18,7 @@ export function EditorModalsSection({
 	spreadsheet,
 	id,
 }: EditorModalsSectionProps) {
-	const { sheetNames, selectedCell } = spreadsheet;
+	const { sheetNames, selectedCell, selectionRange, data } = spreadsheet;
 
 	return (
 		<EditorDialogs
@@ -107,6 +107,22 @@ export function EditorModalsSection({
 			iconName={state.iconName}
 			setIconName={state.setIconName}
 			handleInsertIcon={handlers.handleInsertIcon}
+			// Data tools
+			showDataToolsDialog={state.dataToolsDialog}
+			setShowDataToolsDialog={state.setShowDataToolsDialog}
+			dataToolKind={state.dataToolKind}
+			setDataToolKind={state.setDataToolKind}
+			dataToolSortDirection={state.dataToolSortDirection}
+			setDataToolSortDirection={state.setDataToolSortDirection}
+			dataToolSelectedCols={state.dataToolSelectedCols}
+			setDataToolSelectedCols={state.setDataToolSelectedCols}
+			dataToolHasHeader={state.dataToolHasHeader}
+			setDataToolHasHeader={state.setDataToolHasHeader}
+			dataToolDelimiter={state.dataToolDelimiter}
+			setDataToolDelimiter={state.setDataToolDelimiter}
+			selectionRange={selectionRange}
+			sheetData={data}
+			handleApplyDataTool={handlers.handleApplyDataTool}
 			// Shortcuts
 			showShortcutsDialog={state.shortcutsDialog}
 			setShowShortcutsDialog={state.setShowShortcutsDialog}

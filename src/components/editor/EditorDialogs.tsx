@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
 	Dialog,
 	DialogContent,
@@ -25,6 +25,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
 	Upload,
 	Keyboard,
@@ -36,6 +37,8 @@ import {
 	Scissors,
 	Plus,
 } from "lucide-react";
+import { indexToColLetter, parseCellId } from "@/lib/excel-utils";
+import type { SheetData } from "@/hooks/use-spreadsheet";
 
 interface EditorDialogsProps {
 	// Find & Replace
@@ -149,6 +152,25 @@ interface EditorDialogsProps {
 	setIconName: (name: string) => void;
 	handleInsertIcon: (name: string) => void;
 
+	// Data tools (Sort / Filter / Remove duplicates / Text-to-columns)
+	showDataToolsDialog: boolean;
+	setShowDataToolsDialog: (open: boolean) => void;
+	dataToolKind: "sort" | "filter" | "removeDuplicates" | "textToColumns";
+	setDataToolKind: (
+		v: "sort" | "filter" | "removeDuplicates" | "textToColumns",
+	) => void;
+	dataToolSortDirection: "asc" | "desc";
+	setDataToolSortDirection: (v: "asc" | "desc") => void;
+	dataToolSelectedCols: number[];
+	setDataToolSelectedCols: (v: number[]) => void;
+	dataToolHasHeader: boolean;
+	setDataToolHasHeader: (v: boolean) => void;
+	dataToolDelimiter: string;
+	setDataToolDelimiter: (v: string) => void;
+	selectionRange: string[] | null;
+	sheetData: SheetData;
+	handleApplyDataTool: () => void;
+
 	// Shortcuts
 	showShortcutsDialog: boolean;
 	setShowShortcutsDialog: (open: boolean) => void;
@@ -258,6 +280,21 @@ export const EditorDialogs: React.FC<EditorDialogsProps> = (props) => {
 		iconName,
 		setIconName,
 		handleInsertIcon,
+		showDataToolsDialog,
+		setShowDataToolsDialog,
+		dataToolKind,
+		setDataToolKind,
+		dataToolSortDirection,
+		setDataToolSortDirection,
+		dataToolSelectedCols,
+		setDataToolSelectedCols,
+		dataToolHasHeader,
+		setDataToolHasHeader,
+		dataToolDelimiter,
+		setDataToolDelimiter,
+		selectionRange,
+		sheetData,
+		handleApplyDataTool,
 		showShortcutsDialog,
 		setShowShortcutsDialog,
 		showUserGuideDialog,
@@ -285,6 +322,45 @@ export const EditorDialogs: React.FC<EditorDialogsProps> = (props) => {
 	const [cfType, setCfType] = useState("greaterThan");
 	const [cfValue, setCfValue] = useState("");
 	const [cfColor, setCfColor] = useState("#fef08a"); // Default yellow
+	const [dataToolSearch, setDataToolSearch] = useState("");
+
+	const dataToolColumns = useMemo(() => {
+		if (!selectionRange || selectionRange.length === 0) return [];
+		const start = selectionRange[0];
+		const end = selectionRange[selectionRange.length - 1];
+		const { col: startColRaw, row: startRowRaw } = parseCellId(start);
+		const { col: endColRaw, row: endRowRaw } = parseCellId(end);
+		const startCol = Math.min(startColRaw, endColRaw);
+		const endCol = Math.max(startColRaw, endColRaw);
+		const headerRow = Math.min(startRowRaw, endRowRaw) + 1; // 1-based
+
+		const cols = [];
+		for (let c = startCol; c <= endCol; c++) {
+			const letter = indexToColLetter(c);
+			const headerCellId = `${letter}${headerRow}`;
+			const headerValue = sheetData[headerCellId]?.value?.trim?.() || "";
+			cols.push({
+				relIndex: c - startCol,
+				letter,
+				headerValue,
+				label: headerValue ? `${letter} — ${headerValue}` : letter,
+			});
+		}
+		return cols;
+	}, [selectionRange, sheetData]);
+
+	const filteredDataToolColumns = useMemo(() => {
+		const q = dataToolSearch.trim().toLowerCase();
+		if (!q) return dataToolColumns;
+		return dataToolColumns.filter((c) => {
+			return (
+				c.letter.toLowerCase().includes(q) ||
+				c.headerValue.toLowerCase().includes(q)
+			);
+		});
+	}, [dataToolColumns, dataToolSearch]);
+
+	const isMultiSelect = dataToolKind === "removeDuplicates";
 
 	const specialChars = [
 		"©",
@@ -903,6 +979,176 @@ export const EditorDialogs: React.FC<EditorDialogsProps> = (props) => {
 						</Button>
 						<Button onClick={() => handleInsertIcon(iconName)}>
 							Insert Icon
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			{/* Data Tools Dialog */}
+			<Dialog open={showDataToolsDialog} onOpenChange={setShowDataToolsDialog}>
+				<DialogContent className="max-w-lg">
+					<DialogHeader>
+						<DialogTitle>Data Tools</DialogTitle>
+						<DialogDescription>
+							Choose which column(s) to use for{" "}
+							{dataToolKind === "sort"
+								? "sorting"
+								: dataToolKind === "filter"
+									? "filtering"
+									: dataToolKind === "removeDuplicates"
+										? "removing duplicates"
+										: "text to columns"}
+							.
+						</DialogDescription>
+					</DialogHeader>
+
+					<div className="space-y-4 py-2">
+						<div className="space-y-2">
+							<Label>Tool</Label>
+							<Select
+								value={dataToolKind}
+								onValueChange={(v) =>
+									setDataToolKind(
+										v as "sort" | "filter" | "removeDuplicates" | "textToColumns",
+									)
+								}
+							>
+								<SelectTrigger>
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="sort">Sort</SelectItem>
+									<SelectItem value="filter">Filter</SelectItem>
+									<SelectItem value="removeDuplicates">Remove Duplicates</SelectItem>
+									<SelectItem value="textToColumns">Text to Columns</SelectItem>
+								</SelectContent>
+							</Select>
+						</div>
+
+						{dataToolKind === "sort" && (
+							<div className="space-y-2">
+								<Label>Direction</Label>
+								<Select
+									value={dataToolSortDirection}
+									onValueChange={(v) => setDataToolSortDirection(v as "asc" | "desc")}
+								>
+									<SelectTrigger>
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="asc">Ascending (A → Z)</SelectItem>
+										<SelectItem value="desc">Descending (Z → A)</SelectItem>
+									</SelectContent>
+								</Select>
+							</div>
+						)}
+
+						{dataToolKind === "textToColumns" && (
+							<div className="space-y-2">
+								<Label>Delimiter</Label>
+								<Input
+									value={dataToolDelimiter}
+									onChange={(e) => setDataToolDelimiter(e.target.value)}
+									placeholder=","
+								/>
+							</div>
+						)}
+
+						<div className="flex items-center justify-between gap-3">
+							<div className="flex items-center gap-2">
+								<Switch
+									id="data-tool-has-headers"
+									checked={dataToolHasHeader}
+									onCheckedChange={setDataToolHasHeader}
+								/>
+								<Label htmlFor="data-tool-has-headers">My range has headers</Label>
+							</div>
+							{dataToolKind === "removeDuplicates" && (
+								<Button
+									variant="outline"
+									size="sm"
+									onClick={() => setDataToolSelectedCols(dataToolColumns.map((c) => c.relIndex))}
+									disabled={dataToolColumns.length === 0}
+								>
+									Select all
+								</Button>
+							)}
+						</div>
+
+						<div className="space-y-2">
+							<Label>
+								{isMultiSelect ? "Columns" : "Column"}{" "}
+								<span className="text-muted-foreground text-xs">
+									({dataToolColumns.length} in selection)
+								</span>
+							</Label>
+							<Input
+								value={dataToolSearch}
+								onChange={(e) => setDataToolSearch(e.target.value)}
+								placeholder="Search by letter or header…"
+							/>
+							<ScrollArea className="h-56 rounded-md border">
+								<div className="p-2 space-y-1">
+									{filteredDataToolColumns.length === 0 ? (
+										<div className="text-sm text-muted-foreground p-2">
+											No columns match your search.
+										</div>
+									) : (
+										filteredDataToolColumns.map((col) => {
+											const selected = dataToolSelectedCols.includes(col.relIndex);
+											return (
+												<button
+													key={col.relIndex}
+													type="button"
+													className={[
+														"w-full text-left px-2 py-2 rounded-md border transition-colors",
+														selected
+															? "bg-primary/10 border-primary/30"
+															: "bg-background hover:bg-muted/50 border-transparent hover:border-border",
+													].join(" ")}
+													onClick={() => {
+														if (isMultiSelect) {
+															setDataToolSelectedCols(
+																selected
+																	? dataToolSelectedCols.filter((i) => i !== col.relIndex)
+																	: [...dataToolSelectedCols, col.relIndex].sort((a, b) => a - b),
+															);
+														} else {
+															setDataToolSelectedCols([col.relIndex]);
+														}
+													}}
+												>
+													<div className="flex items-center justify-between gap-3">
+														<div className="min-w-0">
+															<div className="text-sm font-medium truncate">{col.label}</div>
+															{col.headerValue && (
+																<div className="text-xs text-muted-foreground truncate">
+																	Header: {col.headerValue}
+																</div>
+															)}
+														</div>
+														<div className="text-xs text-muted-foreground shrink-0">
+															{selected ? "Selected" : isMultiSelect ? "Tap to add" : "Tap to choose"}
+														</div>
+													</div>
+												</button>
+											);
+										})
+									)}
+								</div>
+							</ScrollArea>
+						</div>
+					</div>
+
+					<DialogFooter>
+						<Button variant="outline" onClick={() => setShowDataToolsDialog(false)}>
+							Cancel
+						</Button>
+						<Button
+							onClick={() => handleApplyDataTool()}
+							disabled={dataToolColumns.length === 0}
+						>
+							Apply
 						</Button>
 					</DialogFooter>
 				</DialogContent>
